@@ -2448,6 +2448,9 @@ onUnmounted(() => {
   overflow-x: hidden;
   scrollbar-gutter: stable;
   -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
 }
 
 .modal-enter-active,
@@ -2486,6 +2489,10 @@ onUnmounted(() => {
     0 0 60px rgba(140, 21, 21, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.9);
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  contain: layout style paint;
+  will-change: scroll-position;
 }
 
 .modalClose {
@@ -2617,12 +2624,18 @@ onUnmounted(() => {
   grid-template-columns: 2fr 1fr;
   gap: 2rem;
   padding: 2.5rem 3rem;
+  width: 100%;
+  box-sizing: border-box;
+  contain: layout style paint;
 }
 
 .mediaPreview {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  contain: content;
 }
 
 .mediaPreview__content {
@@ -2632,11 +2645,14 @@ onUnmounted(() => {
   border: 2px solid #e4e4e1;
   
   /* STANDARD SIZE FOR ALL MEDIA */
-  min-height: 500px;
-  max-height: 500px;
+  width: 100%;
+  height: 500px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  contain: strict;
+  flex-shrink: 0;
 }
 
 /* IMAGE VIEWER */
@@ -2648,6 +2664,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  contain: strict;
 }
 
 .imageViewer__img {
@@ -2710,19 +2727,20 @@ onUnmounted(() => {
 .videoPlayer {
   position: relative;
   width: 100%;
-  height: 500px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #000;
+  contain: strict;
 }
 
 .videoPlayer__element {
   width: 100%;
   height: 100%;
-  max-height: 500px;
   object-fit: contain;
   cursor: pointer;
+  display: block;
 }
 
 /* Custom Video Controls */
@@ -3202,7 +3220,7 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
   border: 2px solid #e4e4e1;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
   font-family: inherit;
   color: #2e2d29;
   font-weight: 600;
@@ -3213,9 +3231,7 @@ onUnmounted(() => {
 .mediaTypeToggle:hover {
   background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f0 100%);
   border-color: #8C1515;
-  transform: translateX(4px) translateY(-1px);
-  box-shadow: 0 8px 24px rgba(140, 21, 21, 0.2),
-              0 0 40px rgba(140, 21, 21, 0.08),
+  box-shadow: 0 6px 16px rgba(140, 21, 21, 0.15),
               inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
@@ -3229,11 +3245,12 @@ onUnmounted(() => {
 .mediaTypeToggle__icon {
   font-size: 1.5rem;
   flex-shrink: 0;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s ease;
+  will-change: transform;
 }
 
 .mediaTypeToggle:hover .mediaTypeToggle__icon {
-  transform: scale(1.15);
+  transform: scale(1.08);
 }
 
 .mediaTypeToggle__label {
@@ -3241,7 +3258,7 @@ onUnmounted(() => {
   text-align: right;
   font-size: 1.05rem;
   font-weight: 700;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 0.3s ease;
 }
 
 .mediaTypeToggle:hover .mediaTypeToggle__label {
@@ -3257,7 +3274,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   min-width: 32px;
   text-align: center;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -3275,12 +3292,13 @@ onUnmounted(() => {
 .mediaTypeToggle__arrow {
   font-size: 0.8rem;
   flex-shrink: 0;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s ease, color 0.3s ease;
   color: #8C1515;
+  will-change: transform;
 }
 
 .mediaTypeToggle:hover .mediaTypeToggle__arrow {
-  transform: translateY(-3px) scale(1.15);
+  transform: scale(1.1);
 }
 
 .mediaTypeToggle--expanded .mediaTypeToggle__arrow {
@@ -3320,13 +3338,14 @@ onUnmounted(() => {
   border-left: 4px solid transparent;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease, font-weight 0.3s ease;
   text-align: right;
   font-family: inherit;
   color: #2e2d29;
   font-weight: 500;
   font-size: 0.95rem;
   position: relative;
+  will-change: background, border-color, box-shadow, color;
 }
 
 [dir="ltr"] .mediaItem {
@@ -3338,22 +3357,16 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
   border-color: #8C1515;
   border-left-color: #8C1515;
-  transform: translateX(-6px) translateY(-3px);
-  box-shadow: 0 12px 32px rgba(140, 21, 21, 0.28),
-              0 0 1px rgba(140, 21, 21, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8),
-              -4px 0 12px rgba(140, 21, 21, 0.15);
+  box-shadow: 0 8px 20px rgba(140, 21, 21, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
   color: #8C1515;
   font-weight: 700;
 }
 
 [dir="ltr"] .mediaItem:hover {
   border-right-color: #8C1515;
-  transform: translateX(6px) translateY(-3px);
-  box-shadow: 0 12px 32px rgba(140, 21, 21, 0.28),
-              0 0 1px rgba(140, 21, 21, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8),
-              4px 0 12px rgba(140, 21, 21, 0.15);
+  box-shadow: 0 8px 20px rgba(140, 21, 21, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .mediaItem--active {
