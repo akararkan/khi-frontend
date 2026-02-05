@@ -24,7 +24,8 @@
 
           <!-- Search Button -->
           <button class="brand-bar__search-btn" @click="openSearch" aria-label="گەڕان">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
@@ -33,12 +34,7 @@
         </div>
 
         <!-- Mobile Menu Toggle -->
-        <button 
-          class="mobile-toggle" 
-          @click="toggleMobileMenu" 
-          :aria-expanded="mobileMenuOpen"
-          aria-label="مێنیو"
-        >
+        <button class="mobile-toggle" @click="toggleMobileMenu" :aria-expanded="mobileMenuOpen" aria-label="مێنیو">
           <span class="hamburger" :class="{ 'is-active': mobileMenuOpen }">
             <span></span>
             <span></span>
@@ -54,12 +50,8 @@
         <!-- Desktop Menu -->
         <ul class="main-nav__menu">
           <li v-for="item in menuItems" :key="item.path" class="main-nav__item">
-            <router-link 
-              :to="item.path" 
-              class="main-nav__link"
-              active-class="is-active"
-              exact-active-class="is-exact-active"
-            >
+            <router-link :to="item.path" class="main-nav__link" active-class="is-active"
+              exact-active-class="is-exact-active">
               {{ item.label }}
             </router-link>
           </li>
@@ -67,43 +59,33 @@
 
         <!-- Language Switcher -->
         <div class="lang-switcher" ref="langSwitcherRef">
-          <button 
-            class="lang-switcher__trigger" 
-            @click="toggleLangMenu"
-            :aria-expanded="langMenuOpen"
-          >
+          <button class="lang-switcher__trigger" @click="toggleLangMenu" :aria-expanded="langMenuOpen">
             <!-- Kurdistan Flag -->
             <div class="lang-switcher__flag">
               <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg">
-                <rect width="36" height="8" fill="#ED2939"/>
-                <rect y="8" width="36" height="8" fill="#FFFFFF"/>
-                <rect y="16" width="36" height="8" fill="#00A651"/>
-                <circle cx="18" cy="12" r="4" fill="#FEDD00"/>
+                <rect width="36" height="8" fill="#ED2939" />
+                <rect y="8" width="36" height="8" fill="#FFFFFF" />
+                <rect y="16" width="36" height="8" fill="#00A651" />
+                <circle cx="18" cy="12" r="4" fill="#FEDD00" />
                 <g fill="#FEDD00">
-                  <polygon points="18,4 18.7,6 17.3,6"/>
-                  <polygon points="18,20 18.7,18 17.3,18"/>
-                  <polygon points="10,12 12,12.7 12,11.3"/>
-                  <polygon points="26,12 24,12.7 24,11.3"/>
-                  <polygon points="12,6 13.5,7.8 12.3,8.3"/>
-                  <polygon points="24,18 22.5,16.2 23.7,15.7"/>
-                  <polygon points="24,6 22.5,7.8 23.7,8.3"/>
-                  <polygon points="12,18 13.5,16.2 12.3,15.7"/>
+                  <polygon points="18,4 18.7,6 17.3,6" />
+                  <polygon points="18,20 18.7,18 17.3,18" />
+                  <polygon points="10,12 12,12.7 12,11.3" />
+                  <polygon points="26,12 24,12.7 24,11.3" />
+                  <polygon points="12,6 13.5,7.8 12.3,8.3" />
+                  <polygon points="24,18 22.5,16.2 23.7,15.7" />
+                  <polygon points="24,6 22.5,7.8 23.7,8.3" />
+                  <polygon points="12,18 13.5,16.2 12.3,15.7" />
                 </g>
               </svg>
             </div>
+
             <span class="lang-switcher__text">{{ currentDialect.name }}</span>
-            <svg 
-              class="lang-switcher__chevron" 
-              :class="{ 'is-rotated': langMenuOpen }"
-              xmlns="http://www.w3.org/2000/svg" 
-              width="12" 
-              height="12" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              stroke-width="2"
-            >
-              <path d="m6 9 6 6 6-6"/>
+
+            <svg class="lang-switcher__chevron" :class="{ 'is-rotated': langMenuOpen }"
+              xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="m6 9 6 6 6-6" />
             </svg>
           </button>
 
@@ -111,28 +93,17 @@
           <Transition name="dropdown">
             <div class="lang-dropdown" v-show="langMenuOpen">
               <div class="lang-dropdown__header">زمان / Language</div>
-              <button 
-                v-for="dialect in dialects" 
-                :key="dialect.id"
-                class="lang-dropdown__item"
-                :class="{ 'is-active': currentDialect.id === dialect.id }"
-                @click="selectDialect(dialect)"
-              >
+
+              <button v-for="dialect in dialects" :key="dialect.id" class="lang-dropdown__item"
+                :class="{ 'is-active': currentDialect.id === dialect.id }" @click="selectDialect(dialect)">
                 <div class="lang-dropdown__info">
                   <span class="lang-dropdown__name">{{ dialect.name }}</span>
                   <span class="lang-dropdown__desc">{{ dialect.description }}</span>
                 </div>
-                <svg 
-                  v-if="currentDialect.id === dialect.id" 
-                  class="lang-dropdown__check"
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  stroke-width="2.5"
-                >
+
+                <svg v-if="currentDialect.id === dialect.id" class="lang-dropdown__check"
+                  xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
               </button>
@@ -148,8 +119,9 @@
         <div class="search-overlay__content">
           <!-- Close Button -->
           <button class="search-overlay__close" @click="closeSearch" aria-label="داخستن">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6 6 18M6 6l12 12"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
 
@@ -157,17 +129,12 @@
 
           <!-- Search Input -->
           <div class="search-overlay__form">
-            <input 
-              ref="searchInputRef"
-              type="text" 
-              class="search-overlay__input"
-              :placeholder="getSearchPlaceholder"
-              v-model="searchQuery"
-              @keyup.enter="performSearch"
-              @keyup.escape="closeSearch"
-            />
+            <input ref="searchInputRef" type="text" class="search-overlay__input" :placeholder="getSearchPlaceholder"
+              v-model="searchQuery" @keyup.enter="performSearch" @keyup.escape="closeSearch" />
+
             <button class="search-overlay__submit" @click="performSearch" aria-label="گەڕان">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.3-4.3"></path>
               </svg>
@@ -179,7 +146,8 @@
             <span class="search-overlay__quick-label">گەڕانی خێرا:</span>
             <router-link to="/library" class="search-overlay__quick-link" @click="closeSearch">کتێبخانە</router-link>
             <router-link to="/archive" class="search-overlay__quick-link" @click="closeSearch">ئەرشیڤ</router-link>
-            <router-link to="/publishments" class="search-overlay__quick-link" @click="closeSearch">بڵاوکراوەکان</router-link>
+            <router-link to="/publishments" class="search-overlay__quick-link"
+              @click="closeSearch">بڵاوکراوەکان</router-link>
             <router-link to="/projects" class="search-overlay__quick-link" @click="closeSearch">پڕۆژەکان</router-link>
           </div>
         </div>
@@ -190,40 +158,34 @@
     <Transition name="mobile-slide">
       <div class="mobile-menu" v-show="mobileMenuOpen">
         <div class="mobile-menu__overlay" @click="closeMobileMenu"></div>
+
         <div class="mobile-menu__drawer">
           <!-- Header -->
           <div class="mobile-menu__header">
             <span class="mobile-menu__logo">پەیمانگای کەلەپووری کوردی</span>
             <button class="mobile-menu__close" @click="closeMobileMenu" aria-label="داخستن">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6 6 18M6 6l12 12"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M18 6 6 18M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           <!-- Search -->
           <div class="mobile-menu__search">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"></circle>
               <path d="m21 21-4.3-4.3"></path>
             </svg>
-            <input 
-              type="text" 
-              placeholder="گەڕان..." 
-              v-model="searchQuery"
-              @keyup.enter="performSearch"
-            />
+
+            <input type="text" placeholder="گەڕان..." v-model="searchQuery" @keyup.enter="performSearch" />
           </div>
 
           <!-- Navigation Links -->
           <nav class="mobile-menu__nav">
-            <router-link 
-              v-for="item in menuItems" 
-              :key="item.path"
-              :to="item.path"
-              class="mobile-menu__link"
-              @click="closeMobileMenu"
-            >
+            <router-link v-for="item in menuItems" :key="item.path" :to="item.path" class="mobile-menu__link"
+              @click="closeMobileMenu">
               {{ item.label }}
             </router-link>
           </nav>
@@ -232,13 +194,8 @@
           <div class="mobile-menu__lang">
             <span class="mobile-menu__lang-title">زمان</span>
             <div class="mobile-menu__lang-btns">
-              <button 
-                v-for="dialect in dialects" 
-                :key="dialect.id"
-                class="mobile-menu__lang-btn"
-                :class="{ 'is-active': currentDialect.id === dialect.id }"
-                @click="selectDialect(dialect)"
-              >
+              <button v-for="dialect in dialects" :key="dialect.id" class="mobile-menu__lang-btn"
+                :class="{ 'is-active': currentDialect.id === dialect.id }" @click="selectDialect(dialect)">
                 {{ dialect.name }}
               </button>
             </div>
@@ -292,26 +249,26 @@ const menuItems = ref([
 // LANGUAGES
 // ============================================
 const dialects = ref([
-  { 
-    id: 'sorani', 
-    name: 'کوردی', 
-    description: 'کوردی ناوەندی (سۆرانی)', 
-    code: 'ckb', 
-    dir: 'rtl' 
+  {
+    id: 'sorani',
+    name: 'کوردی',
+    description: 'کوردی ناوەندی (سۆرانی)',
+    code: 'ckb',
+    dir: 'rtl'
   },
-  { 
-    id: 'kurmanji', 
-    name: 'Kurdî', 
-    description: 'Kurdiya Bakur (Kurmancî)', 
-    code: 'kmr', 
-    dir: 'ltr' 
+  {
+    id: 'kurmanji',
+    name: 'Kurdî',
+    description: 'Kurdiya Bakur (Kurmancî)',
+    code: 'kmr',
+    dir: 'ltr'
   },
-  { 
-    id: 'english', 
-    name: 'English', 
-    description: 'English Language', 
-    code: 'en', 
-    dir: 'ltr' 
+  {
+    id: 'english',
+    name: 'English',
+    description: 'English Language',
+    code: 'en',
+    dir: 'ltr'
   },
 ])
 
@@ -338,11 +295,8 @@ const toggleLangMenu = () => {
 const selectDialect = (dialect) => {
   currentDialect.value = dialect
   langMenuOpen.value = false
-  // Update document direction and language
   document.documentElement.dir = dialect.dir
   document.documentElement.lang = dialect.code
-  // Emit event for parent components if needed
-  // emit('language-change', dialect)
 }
 
 // Search
@@ -407,8 +361,7 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   document.addEventListener('click', handleClickOutside)
   document.addEventListener('keydown', handleKeydown)
-  
-  // Set initial direction
+
   document.documentElement.dir = currentDialect.value.dir
   document.documentElement.lang = currentDialect.value.code
 })
@@ -419,7 +372,6 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
 
-// Watch for route changes to close mobile menu
 watch(() => router.currentRoute.value, () => {
   closeMobileMenu()
 })
@@ -433,7 +385,7 @@ watch(() => router.currentRoute.value, () => {
   --brand-primary: #8C1515;
   --brand-primary-light: #B83A4B;
   --brand-primary-dark: #6B0F0F;
-  
+
   --white: #FFFFFF;
   --black: #1A1A1A;
   --grey-900: #2E2D29;
@@ -443,26 +395,26 @@ watch(() => router.currentRoute.value, () => {
   --grey-200: #D5D5D4;
   --grey-100: #EAEAEA;
   --grey-50: #F7F7F7;
-  
+
   --link-blue: #006CB8;
   --link-blue-dark: #00548F;
-  
+
   --font-sans: 'Noto Sans Arabic', 'Source Sans 3', system-ui, sans-serif;
   --font-display: 'Noto Kufi Arabic', 'Source Serif 4', Georgia, serif;
-  
+
   --transition-fast: 150ms ease;
   --transition-normal: 300ms ease;
   --transition-slow: 400ms ease;
-  
+
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
   --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.2);
-  
+
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  
+
   --container-max: 1500px;
 }
 
@@ -772,6 +724,7 @@ watch(() => router.currentRoute.value, () => {
 
 /* ============================================
    LANGUAGE SWITCHER
+   (UPDATED: fixed dropdown "extra left space" + no hover shifting)
    ============================================ */
 .lang-switcher {
   position: relative;
@@ -780,28 +733,42 @@ watch(() => router.currentRoute.value, () => {
 .lang-switcher__trigger {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background-color: transparent;
-  border: 1px solid var(--grey-200);
-  border-radius: var(--radius-md);
+  gap: 0.6rem;
+  padding: 0.65rem 1rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
+  border: 2px solid #e4e4e1;
+  border-radius: 10px;
   font-family: var(--font-sans);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  font-weight: 600;
+  color: #2e2d29;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .lang-switcher__trigger:hover {
-  background-color: var(--grey-50);
-  border-color: var(--grey-300);
+  background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f0 100%);
+  border-color: #8C1515;
+  box-shadow: 0 8px 24px rgba(140, 21, 21, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
 }
 
 .lang-switcher__flag {
-  width: 24px;
-  height: 16px;
-  border-radius: 2px;
+  width: 26px;
+  height: 17px;
+  border-radius: 3px;
   overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12),
+    0 0 0 1.5px rgba(255, 255, 255, 0.8);
   flex-shrink: 0;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lang-switcher__trigger:hover .lang-switcher__flag {
+  box-shadow: 0 4px 12px rgba(140, 21, 21, 0.15),
+    0 0 0 1.5px rgba(255, 255, 255, 0.9);
+  transform: scale(1.08);
 }
 
 .lang-switcher__flag svg {
@@ -811,49 +778,71 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .lang-switcher__text {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--grey-900);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2e2d29;
+  transition: color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lang-switcher__trigger:hover .lang-switcher__text {
+  color: #8C1515;
 }
 
 .lang-switcher__chevron {
-  color: var(--grey-500);
-  transition: transform var(--transition-fast);
+  color: #8C1515;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
+  font-weight: bold;
 }
 
 .lang-switcher__chevron.is-rotated {
-  transform: rotate(180deg);
+  transform: rotate(180deg) scale(1.15);
 }
 
-/* Language Dropdown */
+/* Dropdown (FIXED ALIGNMENT + no off-screen / no left gap) */
 .lang-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  min-width: 240px;
-  background-color: var(--white);
-  border: 1px solid var(--grey-200);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  top: calc(100% + 10px);
+
+  /* RTL default: anchor to end */
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+
+  width: max-content;
+  min-width: 280px;
+  max-width: min(360px, calc(100vw - 24px));
+
+  background-color: #ffffff;
+  border: 2px solid #e4e4e1;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.14),
+    0 0 1px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   overflow: hidden;
   z-index: 200;
+  animation: dropdown-scale 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* keep away from the screen edges */
+  margin-inline: 12px;
+
+  transform-origin: top right;
 }
 
-[dir="rtl"] .lang-dropdown {
-  left: auto;
-  right: 0;
+[dir="ltr"] .lang-dropdown {
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  transform-origin: top left;
 }
 
 .lang-dropdown__header {
-  padding: 0.75rem 1rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--grey-500);
+  padding: 1rem 1.5rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #767671;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background-color: var(--grey-50);
-  border-bottom: 1px solid var(--grey-100);
+  letter-spacing: 0.12em;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  border-bottom: 2px solid #e8e8e5;
 }
 
 .lang-dropdown__item {
@@ -861,59 +850,116 @@ watch(() => router.currentRoute.value, () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0.875rem 1rem;
+
+  /* IMPORTANT: no hover padding changes (no shifting) */
+  padding: 1rem 1.25rem;
+
   background-color: transparent;
   border: none;
+
+  /* active border without layout shift */
+  box-shadow: inset 4px 0 0 transparent;
+
   font-family: var(--font-sans);
-  text-align: right;
+  text-align: start;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: background 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
 }
 
 [dir="ltr"] .lang-dropdown__item {
-  text-align: left;
+  box-shadow: inset -4px 0 0 transparent;
 }
 
 .lang-dropdown__item:hover {
-  background-color: var(--grey-50);
+  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  box-shadow: inset 4px 0 0 #8C1515;
+}
+
+[dir="ltr"] .lang-dropdown__item:hover {
+  box-shadow: inset -4px 0 0 #8C1515;
 }
 
 .lang-dropdown__item.is-active {
-  background-color: rgba(140, 21, 21, 0.05);
+  background: linear-gradient(135deg, rgba(140, 21, 21, 0.10) 0%, rgba(140, 21, 21, 0.05) 100%);
+  box-shadow: inset 4px 0 0 #8C1515;
+}
+
+[dir="ltr"] .lang-dropdown__item.is-active {
+  box-shadow: inset -4px 0 0 #8C1515;
 }
 
 .lang-dropdown__info {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 0.35rem;
+  text-align: start;
 }
 
 .lang-dropdown__name {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--grey-900);
+  font-size: 0.975rem;
+  font-weight: 700;
+  color: #2e2d29;
+}
+
+.lang-dropdown__item:hover .lang-dropdown__name,
+.lang-dropdown__item.is-active .lang-dropdown__name {
+  color: #8C1515;
 }
 
 .lang-dropdown__desc {
   font-size: 0.75rem;
-  color: var(--grey-500);
+  color: #a6a5a0;
+}
+
+.lang-dropdown__item:hover .lang-dropdown__desc {
+  color: #8C1515;
+  opacity: 0.9;
 }
 
 .lang-dropdown__check {
-  color: var(--brand-primary);
+  color: #8C1515;
   flex-shrink: 0;
+  animation: check-bounce 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Dropdown Animation */
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: all var(--transition-normal);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dropdown-enter-from,
 .dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-16px) scale(0.94);
+}
+
+@keyframes dropdown-scale {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes check-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-30deg);
+  }
+
+  50% {
+    transform: scale(1.2) rotate(10deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
 }
 
 /* ============================================
@@ -989,10 +1035,6 @@ watch(() => router.currentRoute.value, () => {
   border: none;
   outline: none;
   background-color: transparent;
-}
-
-.search-overlay__input::placeholder {
-  color: var(--grey-400);
 }
 
 .search-overlay__submit {
