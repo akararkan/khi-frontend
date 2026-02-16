@@ -1,52 +1,19 @@
 <template>
   <!-- ============================================
-       STANFORD-STYLE NAVBAR - Kurdish Heritage Institute
-       Features: Brand Bar, Main Nav, Search Overlay, Mobile Menu
+       IMPROVED NAVBAR - Kurdish Heritage Institute
+       Clean single-bar design with logo, nav, search, and language switcher
        RTL Support for Kurdish (Sorani)
        ============================================ -->
 
   <header class="site-header">
-    <!-- BRAND BAR (Top Red Identity Bar) -->
-    <div class="brand-bar">
-      <div class="brand-bar__container">
-        <!-- Logo -->
-        <router-link to="/" class="brand-bar__logo">
-          <span class="brand-bar__logo-text">پەیمانگای کەلەپووری کوردی</span>
-        </router-link>
-
-        <!-- Quick Links (Desktop) -->
-        <div class="brand-bar__links">
-          <span class="brand-bar__label">زانیاری بۆ:</span>
-          <router-link to="/students" class="brand-bar__link">خوێندکاران</router-link>
-          <router-link to="/researchers" class="brand-bar__link">توێژەران</router-link>
-          <router-link to="/visitors" class="brand-bar__link">میوانان</router-link>
-          <router-link to="/partners" class="brand-bar__link">هاوبەشان</router-link>
-
-          <!-- Search Button -->
-          <button class="brand-bar__search-btn" @click="openSearch" aria-label="گەڕان">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </svg>
-            <span>گەڕان</span>
-          </button>
-        </div>
-
-        <!-- Mobile Menu Toggle -->
-        <button class="mobile-toggle" @click="toggleMobileMenu" :aria-expanded="mobileMenuOpen" aria-label="مێنیو">
-          <span class="hamburger" :class="{ 'is-active': mobileMenuOpen }">
-            <span></span>
-            <span></span>
-            <span></span>
-          </span>
-        </button>
-      </div>
-    </div>
-
     <!-- MAIN NAVIGATION -->
     <nav class="main-nav" :class="{ 'is-scrolled': isScrolled }">
       <div class="main-nav__container">
+        <!-- Logo -->
+        <router-link to="/" class="main-nav__logo">
+          <span class="main-nav__logo-text">پەیمانگای کەلەپووری کوردی</span>
+        </router-link>
+
         <!-- Desktop Menu -->
         <ul class="main-nav__menu">
           <li v-for="item in menuItems" :key="item.path" class="main-nav__item">
@@ -57,58 +24,139 @@
           </li>
         </ul>
 
-        <!-- Language Switcher -->
-        <div class="lang-switcher" ref="langSwitcherRef">
-          <button class="lang-switcher__trigger" @click="toggleLangMenu" :aria-expanded="langMenuOpen">
-            <!-- Kurdistan Flag -->
-            <div class="lang-switcher__flag">
-              <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg">
-                <rect width="36" height="8" fill="#ED2939" />
-                <rect y="8" width="36" height="8" fill="#FFFFFF" />
-                <rect y="16" width="36" height="8" fill="#00A651" />
-                <circle cx="18" cy="12" r="4" fill="#FEDD00" />
-                <g fill="#FEDD00">
-                  <polygon points="18,4 18.7,6 17.3,6" />
-                  <polygon points="18,20 18.7,18 17.3,18" />
-                  <polygon points="10,12 12,12.7 12,11.3" />
-                  <polygon points="26,12 24,12.7 24,11.3" />
-                  <polygon points="12,6 13.5,7.8 12.3,8.3" />
-                  <polygon points="24,18 22.5,16.2 23.7,15.7" />
-                  <polygon points="24,6 22.5,7.8 23.7,8.3" />
-                  <polygon points="12,18 13.5,16.2 12.3,15.7" />
-                </g>
-              </svg>
-            </div>
-
-            <span class="lang-switcher__text">{{ currentDialect.name }}</span>
-
-            <svg class="lang-switcher__chevron" :class="{ 'is-rotated': langMenuOpen }"
-              xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2">
-              <path d="m6 9 6 6 6-6" />
+        <!-- Right Actions -->
+        <div class="main-nav__actions">
+          <!-- Search Button -->
+          <button class="main-nav__search-btn" @click="openSearch" aria-label="گەڕان">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
             </svg>
           </button>
 
-          <!-- Language Dropdown -->
-          <Transition name="dropdown">
-            <div class="lang-dropdown" v-show="langMenuOpen">
-              <div class="lang-dropdown__header">زمان / Language</div>
+          <!-- ── LOGIN / USER BUTTON ───────────────────────── -->
 
-              <button v-for="dialect in dialects" :key="dialect.id" class="lang-dropdown__item"
-                :class="{ 'is-active': currentDialect.id === dialect.id }" @click="selectDialect(dialect)">
-                <div class="lang-dropdown__info">
-                  <span class="lang-dropdown__name">{{ dialect.name }}</span>
-                  <span class="lang-dropdown__desc">{{ dialect.description }}</span>
+          <!-- Logged in: user menu -->
+          <div v-if="authStore.isAuthenticated" class="user-menu" ref="userMenuRef">
+            <button class="user-menu__trigger" @click="toggleUserMenu" :aria-expanded="userMenuOpen">
+              <div class="user-menu__avatar">
+                {{ authStore.username?.charAt(0)?.toUpperCase() || 'K' }}
+              </div>
+              <span class="user-menu__name">{{ authStore.username }}</span>
+              <svg class="user-menu__chevron" :class="{ 'is-rotated': userMenuOpen }"
+                xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+
+            <Transition name="dropdown">
+              <div class="user-dropdown" v-show="userMenuOpen">
+                <div class="user-dropdown__info">
+                  <span class="user-dropdown__username">{{ authStore.username }}</span>
+                  <span class="user-dropdown__role">{{ authStore.role }}</span>
                 </div>
 
-                <svg v-if="currentDialect.id === dialect.id" class="lang-dropdown__check"
-                  xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2.5">
-                  <polyline points="20 6 9 17 4 12"></polyline>
+                <router-link to="/admin" class="user-dropdown__item" @click="userMenuOpen = false">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                  </svg>
+                  داشبۆرد
+                </router-link>
+
+                <button class="user-dropdown__item user-dropdown__item--danger" @click="handleLogout">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  چوونەدەرەوە
+                </button>
+              </div>
+            </Transition>
+          </div>
+
+          <!-- Not logged in: Login button -->
+          <router-link v-else to="/login" class="login-btn" aria-label="چوونەژوورەوە">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            <span class="login-btn__text">چوونەژوورەوە</span>
+          </router-link>
+
+          <!-- ── END LOGIN BUTTON ───────────────────────────── -->
+
+          <!-- Language Switcher -->
+          <div class="lang-switcher" ref="langSwitcherRef">
+            <button class="lang-switcher__trigger" @click="toggleLangMenu" :aria-expanded="langMenuOpen">
+              <!-- Kurdistan Flag -->
+              <div class="lang-switcher__flag">
+                <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="36" height="8" fill="#ED2939" />
+                  <rect y="8" width="36" height="8" fill="#FFFFFF" />
+                  <rect y="16" width="36" height="8" fill="#00A651" />
+                  <circle cx="18" cy="12" r="4" fill="#FEDD00" />
+                  <g fill="#FEDD00">
+                    <polygon points="18,4 18.7,6 17.3,6" />
+                    <polygon points="18,20 18.7,18 17.3,18" />
+                    <polygon points="10,12 12,12.7 12,11.3" />
+                    <polygon points="26,12 24,12.7 24,11.3" />
+                    <polygon points="12,6 13.5,7.8 12.3,8.3" />
+                    <polygon points="24,18 22.5,16.2 23.7,15.7" />
+                    <polygon points="24,6 22.5,7.8 23.7,8.3" />
+                    <polygon points="12,18 13.5,16.2 12.3,15.7" />
+                  </g>
                 </svg>
-              </button>
-            </div>
-          </Transition>
+              </div>
+
+              <span class="lang-switcher__text">{{ currentDialect.name }}</span>
+
+              <svg class="lang-switcher__chevron" :class="{ 'is-rotated': langMenuOpen }"
+                xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+
+            <!-- Language Dropdown -->
+            <Transition name="dropdown">
+              <div class="lang-dropdown" v-show="langMenuOpen">
+                <div class="lang-dropdown__header">زمان / Language</div>
+
+                <button v-for="dialect in dialects" :key="dialect.id" class="lang-dropdown__item"
+                  :class="{ 'is-active': currentDialect.id === dialect.id }" @click="selectDialect(dialect)">
+                  <div class="lang-dropdown__info">
+                    <span class="lang-dropdown__name">{{ dialect.name }}</span>
+                    <span class="lang-dropdown__desc">{{ dialect.description }}</span>
+                  </div>
+
+                  <svg v-if="currentDialect.id === dialect.id" class="lang-dropdown__check"
+                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </Transition>
+          </div>
+
+          <!-- Mobile Menu Toggle -->
+          <button class="mobile-toggle" @click="toggleMobileMenu" :aria-expanded="mobileMenuOpen" aria-label="مێنیو">
+            <span class="hamburger" :class="{ 'is-active': mobileMenuOpen }">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </button>
         </div>
       </div>
     </nav>
@@ -190,6 +238,44 @@
             </router-link>
           </nav>
 
+          <!-- ── MOBILE LOGIN / LOGOUT ──────────────────── -->
+          <div class="mobile-menu__auth">
+            <!-- Authenticated -->
+            <template v-if="authStore.isAuthenticated">
+              <div class="mobile-menu__user-info">
+                <div class="mobile-menu__user-avatar">
+                  {{ authStore.username?.charAt(0)?.toUpperCase() || 'K' }}
+                </div>
+                <div>
+                  <p class="mobile-menu__user-name">{{ authStore.username }}</p>
+                  <p class="mobile-menu__user-role">{{ authStore.role }}</p>
+                </div>
+              </div>
+              <div class="mobile-menu__auth-btns">
+                <router-link to="/admin" class="mobile-menu__auth-btn mobile-menu__auth-btn--secondary"
+                  @click="closeMobileMenu">
+                  داشبۆرد
+                </router-link>
+                <button class="mobile-menu__auth-btn mobile-menu__auth-btn--danger" @click="handleLogout">
+                  چوونەدەرەوە
+                </button>
+              </div>
+            </template>
+
+            <!-- Not authenticated -->
+            <router-link v-else to="/login" class="mobile-menu__auth-btn mobile-menu__auth-btn--primary"
+              @click="closeMobileMenu">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+              </svg>
+              چوونەژوورەوە
+            </router-link>
+          </div>
+          <!-- ── END MOBILE AUTH ────────────────────────── -->
+
           <!-- Language Options -->
           <div class="mobile-menu__lang">
             <span class="mobile-menu__lang-title">زمان</span>
@@ -217,8 +303,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 // ============================================
 // STATE
@@ -230,6 +318,8 @@ const langMenuOpen = ref(false)
 const langSwitcherRef = ref(null)
 const mobileMenuOpen = ref(false)
 const isScrolled = ref(false)
+const userMenuOpen = ref(false)
+const userMenuRef = ref(null)
 
 // ============================================
 // MENU ITEMS
@@ -287,6 +377,18 @@ const getSearchPlaceholder = computed(() => {
 // METHODS
 // ============================================
 
+// Auth
+const toggleUserMenu = () => {
+  userMenuOpen.value = !userMenuOpen.value
+}
+
+const handleLogout = async () => {
+  userMenuOpen.value = false
+  closeMobileMenu()
+  await authStore.logout()
+  router.push('/')
+}
+
 // Language
 const toggleLangMenu = () => {
   langMenuOpen.value = !langMenuOpen.value
@@ -335,13 +437,16 @@ const closeMobileMenu = () => {
 
 // Scroll Handler
 const handleScroll = () => {
-  isScrolled.value = window.scrollY > 50
+  isScrolled.value = window.scrollY > 10
 }
 
 // Click Outside Handler
 const handleClickOutside = (event) => {
   if (langSwitcherRef.value && !langSwitcherRef.value.contains(event.target)) {
     langMenuOpen.value = false
+  }
+  if (userMenuRef.value && !userMenuRef.value.contains(event.target)) {
+    userMenuOpen.value = false
   }
 }
 
@@ -351,6 +456,7 @@ const handleKeydown = (event) => {
     if (searchOpen.value) closeSearch()
     if (mobileMenuOpen.value) closeMobileMenu()
     if (langMenuOpen.value) langMenuOpen.value = false
+    if (userMenuOpen.value) userMenuOpen.value = false
   }
 }
 
@@ -374,6 +480,7 @@ onUnmounted(() => {
 
 watch(() => router.currentRoute.value, () => {
   closeMobileMenu()
+  userMenuOpen.value = false
 })
 </script>
 
@@ -419,135 +526,179 @@ watch(() => router.currentRoute.value, () => {
 }
 
 /* ============================================
-   BRAND BAR
+   MAIN NAVIGATION
    ============================================ */
-.brand-bar {
-  background-color: var(--brand-primary);
-  padding: 0.625rem 0;
+.main-nav {
+  background-color: var(--white);
+  border-bottom: 1px solid var(--grey-100);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  transition: all var(--transition-normal);
 }
 
-.brand-bar__container {
+.main-nav.is-scrolled {
+  box-shadow: var(--shadow-md);
+  border-bottom-color: transparent;
+}
+
+.main-nav__container {
   max-width: var(--container-max);
   margin: 0 auto;
   padding: 0 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 2rem;
+  height: 72px;
 }
 
 @media (min-width: 768px) {
-  .brand-bar__container {
+  .main-nav__container {
     padding: 0 2rem;
+    height: 76px;
   }
 }
 
 @media (min-width: 1024px) {
-  .brand-bar__container {
+  .main-nav__container {
     padding: 0 3rem;
+    height: 80px;
   }
 }
 
-.brand-bar__logo {
+/* Logo */
+.main-nav__logo {
   display: flex;
   align-items: center;
-  color: var(--white);
+  color: var(--brand-primary);
   text-decoration: none;
   transition: opacity var(--transition-fast);
+  flex-shrink: 0;
 }
 
-.brand-bar__logo:hover {
-  opacity: 0.9;
+.main-nav__logo:hover {
+  opacity: 0.85;
 }
 
-.brand-bar__logo-text {
+.main-nav__logo-text {
   font-family: var(--font-display);
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   font-weight: 700;
   letter-spacing: 0.01em;
 }
 
-@media (min-width: 768px) {
-  .brand-bar__logo-text {
-    font-size: 1.125rem;
-  }
-}
+@media (min-width: 768px) { .main-nav__logo-text { font-size: 1.25rem; } }
+@media (min-width: 1280px) { .main-nav__logo-text { font-size: 1.375rem; } }
 
-.brand-bar__links {
+/* Menu */
+.main-nav__menu {
   display: none;
-  align-items: center;
-  gap: 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0.25rem;
+  flex: 1;
+  justify-content: center;
 }
 
 @media (min-width: 1024px) {
-  .brand-bar__links {
+  .main-nav__menu {
     display: flex;
   }
 }
 
-.brand-bar__label {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.8125rem;
+.main-nav__link {
+  display: block;
+  padding: 0.625rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
   font-weight: 500;
-}
-
-.brand-bar__link {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.8125rem;
-  font-weight: 400;
+  color: var(--grey-900);
   text-decoration: none;
+  border-radius: var(--radius-sm);
   position: relative;
-  transition: color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
-.brand-bar__link::after {
+@media (min-width: 1280px) {
+  .main-nav__link {
+    padding: 0.625rem 1.25rem;
+    font-size: 1rem;
+  }
+}
+
+.main-nav__link::after {
   content: '';
   position: absolute;
-  bottom: -3px;
+  bottom: 0;
   right: 0;
-  width: 0;
-  height: 1px;
-  background-color: var(--white);
-  transition: width var(--transition-normal);
-}
-
-[dir="ltr"] .brand-bar__link::after {
-  right: auto;
   left: 0;
+  height: 3px;
+  background-color: var(--brand-primary);
+  border-radius: 3px 3px 0 0;
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
 }
 
-.brand-bar__link:hover {
-  color: var(--white);
+.main-nav__link:hover {
+  color: var(--brand-primary);
+  background-color: rgba(140, 21, 21, 0.05);
 }
 
-.brand-bar__link:hover::after {
-  width: 100%;
+.main-nav__link:hover::after,
+.main-nav__link.is-active::after,
+.main-nav__link.is-exact-active::after {
+  transform: scaleX(1);
 }
 
-.brand-bar__search-btn {
+.main-nav__link.is-active,
+.main-nav__link.is-exact-active {
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+
+/* Actions */
+.main-nav__actions {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-right: 0.75rem;
-  padding: 0.4rem 0.875rem;
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-sm);
-  color: var(--white);
-  font-family: var(--font-sans);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .main-nav__actions {
+    gap: 1rem;
+  }
+}
+
+/* Search Button */
+.main-nav__search-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background-color: var(--grey-50);
+  border: 1px solid var(--grey-200);
+  border-radius: var(--radius-md);
+  color: var(--grey-700);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-[dir="ltr"] .brand-bar__search-btn {
-  margin-right: 0;
-  margin-left: 0.75rem;
+@media (min-width: 768px) {
+  .main-nav__search-btn {
+    display: flex;
+  }
 }
 
-.brand-bar__search-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+.main-nav__search-btn:hover {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: var(--white);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Mobile Toggle */
@@ -582,14 +733,14 @@ watch(() => router.currentRoute.value, () => {
   display: block;
   width: 100%;
   height: 2px;
-  background-color: var(--white);
+  background-color: var(--grey-900);
   border-radius: 2px;
   transition: all var(--transition-normal);
   transform-origin: center;
 }
 
 .hamburger span:nth-child(3) {
-  width: 65%;
+  width: 70%;
   margin-right: auto;
 }
 
@@ -613,118 +764,189 @@ watch(() => router.currentRoute.value, () => {
 }
 
 /* ============================================
-   MAIN NAVIGATION
+   LOGIN BUTTON (desktop)
    ============================================ */
-.main-nav {
-  background-color: var(--white);
-  border-bottom: 1px solid var(--grey-100);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  transition: box-shadow var(--transition-normal);
-}
-
-.main-nav.is-scrolled {
-  box-shadow: var(--shadow-md);
-}
-
-.main-nav__container {
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: 0 1.5rem;
-  display: flex;
+.login-btn {
+  display: none;
   align-items: center;
-  justify-content: space-between;
-  height: 56px;
+  gap: 0.5rem;
+  padding: 0.5rem 1.125rem;
+  background-color: var(--brand-primary);
+  color: var(--white);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(140, 21, 21, 0.25);
 }
 
 @media (min-width: 768px) {
-  .main-nav__container {
-    padding: 0 2rem;
-    height: 60px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .main-nav__container {
-    padding: 0 3rem;
-    height: 64px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .main-nav__container {
-    height: 70px;
-  }
-}
-
-.main-nav__menu {
-  display: none;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  gap: 0.125rem;
-}
-
-@media (min-width: 1024px) {
-  .main-nav__menu {
+  .login-btn {
     display: flex;
   }
 }
 
-.main-nav__link {
-  display: block;
-  padding: 0.5rem 0.875rem;
-  font-family: var(--font-sans);
-  font-size: 0.9375rem;
-  font-weight: 400;
-  color: var(--grey-900);
-  text-decoration: none;
-  border-radius: var(--radius-sm);
-  position: relative;
-  transition: all var(--transition-fast);
+.login-btn:hover {
+  background-color: var(--brand-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(140, 21, 21, 0.35);
 }
 
-@media (min-width: 1280px) {
-  .main-nav__link {
-    padding: 0.5rem 1.125rem;
-    font-size: 1rem;
+.login-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 1023px) {
+  .login-btn__text {
+    display: none;
   }
 }
 
-.main-nav__link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  left: 0;
-  height: 3px;
-  background-color: var(--brand-primary);
-  border-radius: 3px 3px 0 0;
-  transform: scaleX(0);
-  transition: transform var(--transition-normal);
+/* ============================================
+   USER MENU (authenticated state)
+   ============================================ */
+.user-menu {
+  display: none;
+  position: relative;
 }
 
-.main-nav__link:hover {
-  color: var(--brand-primary);
-  background-color: var(--grey-50);
+@media (min-width: 768px) {
+  .user-menu {
+    display: block;
+  }
 }
 
-.main-nav__link:hover::after,
-.main-nav__link.is-active::after,
-.main-nav__link.is-exact-active::after {
-  transform: scaleX(1);
+.user-menu__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem 0.375rem 0.5rem;
+  background: var(--grey-50);
+  border: 1.5px solid var(--grey-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.main-nav__link.is-active,
-.main-nav__link.is-exact-active {
-  color: var(--brand-primary);
+.user-menu__trigger:hover {
+  border-color: var(--brand-primary);
+  background: var(--white);
+}
+
+.user-menu__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
+  color: var(--white);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.user-menu__name {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
   font-weight: 600;
+  color: var(--grey-900);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .user-menu__name {
+    display: block;
+  }
+}
+
+.user-menu__chevron {
+  color: var(--grey-500);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.user-menu__chevron.is-rotated {
+  transform: rotate(180deg);
+}
+
+/* User Dropdown */
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  width: 200px;
+  background: var(--white);
+  border: 1.5px solid var(--grey-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 200;
+}
+
+.user-dropdown__info {
+  padding: 0.875rem 1rem;
+  background: var(--grey-50);
+  border-bottom: 1px solid var(--grey-100);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.user-dropdown__username {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--grey-900);
+}
+
+.user-dropdown__role {
+  font-size: 0.7rem;
+  color: var(--grey-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.user-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--grey-900);
+  text-decoration: none;
+  cursor: pointer;
+  text-align: start;
+  transition: all var(--transition-fast);
+}
+
+.user-dropdown__item:hover {
+  background: var(--grey-50);
+  color: var(--brand-primary);
+}
+
+.user-dropdown__item--danger {
+  color: #CC2936;
+}
+
+.user-dropdown__item--danger:hover {
+  background: #FFF0F0;
+  color: #CC2936;
 }
 
 /* ============================================
    LANGUAGE SWITCHER
-   (UPDATED: fixed dropdown "extra left space" + no hover shifting)
    ============================================ */
 .lang-switcher {
   position: relative;
@@ -733,42 +955,39 @@ watch(() => router.currentRoute.value, () => {
 .lang-switcher__trigger {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.65rem 1rem;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
   background: linear-gradient(135deg, #ffffff 0%, #f9f9f9 100%);
   border: 2px solid #e4e4e1;
   border-radius: 10px;
   font-family: var(--font-sans);
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   font-weight: 600;
   color: #2e2d29;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .lang-switcher__trigger:hover {
   background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f0 100%);
-  border-color: #8C1515;
-  box-shadow: 0 8px 24px rgba(140, 21, 21, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border-color: var(--brand-primary);
+  box-shadow: 0 6px 20px rgba(140, 21, 21, 0.15);
   transform: translateY(-2px);
 }
 
 .lang-switcher__flag {
-  width: 26px;
-  height: 17px;
+  width: 24px;
+  height: 16px;
   border-radius: 3px;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12),
-    0 0 0 1.5px rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .lang-switcher__trigger:hover .lang-switcher__flag {
-  box-shadow: 0 4px 12px rgba(140, 21, 21, 0.15),
-    0 0 0 1.5px rgba(255, 255, 255, 0.9);
-  transform: scale(1.08);
+  box-shadow: 0 3px 8px rgba(140, 21, 21, 0.15);
+  transform: scale(1.05);
 }
 
 .lang-switcher__flag svg {
@@ -778,64 +997,46 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .lang-switcher__text {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 700;
   color: #2e2d29;
-  transition: color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 0.3s ease;
 }
 
 .lang-switcher__trigger:hover .lang-switcher__text {
-  color: #8C1515;
+  color: var(--brand-primary);
 }
 
 .lang-switcher__chevron {
-  color: #8C1515;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--brand-primary);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
-  font-weight: bold;
 }
 
 .lang-switcher__chevron.is-rotated {
-  transform: rotate(180deg) scale(1.15);
+  transform: rotate(180deg);
 }
 
-/* Dropdown (FIXED ALIGNMENT + no off-screen / no left gap) */
 .lang-dropdown {
   position: absolute;
-  top: calc(100% + 10px);
-
-  /* RTL default: anchor to end */
+  top: calc(100% + 8px);
   inset-inline-end: 0;
-  inset-inline-start: auto;
-
   width: max-content;
-  min-width: 280px;
-  max-width: min(360px, calc(100vw - 24px));
-
+  min-width: 240px;
+  max-width: 280px;
   background-color: #ffffff;
   border: 2px solid #e4e4e1;
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.14),
-    0 0 1px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   z-index: 200;
-  animation: dropdown-scale 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* keep away from the screen edges */
-  margin-inline: 12px;
-
-  transform-origin: top right;
 }
 
-[dir="ltr"] .lang-dropdown {
-  inset-inline-start: 0;
-  inset-inline-end: auto;
-  transform-origin: top left;
-}
+[dir="rtl"] .lang-dropdown { transform-origin: top right; }
+[dir="ltr"] .lang-dropdown { transform-origin: top left; }
 
 .lang-dropdown__header {
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.25rem;
   font-size: 0.65rem;
   font-weight: 800;
   color: #767671;
@@ -850,116 +1051,77 @@ watch(() => router.currentRoute.value, () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-
-  /* IMPORTANT: no hover padding changes (no shifting) */
-  padding: 1rem 1.25rem;
-
+  padding: 0.875rem 1.125rem;
   background-color: transparent;
   border: none;
-
-  /* active border without layout shift */
-  box-shadow: inset 4px 0 0 transparent;
-
   font-family: var(--font-sans);
   text-align: start;
   cursor: pointer;
-  transition: background 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+  transition: all 0.2s ease;
+  box-shadow: inset 4px 0 0 transparent;
 }
 
-[dir="ltr"] .lang-dropdown__item {
-  box-shadow: inset -4px 0 0 transparent;
-}
+[dir="ltr"] .lang-dropdown__item { box-shadow: inset -4px 0 0 transparent; }
 
 .lang-dropdown__item:hover {
-  background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
-  box-shadow: inset 4px 0 0 #8C1515;
+  background: linear-gradient(135deg, #fafafa 0%, #f9f9f9 100%);
+  box-shadow: inset 4px 0 0 var(--brand-primary);
 }
 
-[dir="ltr"] .lang-dropdown__item:hover {
-  box-shadow: inset -4px 0 0 #8C1515;
-}
+[dir="ltr"] .lang-dropdown__item:hover { box-shadow: inset -4px 0 0 var(--brand-primary); }
 
 .lang-dropdown__item.is-active {
-  background: linear-gradient(135deg, rgba(140, 21, 21, 0.10) 0%, rgba(140, 21, 21, 0.05) 100%);
-  box-shadow: inset 4px 0 0 #8C1515;
+  background: linear-gradient(135deg, rgba(140, 21, 21, 0.08) 0%, rgba(140, 21, 21, 0.04) 100%);
+  box-shadow: inset 4px 0 0 var(--brand-primary);
 }
 
-[dir="ltr"] .lang-dropdown__item.is-active {
-  box-shadow: inset -4px 0 0 #8C1515;
-}
+[dir="ltr"] .lang-dropdown__item.is-active { box-shadow: inset -4px 0 0 var(--brand-primary); }
 
 .lang-dropdown__info {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.25rem;
   text-align: start;
 }
 
 .lang-dropdown__name {
-  font-size: 0.975rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   color: #2e2d29;
+  transition: color 0.2s ease;
 }
 
 .lang-dropdown__item:hover .lang-dropdown__name,
 .lang-dropdown__item.is-active .lang-dropdown__name {
-  color: #8C1515;
+  color: var(--brand-primary);
 }
 
 .lang-dropdown__desc {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #a6a5a0;
+  transition: color 0.2s ease;
 }
 
 .lang-dropdown__item:hover .lang-dropdown__desc {
   color: #8C1515;
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
 .lang-dropdown__check {
-  color: #8C1515;
+  color: var(--brand-primary);
   flex-shrink: 0;
-  animation: check-bounce 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Dropdown Animation */
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dropdown-enter-from,
 .dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-16px) scale(0.94);
-}
-
-@keyframes dropdown-scale {
-  from {
-    opacity: 0;
-    transform: translateY(-16px) scale(0.92);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes check-bounce {
-  0% {
-    opacity: 0;
-    transform: scale(0.6) rotate(-30deg);
-  }
-
-  50% {
-    transform: scale(1.2) rotate(10deg);
-  }
-
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
+  transform: translateY(-12px) scale(0.95);
 }
 
 /* ============================================
@@ -1046,9 +1208,7 @@ watch(() => router.currentRoute.value, () => {
   transition: background-color var(--transition-fast);
 }
 
-.search-overlay__submit:hover {
-  background-color: var(--brand-primary-dark);
-}
+.search-overlay__submit:hover { background-color: var(--brand-primary-dark); }
 
 .search-overlay__quick {
   display: flex;
@@ -1079,7 +1239,6 @@ watch(() => router.currentRoute.value, () => {
   color: var(--white);
 }
 
-/* Search Overlay Animation */
 .search-fade-enter-active,
 .search-fade-leave-active {
   transition: opacity var(--transition-slow);
@@ -1091,9 +1250,7 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .search-fade-enter-from,
-.search-fade-leave-to {
-  opacity: 0;
-}
+.search-fade-leave-to { opacity: 0; }
 
 .search-fade-enter-from .search-overlay__content,
 .search-fade-leave-to .search-overlay__content {
@@ -1164,9 +1321,7 @@ watch(() => router.currentRoute.value, () => {
   transition: background-color var(--transition-fast);
 }
 
-.mobile-menu__close:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
+.mobile-menu__close:hover { background-color: rgba(255, 255, 255, 0.2); }
 
 .mobile-menu__search {
   display: flex;
@@ -1177,10 +1332,7 @@ watch(() => router.currentRoute.value, () => {
   border-bottom: 1px solid var(--grey-100);
 }
 
-.mobile-menu__search svg {
-  color: var(--grey-500);
-  flex-shrink: 0;
-}
+.mobile-menu__search svg { color: var(--grey-500); flex-shrink: 0; }
 
 .mobile-menu__search input {
   flex: 1;
@@ -1192,10 +1344,7 @@ watch(() => router.currentRoute.value, () => {
   outline: none;
 }
 
-.mobile-menu__nav {
-  flex: 1;
-  padding: 0.5rem 0;
-}
+.mobile-menu__nav { flex: 1; padding: 0.5rem 0; }
 
 .mobile-menu__link {
   display: block;
@@ -1214,6 +1363,109 @@ watch(() => router.currentRoute.value, () => {
   color: var(--brand-primary);
 }
 
+/* ── Mobile Auth section ───────────────────── */
+.mobile-menu__auth {
+  padding: 1.25rem;
+  border-top: 2px solid var(--grey-100);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobile-menu__user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem;
+  background: var(--grey-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--grey-200);
+}
+
+.mobile-menu__user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
+  color: var(--white);
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-menu__user-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--grey-900);
+  margin: 0;
+}
+
+.mobile-menu__user-role {
+  font-size: 0.7rem;
+  color: var(--grey-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.mobile-menu__auth-btns {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.mobile-menu__auth-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  text-align: center;
+  transition: all var(--transition-fast);
+}
+
+.mobile-menu__auth-btn--primary {
+  background-color: var(--brand-primary);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(140,21,21,0.25);
+}
+
+.mobile-menu__auth-btn--primary:hover {
+  background-color: var(--brand-primary-dark);
+}
+
+.mobile-menu__auth-btn--secondary {
+  background-color: var(--grey-50);
+  color: var(--grey-900);
+  border: 1px solid var(--grey-200);
+}
+
+.mobile-menu__auth-btn--secondary:hover {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+.mobile-menu__auth-btn--danger {
+  background-color: #FFF0F0;
+  color: #CC2936;
+  border: 1px solid #F5C6C8;
+}
+
+.mobile-menu__auth-btn--danger:hover {
+  background-color: #FFE0E2;
+}
+
+/* ── Language ──────────────────────────────── */
 .mobile-menu__lang {
   padding: 1.25rem;
   border-top: 1px solid var(--grey-100);
@@ -1229,10 +1481,7 @@ watch(() => router.currentRoute.value, () => {
   margin-bottom: 0.75rem;
 }
 
-.mobile-menu__lang-btns {
-  display: flex;
-  gap: 0.5rem;
-}
+.mobile-menu__lang-btns { display: flex; gap: 0.5rem; }
 
 .mobile-menu__lang-btn {
   flex: 1;
@@ -1248,9 +1497,7 @@ watch(() => router.currentRoute.value, () => {
   transition: all var(--transition-fast);
 }
 
-.mobile-menu__lang-btn:hover {
-  border-color: var(--grey-300);
-}
+.mobile-menu__lang-btn:hover { border-color: var(--grey-300); }
 
 .mobile-menu__lang-btn.is-active {
   background-color: var(--brand-primary);
@@ -1296,9 +1543,7 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .mobile-slide-enter-from,
-.mobile-slide-leave-to {
-  opacity: 0;
-}
+.mobile-slide-leave-to { opacity: 0; }
 
 .mobile-slide-enter-from .mobile-menu__drawer,
 .mobile-slide-leave-to .mobile-menu__drawer {
