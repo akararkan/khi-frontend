@@ -1,45 +1,73 @@
 <template>
-  <aside class="side" :class="{ 'side--collapsed': collapsed }">
-    <div class="side__top">
-      <div class="brand">
-        <div class="brand__mark">KHI</div>
-        <div class="brand__text" v-if="!collapsed">
+  <aside class="side" :class="{ 'side--slim': slim }">
+
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand__gem">
+        <span class="brand__gem-text">KHI</span>
+      </div>
+      <Transition name="fade">
+        <div v-if="!slim" class="brand__copy">
           <div class="brand__title">داشبۆرد</div>
           <div class="brand__sub">ناوەندی کەلەپووری کوردی</div>
         </div>
-      </div>
-
-      <button class="toggle" type="button" @click="collapsed = !collapsed">
-        <span v-if="collapsed">›</span>
-        <span v-else>‹</span>
+      </Transition>
+      <button class="brand__toggle" @click="slim = !slim" :title="slim ? 'فراوانکردن' : 'تەنگکردن'">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path :d="slim ? 'M6 3l5 5-5 5' : 'M10 3L5 8l5 5'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </button>
     </div>
 
+    <!-- Main nav -->
     <nav class="nav">
-      <RouterLink class="item" to="/admin" exact-active-class="item--active">
-        <span class="ico">⌂</span>
-        <span class="txt" v-if="!collapsed">سەرەکی</span>
+      <RouterLink class="nav__item" to="/admin" exact-active-class="nav__item--on">
+        <span class="nav__ico">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </span>
+        <Transition name="fade"><span v-if="!slim" class="nav__label">سەرەکی</span></Transition>
       </RouterLink>
 
-      <div class="sep" v-if="!collapsed">ناوەڕۆک</div>
+      <div v-if="!slim" class="nav__sep">ناوەڕۆک</div>
+      <div v-else class="nav__sep-dot"></div>
 
-      <RouterLink v-for="it in items" :key="it.key" class="item" :to="it.to" active-class="item--active">
-        <span class="ico">{{ it.icon }}</span>
-        <span class="txt" v-if="!collapsed">{{ it.label }}</span>
+      <RouterLink
+        v-for="it in items" :key="it.key"
+        class="nav__item" :to="it.to"
+        active-class="nav__item--on"
+        :title="it.label"
+      >
+        <span class="nav__ico" v-html="it.icon"></span>
+        <Transition name="fade">
+          <span v-if="!slim" class="nav__label">{{ it.label }}</span>
+        </Transition>
+        <span v-if="!slim" class="nav__arrow">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
       </RouterLink>
     </nav>
 
-    <div class="side__bottom">
-      <div class="mini" v-if="!collapsed">
-        <div class="mini__k">ڕۆڵ</div>
-        <div class="mini__v">{{ auth.role || '—' }}</div>
+    <!-- Footer -->
+    <div class="foot">
+      <div v-if="!slim" class="foot__role">
+        <span class="foot__role-dot"></span>
+        <span>{{ auth.role || 'ئەدمین' }}</span>
       </div>
-
-      <button class="logout" type="button" @click="doLogout">
-        <span class="ico">⟲</span>
-        <span class="txt" v-if="!collapsed">چوونەدەرەوە</span>
+      <button class="foot__logout" @click="doLogout" :title="slim ? 'چوونەدەرەوە' : ''">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <Transition name="fade"><span v-if="!slim" class="nav__label">چوونەدەرەوە</span></Transition>
       </button>
     </div>
+
   </aside>
 </template>
 
@@ -49,53 +77,175 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 const router = useRouter()
-const auth = useAuthStore()
-const collapsed = ref(false)
+const auth   = useAuthStore()
+const slim   = ref(false)
+
+const SVGs = {
+  projects: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
+  news:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>`,
+  films:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`,
+  images:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+  sounds:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+  albums:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>`,
+  writings: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+}
 
 const items = [
-  { key: 'projects', label: 'پڕۆژەکان', to: '/admin/projects', icon: '▦' },
-  { key: 'news', label: 'هەواڵ', to: '/admin/news', icon: '📰' },
-  { key: 'films', label: 'فیلم', to: '/admin/films', icon: '▶' },
-  { key: 'image-collections', label: 'کۆمەڵە وێنە', to: '/admin/image-collections', icon: '▧' },
-  { key: 'soundtracks', label: 'دەنگ', to: '/admin/soundtracks', icon: '♫' },
-  { key: 'albums', label: 'ئالبوم', to: '/admin/albums', icon: '◫' },
-  { key: 'writings', label: 'نووسراوەکان', to: '/admin/writings', icon: '✎' },
+  { key: 'projects',          label: 'پڕۆژەکان',      to: '/admin/projects',          icon: SVGs.projects },
+  { key: 'news',              label: 'هەواڵ',           to: '/admin/news',              icon: SVGs.news },
+  { key: 'films',             label: 'فیلم',            to: '/admin/films',             icon: SVGs.films },
+  { key: 'image-collections', label: 'کۆمەڵە وێنە',    to: '/admin/image-collections', icon: SVGs.images },
+  { key: 'soundtracks',       label: 'دەنگ',            to: '/admin/soundtracks',       icon: SVGs.sounds },
+  { key: 'albums',            label: 'ئالبوم',          to: '/admin/albums',            icon: SVGs.albums },
+  { key: 'writings',          label: 'نووسراوەکان',     to: '/admin/writings',          icon: SVGs.writings },
 ]
 
-const doLogout = () => {
-  auth.logout()
-  router.push('/login')
-}
+const doLogout = () => { auth.logout(); router.push('/login') }
 </script>
 
 <style scoped>
-.side{height:100vh;position:sticky;top:0;display:flex;flex-direction:column;
-  background:linear-gradient(180deg,#4A0A0A 0%,#8C1515 55%,#6B0F0F 100%);
-  color:#fff;border-left:1px solid rgba(255,255,255,.10);box-shadow:18px 0 60px rgba(0,0,0,.18);overflow:hidden}
-.side--collapsed{width:78px!important}
-.side__top{display:flex;align-items:center;justify-content:space-between;padding:1rem 1rem .85rem}
-.brand{display:flex;align-items:center;gap:.75rem;min-width:0}
-.brand__mark{width:44px;height:44px;border-radius:14px;background:rgba(254,221,0,.14);
-  border:1px solid rgba(254,221,0,.25);display:flex;align-items:center;justify-content:center;font-weight:1000}
-.brand__title{font-weight:1000}
-.brand__sub{opacity:.75;font-weight:800;font-size:.78rem;margin-top:.15rem}
-.toggle{width:36px;height:36px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.06);color:#fff;cursor:pointer;transition:.18s ease}
-.toggle:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
-.nav{padding:.4rem .75rem 1rem;display:flex;flex-direction:column;gap:.35rem}
-.sep{margin:.55rem .35rem .25rem;opacity:.75;font-weight:900;font-size:.78rem}
-.item{display:flex;align-items:center;gap:.75rem;padding:.75rem .75rem;border-radius:14px;color:#fff;text-decoration:none;
-  border:1px solid transparent;transition:.18s ease}
-.item:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);transform:translateY(-1px)}
-.item--active{background:rgba(254,221,0,.16);border-color:rgba(254,221,0,.22);box-shadow:0 14px 34px rgba(0,0,0,.18)}
-.ico{width:34px;height:34px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
-  display:flex;align-items:center;justify-content:center;flex:0 0 34px}
-.txt{font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.side__bottom{margin-top:auto;padding:1rem .75rem 1rem;border-top:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.08)}
-.mini{padding:.6rem .6rem .8rem}
-.mini__k{opacity:.75;font-weight:900;font-size:.78rem}
-.mini__v{font-weight:1000;margin-top:.2rem}
-.logout{width:100%;display:flex;align-items:center;gap:.75rem;padding:.75rem .75rem;border-radius:14px;
-  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;cursor:pointer;transition:.18s ease}
-.logout:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
+.side {
+  width: 270px;
+  flex: 0 0 270px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(170deg, #3D0808 0%, #7A1212 45%, #5A0E0E 100%);
+  color: #fff;
+  border-left: 1px solid rgba(255,255,255,.07);
+  transition: width var(--transition), flex-basis var(--transition);
+  overflow: hidden;
+  z-index: 10;
+}
+.side--slim { width: 74px; flex: 0 0 74px; }
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: 1.1rem 1rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  min-height: 70px;
+}
+.brand__gem {
+  width: 42px; height: 42px; flex: 0 0 42px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(254,221,0,.22) 0%, rgba(254,221,0,.08) 100%);
+  border: 1px solid rgba(254,221,0,.35);
+  box-shadow: 0 0 20px rgba(254,221,0,.15);
+  display: flex; align-items: center; justify-content: center;
+}
+.brand__gem-text { font-family: 'Playfair Display', serif; font-size: .85rem; font-weight: 900; color: var(--gold); letter-spacing: .04em; }
+.brand__copy { flex: 1; min-width: 0; }
+.brand__title { font-weight: 700; font-size: .95rem; white-space: nowrap; }
+.brand__sub { font-size: .72rem; opacity: .65; margin-top: .1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand__toggle {
+  width: 32px; height: 32px; flex: 0 0 32px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.7);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+  margin-right: auto;
+}
+.brand__toggle:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+/* Nav */
+.nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: .75rem .65rem; display: flex; flex-direction: column; gap: .25rem; }
+.nav::-webkit-scrollbar { width: 3px; }
+.nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); }
+.nav__sep {
+  padding: .55rem .5rem .25rem;
+  font-size: .7rem;
+  font-weight: 700;
+  opacity: .55;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.nav__sep-dot { height: 1px; background: rgba(255,255,255,.1); margin: .6rem .4rem; }
+.nav__item {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .65rem .75rem;
+  border-radius: var(--radius-sm);
+  color: rgba(255,255,255,.78);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  position: relative;
+  min-height: 44px;
+  white-space: nowrap;
+}
+.nav__item:hover {
+  background: rgba(255,255,255,.07);
+  color: #fff;
+  border-color: rgba(255,255,255,.1);
+}
+.nav__item--on {
+  background: rgba(254,221,0,.13);
+  border-color: rgba(254,221,0,.25);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+.nav__item--on::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 3px;
+  background: var(--gold);
+  border-radius: 99px;
+}
+.nav__ico {
+  width: 34px; height: 34px; flex: 0 0 34px;
+  border-radius: 9px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+}
+.nav__label { flex: 1; font-weight: 600; font-size: .9rem; }
+.nav__arrow { opacity: .35; display: flex; align-items: center; }
+.nav__item--on .nav__arrow { opacity: .7; }
+
+/* Footer */
+.foot {
+  padding: .85rem .65rem .85rem;
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex; flex-direction: column; gap: .5rem;
+}
+.foot__role {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .4rem .5rem;
+  font-size: .8rem;
+  opacity: .7;
+  white-space: nowrap;
+}
+.foot__role-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 3px rgba(254,221,0,.2);
+  flex: 0 0 7px;
+}
+.foot__logout {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .65rem .75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
+  color: rgba(255,255,255,.7);
+  cursor: pointer;
+  transition: var(--transition);
+  min-height: 44px;
+  white-space: nowrap;
+}
+.foot__logout:hover { background: rgba(200,30,30,.25); border-color: rgba(200,30,30,.4); color: #fff; }
+
+/* Transitions */
+.fade-enter-active, .fade-leave-active { transition: opacity .15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
