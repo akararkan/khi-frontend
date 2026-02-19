@@ -3,9 +3,10 @@
     <Sidebar />
     <div class="shell__main">
       <Topbar />
-      <main class="shell__content">
-        <router-view />
-      </main>
+      <!-- AdminLayout.vue -->
+<main class="shell__content">
+  <router-view :key="$route.fullPath" />
+</main>
     </div>
   </div>
 </template>

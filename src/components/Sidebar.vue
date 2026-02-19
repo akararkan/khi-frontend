@@ -34,15 +34,16 @@
       <div v-if="!slim" class="nav__sep">ناوەڕۆک</div>
       <div v-else class="nav__sep-dot"></div>
 
+      <!-- Projects -->
       <RouterLink
-        v-for="it in items" :key="it.key"
-        class="nav__item" :to="it.to"
-        active-class="nav__item--on"
-        :title="it.label"
+        class="nav__item"
+        :to="{ name: 'AdminProjectList' }"
+        :class="{ 'nav__item--on': isActive('projects') }"
+        title="پڕۆژەکان"
       >
-        <span class="nav__ico" v-html="it.icon"></span>
+        <span class="nav__ico" v-html="SVGs.projects"></span>
         <Transition name="fade">
-          <span v-if="!slim" class="nav__label">{{ it.label }}</span>
+          <span v-if="!slim" class="nav__label">پڕۆژەکان</span>
         </Transition>
         <span v-if="!slim" class="nav__arrow">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -50,6 +51,76 @@
           </svg>
         </span>
       </RouterLink>
+
+      <!-- News -->
+      <RouterLink
+        class="nav__item"
+        :to="{ name: 'AdminNewsList' }"
+        :class="{ 'nav__item--on': isActive('news') }"
+        title="هەواڵ"
+      >
+        <span class="nav__ico" v-html="SVGs.news"></span>
+        <Transition name="fade">
+          <span v-if="!slim" class="nav__label">هەواڵ</span>
+        </Transition>
+        <span v-if="!slim" class="nav__arrow">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+      </RouterLink>
+
+      <!-- Publications Dropdown -->
+      <div v-if="!slim">
+        <button
+          class="nav__item nav__item--dropdown"
+          :class="{ 'nav__item--on': isPublicationsActive }"
+          @click="publicationsOpen = !publicationsOpen"
+        >
+          <span class="nav__ico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
+            </svg>
+          </span>
+          <span class="nav__label">بڵاوکراوەکان</span>
+          <span class="nav__chevron" :class="{ 'nav__chevron--open': publicationsOpen }">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </button>
+
+        <Transition name="dropdown">
+          <div v-if="publicationsOpen" class="nav__dropdown">
+            <RouterLink
+              v-for="item in publicationItems"
+              :key="item.key"
+              class="nav__subitem"
+              :to="item.to"
+              :class="{ 'nav__subitem--on': isActive(item.key) }"
+              :title="item.label"
+            >
+              <span class="nav__subitem-ico" v-html="item.icon"></span>
+              <span class="nav__subitem-label">{{ item.label }}</span>
+            </RouterLink>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- Slim mode: show publication items directly -->
+      <template v-if="slim">
+        <RouterLink
+          v-for="item in publicationItems"
+          :key="item.key"
+          class="nav__item"
+          :to="item.to"
+          :class="{ 'nav__item--on': isActive(item.key) }"
+          :title="item.label"
+        >
+          <span class="nav__ico" v-html="item.icon"></span>
+        </RouterLink>
+      </template>
     </nav>
 
     <!-- Footer -->
@@ -72,33 +143,93 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 
 const router = useRouter()
+const route  = useRoute()
 const auth   = useAuthStore()
 const slim   = ref(false)
+const publicationsOpen = ref(true)
 
 const SVGs = {
   projects: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
   news:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>`,
-  films:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`,
-  images:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
-  sounds:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
   albums:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>`,
+  images:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+  films:    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>`,
+  sounds:   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
   writings: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
 }
 
-const items = [
-  { key: 'projects',          label: 'پڕۆژەکان',      to: '/admin/projects',          icon: SVGs.projects },
-  { key: 'news',              label: 'هەواڵ',           to: '/admin/news',              icon: SVGs.news },
-  { key: 'films',             label: 'فیلم',            to: '/admin/films',             icon: SVGs.films },
-  { key: 'image-collections', label: 'کۆمەڵە وێنە',    to: '/admin/image-collections', icon: SVGs.images },
-  { key: 'soundtracks',       label: 'دەنگ',            to: '/admin/soundtracks',       icon: SVGs.sounds },
-  { key: 'albums',            label: 'ئالبوم',          to: '/admin/albums',            icon: SVGs.albums },
-  { key: 'writings',          label: 'نووسراوەکان',     to: '/admin/writings',          icon: SVGs.writings },
+// Publications sub-items — now pointing to real dedicated routes
+const publicationItems = [
+  {
+    key:   'albums',
+    label: 'ئەلبومی یادگاریەکان',
+    to:    { name: 'AdminResourceList', params: { resource: 'albums' } }, // no dedicated route yet
+    icon:  SVGs.albums,
+  },
+  {
+    key:   'image-collections',
+    label: 'وێنە',
+    to:    { name: 'AdminImageCollectionList' }, // ✅ fixed
+    icon:  SVGs.images,
+  },
+  {
+    key:   'films',
+    label: 'فیلم',
+    to:    { name: 'AdminResourceList', params: { resource: 'films' } }, // no dedicated route yet
+    icon:  SVGs.films,
+  },
+  {
+    key:   'soundtracks',
+    label: 'دەنگ',
+    to:    { name: 'AdminSoundTrackList' }, // ✅ fixed
+    icon:  SVGs.sounds,
+  },
+  {
+    key:   'writings',
+    label: 'نوسین',
+    to:    { name: 'AdminResourceList', params: { resource: 'writings' } }, // no dedicated route yet
+    icon:  SVGs.writings,
+  },
 ]
+
+// Check if any publication item is active
+const isPublicationsActive = computed(() => {
+  return publicationItems.some(item => isActive(item.key))
+})
+
+// Check if a navigation item is active (including nested routes)
+const isActive = (key) => {
+  const currentName     = route.name
+  const currentResource = route.params.resource
+
+  if (key === 'projects') {
+    return ['AdminProjectList', 'AdminProjectCreate', 'AdminProjectEdit'].includes(currentName)
+  }
+
+  if (key === 'news') {
+    return ['AdminNewsList', 'AdminNewsCreate', 'AdminNewsEdit'].includes(currentName)
+  }
+
+  if (key === 'image-collections') {
+    return ['AdminImageCollectionList', 'AdminImageCollectionCreate', 'AdminImageCollectionEdit'].includes(currentName)
+  }
+
+  if (key === 'soundtracks') {
+    return ['AdminSoundTrackList', 'AdminSoundTrackCreate', 'AdminSoundTrackEdit'].includes(currentName)
+  }
+
+  // Generic resource routes (albums, films, writings)
+  if (['AdminResourceList', 'AdminResourceCreate', 'AdminResourceEdit'].includes(currentName)) {
+    return currentResource === key
+  }
+
+  return false
+}
 
 const doLogout = () => { auth.logout(); router.push('/login') }
 </script>
@@ -181,6 +312,13 @@ const doLogout = () => { auth.logout(); router.push('/login') }
   min-height: 44px;
   white-space: nowrap;
 }
+.nav__item--dropdown {
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  width: 100%;
+}
 .nav__item:hover {
   background: rgba(255,255,255,.07);
   color: #fff;
@@ -210,6 +348,93 @@ const doLogout = () => { auth.logout(); router.push('/login') }
 .nav__label { flex: 1; font-weight: 600; font-size: .9rem; }
 .nav__arrow { opacity: .35; display: flex; align-items: center; }
 .nav__item--on .nav__arrow { opacity: .7; }
+.nav__chevron {
+  opacity: .5;
+  display: flex;
+  align-items: center;
+  transition: transform .25s ease;
+}
+.nav__chevron--open { transform: rotate(180deg); }
+
+/* Dropdown */
+.nav__dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .35rem 0 .35rem 3rem;
+  margin-top: .25rem;
+}
+.nav__subitem {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .7rem;
+  border-radius: var(--radius-sm);
+  color: rgba(255,255,255,.65);
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  font-size: .87rem;
+  position: relative;
+}
+.nav__subitem:hover {
+  background: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.9);
+  border-color: rgba(255,255,255,.08);
+}
+.nav__subitem--on {
+  background: rgba(254,221,0,.1);
+  border-color: rgba(254,221,0,.18);
+  color: #fff;
+}
+.nav__subitem--on::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 30%;
+  bottom: 30%;
+  width: 2px;
+  background: var(--gold);
+  border-radius: 99px;
+}
+.nav__subitem-ico {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 7px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav__subitem-label {
+  flex: 1;
+  font-weight: 600;
+  font-size: .85rem;
+}
+
+/* Dropdown transition */
+.dropdown-enter-active {
+  transition: all .3s ease;
+  overflow: hidden;
+}
+.dropdown-leave-active {
+  transition: all .25s ease;
+  overflow: hidden;
+}
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-10px);
+}
+.dropdown-enter-to,
+.dropdown-leave-from {
+  opacity: 1;
+  max-height: 500px;
+  transform: translateY(0);
+}
 
 /* Footer */
 .foot {

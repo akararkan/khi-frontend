@@ -24,13 +24,12 @@
           </button>
         </Transition>
       </div>
-      <select v-model="filterLang" class="sel" @change="load">
+      <select v-model="filterLang" class="sel">
         <option value="">هەموو زمانەکان</option>
         <option value="CKB">سۆرانی</option>
         <option value="KMR">کورمانجی</option>
       </select>
-      <!-- Status filter -->
-      <select v-model="filterStatus" class="sel" @change="load">
+      <select v-model="filterStatus" class="sel">
         <option value="">هەموو دۆخەکان</option>
         <option value="PUBLISHED">بڵاوکراوە</option>
         <option value="DRAFT">ڕەشنووس</option>
@@ -66,7 +65,10 @@
 
     <!-- ── TABLE ── -->
     <div v-else class="table-wrap">
-      <div class="table-meta">کۆی {{ totalItems }} هەواڵ<span v-if="searchQ"> — ئەنجامی گەڕان بۆ «{{ searchQ }}»</span></div>
+      <div class="table-meta">
+        کۆی {{ totalItems }} هەواڵ
+        <span v-if="searchQ"> — ئەنجامی گەڕان بۆ «{{ searchQ }}»</span>
+      </div>
       <table class="tbl">
         <thead>
           <tr>
@@ -95,7 +97,6 @@
             <td>
               <div class="tbl__name tbl__name--kmr">{{ n.kmrContent?.title || n.content?.kmr?.title || '—' }}</div>
             </td>
-            <!-- Category / SubCategory -->
             <td>
               <div v-if="bestCategory(n)" class="tbl__type-row">
                 <span class="pill pill--cat">{{ bestCategory(n) }}</span>
@@ -105,7 +106,6 @@
               </div>
               <span v-if="!bestCategory(n) && !bestSubCategory(n)" class="tbl__dash">—</span>
             </td>
-            <!-- Status badge -->
             <td>
               <span class="status-pill" :class="n.status === 'DRAFT' ? 'status-pill--draft' : 'status-pill--published'">
                 <span class="status-pill__dot"></span>
@@ -113,13 +113,29 @@
               </span>
             </td>
             <td class="tbl__date">{{ fmtDate(n.datePublished) }}</td>
-            <td><div class="lang-row"><span v-for="l in (n.contentLanguages||[])" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span></div></td>
-            <td><span class="media-pill" v-if="n.media?.length"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>{{ n.media.length }}</span><span v-else class="tbl__dash">—</span></td>
+            <td>
+              <div class="lang-row">
+                <span v-for="l in (n.contentLanguages||[])" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="media-pill" v-if="n.media?.length">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                {{ n.media.length }}
+              </span>
+              <span v-else class="tbl__dash">—</span>
+            </td>
             <td @click.stop>
               <div class="tbl__acts">
-                <button class="act act--view" title="تەواوی زانیاری" @click="openDetail(n)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                <RouterLink class="act act--edit" :to="`/admin/news/${n.id}/edit`"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></RouterLink>
-                <button class="act act--del" @click="confirmDelete(n)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+                <button class="act act--view" title="تەواوی زانیاری" @click="openDetail(n)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <RouterLink class="act act--edit" :to="`/admin/news/${n.id}/edit`">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                </RouterLink>
+                <button class="act act--del" @click="confirmDelete(n)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                </button>
               </div>
             </td>
           </tr>
@@ -129,9 +145,13 @@
 
     <!-- ── PAGINATION ── -->
     <div v-if="totalPages > 1" class="pager">
-      <button class="pager__btn" :disabled="page===0" @click="changePage(page-1)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="pager__btn" :disabled="page===0" @click="changePage(page-1)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
       <button v-for="p in pageRange" :key="p" class="pager__btn" :class="{'pager__btn--on':p===page}" @click="changePage(p)">{{ p+1 }}</button>
-      <button class="pager__btn" :disabled="page>=totalPages-1" @click="changePage(page+1)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+      <button class="pager__btn" :disabled="page>=totalPages-1" @click="changePage(page+1)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
     </div>
 
     <!-- ══ DELETE MODAL ══ -->
@@ -139,12 +159,17 @@
       <Transition name="modal">
         <div v-if="delTarget" class="overlay" @click.self="delTarget=null">
           <div class="del-modal">
-            <div class="del-modal__ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8C1515" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></div>
+            <div class="del-modal__ico">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8C1515" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </div>
             <h3 class="del-modal__title">دڵنیای لە سڕینەوە؟</h3>
             <p class="del-modal__body">هەواڵی <strong>«{{ bestTitle(delTarget) || '#'+delTarget.id }}»</strong><br/>بە تەواوی سڕاوەتەوە و ناگەڕێتەوە.</p>
             <div class="del-modal__acts">
               <button class="btn btn--ghost" @click="delTarget=null">نەخێر</button>
-              <button class="btn btn--danger" :disabled="deleting" @click="doDelete"><span v-if="deleting" class="spinner"></span>{{ deleting?'…':'بەڵێ، بیسڕەوە' }}</button>
+              <button class="btn btn--danger" :disabled="deleting" @click="doDelete">
+                <span v-if="deleting" class="spinner"></span>
+                {{ deleting ? '…' : 'بەڵێ، بیسڕەوە' }}
+              </button>
             </div>
           </div>
         </div>
@@ -158,7 +183,6 @@
           <Transition name="pdm-rise" appear>
             <div v-if="detail" class="pdm" role="dialog" :aria-label="bestTitle(detail)">
 
-              <!-- CLOSE -->
               <button class="pdm-x" @click="closeDetail" aria-label="داخستن">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -174,24 +198,20 @@
                 </div>
 
                 <div class="pdm-stage" v-else>
-                  <!-- IMAGE -->
                   <div v-if="currentMedia.type === 'IMAGE'" class="pdm-stage__image-wrap">
                     <img :src="currentMedia.url" :key="currentMedia.url" class="pdm-stage__image" :alt="currentMedia.caption || ''" />
                     <div class="pdm-stage__caption" v-if="currentMedia.caption">{{ currentMedia.caption }}</div>
                   </div>
-                  <!-- VIDEO with embed -->
                   <div v-else-if="currentMedia.type === 'VIDEO' && currentMedia.embedUrl" class="pdm-stage__video-wrap">
                     <iframe :src="currentMedia.embedUrl" :key="currentMedia.embedUrl" class="pdm-stage__video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     <div class="pdm-stage__caption" v-if="currentMedia.caption">{{ currentMedia.caption }}</div>
                   </div>
-                  <!-- VIDEO direct -->
                   <div v-else-if="currentMedia.type === 'VIDEO'" class="pdm-stage__video-wrap">
                     <video :key="currentMedia.url" class="pdm-stage__video" controls controlsList="nodownload" preload="metadata">
                       <source v-if="currentMedia.url" :src="currentMedia.url" />
                     </video>
                     <div class="pdm-stage__caption" v-if="currentMedia.caption">{{ currentMedia.caption }}</div>
                   </div>
-                  <!-- AUDIO -->
                   <div v-else-if="currentMedia.type === 'AUDIO'" class="pdm-stage__audio-wrap">
                     <div class="pdm-audio-player">
                       <div class="pdm-audio-player__wave">
@@ -207,7 +227,6 @@
                       </a>
                     </div>
                   </div>
-                  <!-- DOC/PDF -->
                   <div v-else-if="currentMedia.type === 'PDF' || currentMedia.type === 'DOCUMENT'" class="pdm-stage__doc-wrap">
                     <div class="pdm-doc-card">
                       <div class="pdm-doc-card__icon">
@@ -252,7 +271,6 @@
                 <div class="pdm-info__head">
                   <div class="pdm-info__head-meta">
                     <span class="pdm-id-tag"># {{ detail.id }}</span>
-                    <!-- Status badge in detail modal -->
                     <span class="pdm-status-badge" :class="detail.status === 'DRAFT' ? 'pdm-status-badge--draft' : 'pdm-status-badge--published'">
                       <span class="pdm-status-badge__dot"></span>
                       {{ detail.status === 'DRAFT' ? 'ڕەشنووس' : 'بڵاوکراوە' }}
@@ -263,7 +281,6 @@
                     </span>
                   </div>
 
-                  <!-- Category display -->
                   <div class="pdm-cats" v-if="bestCategory(detail) || bestSubCategory(detail)">
                     <span v-if="bestCategory(detail)" class="pdm-cat-tag pdm-cat-tag--main">{{ bestCategory(detail) }}</span>
                     <span v-if="bestSubCategory(detail)" class="pdm-cat-tag pdm-cat-tag--sub">{{ bestSubCategory(detail) }}</span>
@@ -293,7 +310,6 @@
 
                 <div class="pdm-info__body">
 
-                  <!-- Description -->
                   <div class="acc" v-if="activeDescription(detail)">
                     <button class="acc__hd" @click="toggleAcc('desc')">
                       <span class="acc__hd-left"><span class="acc__ico acc__ico--desc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="14 2 14 8 20 8"/></svg></span><span class="acc__title">وەسف</span></span>
@@ -306,7 +322,6 @@
                     </Transition>
                   </div>
 
-                  <!-- Tags -->
                   <div class="acc" v-if="activeTags(detail).length">
                     <button class="acc__hd" @click="toggleAcc('tags')">
                       <span class="acc__hd-left"><span class="acc__ico acc__ico--tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="acc__title">تاگەکان</span><span class="acc__badge acc__badge--tag">{{ activeTags(detail).length }}</span></span>
@@ -319,7 +334,6 @@
                     </Transition>
                   </div>
 
-                  <!-- Keywords -->
                   <div class="acc" v-if="activeKeywords(detail).length">
                     <button class="acc__hd" @click="toggleAcc('kw')">
                       <span class="acc__hd-left"><span class="acc__ico acc__ico--kw"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span><span class="acc__title">کیووەردەکان</span><span class="acc__badge acc__badge--kw">{{ activeKeywords(detail).length }}</span></span>
@@ -332,7 +346,6 @@
                     </Transition>
                   </div>
 
-                  <!-- Media list -->
                   <div class="acc" v-if="allMediaItems.length">
                     <button class="acc__hd" @click="toggleAcc('media')">
                       <span class="acc__hd-left"><span class="acc__ico acc__ico--media"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span><span class="acc__title">میدیاکان</span><span class="acc__badge acc__badge--media">{{ allMediaItems.length }}</span></span>
@@ -353,7 +366,6 @@
                     </Transition>
                   </div>
 
-                  <!-- System info -->
                   <div class="acc acc--system">
                     <button class="acc__hd acc__hd--system" @click="toggleAcc('sys')">
                       <span class="acc__hd-left"><span class="acc__ico acc__ico--sys"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span><span class="acc__title">زانیاری سیستەم</span></span>
@@ -407,10 +419,12 @@ const toast          = ref({ show: false, type: 'success', msg: '' })
 const openAccordions = ref(new Set(['desc', 'tags', 'kw', 'media']))
 let   searchTimer    = null
 
-/* ── client-side status filter ── */
+/* ── client-side filters (lang + status) ── */
 const filteredItems = computed(() => {
-  if (!filterStatus.value) return items.value
-  return items.value.filter(n => n.status === filterStatus.value)
+  let list = items.value
+  if (filterStatus.value) list = list.filter(n => n.status === filterStatus.value)
+  if (filterLang.value)   list = list.filter(n => (n.contentLanguages || []).includes(filterLang.value))
+  return list
 })
 
 const toggleAcc = (key) => {
@@ -432,18 +446,18 @@ const allMediaItems = computed(() => {
     list.push({ type: 'IMAGE', url: detail.value.coverUrl, caption: 'کڤەر', isCover: true })
   }
   const media = Array.isArray(detail.value.media) ? detail.value.media : []
-  ;(media)
+  media
     .slice()
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     .forEach(m => {
       if (m.url || m.embedUrl || m.externalUrl) {
         list.push({
           type:        m.mediaType || m.type || 'IMAGE',
-          url:         m.url || m.externalUrl || '',
+          url:         m.url         || m.externalUrl || '',
           externalUrl: m.externalUrl || '',
-          embedUrl:    m.embedUrl || '',
-          caption:     m.caption || '',
-          sortOrder:   m.sortOrder ?? 0,
+          embedUrl:    m.embedUrl    || '',
+          caption:     m.caption     || '',
+          sortOrder:   m.sortOrder   ?? 0,
         })
       }
     })
@@ -453,18 +467,46 @@ const allMediaItems = computed(() => {
 const currentMedia = computed(() => allMediaItems.value[mediaIdx.value] || {})
 watch(detail, () => { mediaIdx.value = 0 })
 
-/* ── data loading ── */
+/* ────────────────────────────────────────────────────────────────
+   DATA LOADING  — mirrors projects pattern exactly:
+     projects: GET /api/v1/projects/getAll  → data.data.content (paginated)
+     news:     GET /api/v1/news/all          → data.data (plain array)
+   We handle BOTH shapes so it works regardless.
+──────────────────────────────────────────────────────────────── */
 const load = async () => {
-  loading.value = true; error.value = ''
+  loading.value = true
+  error.value   = ''
   try {
-    let url = `/api/v1/news/all?page=${page.value}&size=15`
-    if (searchQ.value.trim()) url = `/api/v1/news/search/keyword?keyword=${encodeURIComponent(searchQ.value)}&page=${page.value}&size=15`
+    let url = '/api/v1/news/all'
+    if (searchQ.value.trim()) {
+      url = `/api/v1/news/search/keyword?keyword=${encodeURIComponent(searchQ.value)}&language=both`
+    }
+
     const { data } = await api.get(url)
-    const payload = data?.data ?? data ?? {}
-    const result  = payload?.content !== undefined ? payload : (payload?.data ?? {})
-    items.value      = Array.isArray(result.content) ? result.content : (Array.isArray(result) ? result : [])
-    totalPages.value = result.totalPages    ?? 0
-    totalItems.value = result.totalElements ?? items.value.length
+
+    // data.data can be:
+    //   (a) plain array          → List<NewsDto>  (getAllNews)
+    //   (b) paginated object     → { content: [], totalPages, totalElements }
+    const payload = data?.data ?? data ?? []
+
+    if (Array.isArray(payload)) {
+      // plain list — same as projects.getAll returns after flattening
+      items.value      = payload
+      totalItems.value = payload.length
+      totalPages.value = 0
+    } else if (payload?.content !== undefined) {
+      // paginated shape
+      items.value      = Array.isArray(payload.content) ? payload.content : []
+      totalPages.value = payload.totalPages    ?? 0
+      totalItems.value = payload.totalElements ?? items.value.length
+    } else {
+      // fallback: maybe wrapped one more level like projects
+      const inner = payload?.data ?? {}
+      items.value      = Array.isArray(inner.content) ? inner.content : (Array.isArray(inner) ? inner : [])
+      totalPages.value = inner.totalPages    ?? 0
+      totalItems.value = inner.totalElements ?? items.value.length
+    }
+
   } catch (e) {
     error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
   } finally {
@@ -484,10 +526,13 @@ const doDelete = async () => {
   try {
     await api.delete(`/api/v1/news/delete/${delTarget.value.id}`)
     showToast('success', 'هەواڵەکە بە سەرکەوتنی سڕایەوە')
-    delTarget.value = null; load()
+    delTarget.value = null
+    load()
   } catch (e) {
     showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
-  } finally { deleting.value = false }
+  } finally {
+    deleting.value = false
+  }
 }
 
 /* ── detail modal ── */
@@ -522,8 +567,8 @@ const activeDescription = (n) => {
   const c = detailLang.value === 'CKB' ? (n.ckbContent || n.content?.ckb) : (n.kmrContent || n.content?.kmr)
   return c?.description || ''
 }
-const activeTags     = (n) => !n ? [] : detailLang.value === 'CKB' ? (n.tags?.ckb || n.tagsCkb || []) : (n.tags?.kmr || n.tagsKmr || [])
-const activeKeywords = (n) => !n ? [] : detailLang.value === 'CKB' ? (n.keywords?.ckb || n.keywordsCkb || []) : (n.keywords?.kmr || n.keywordsKmr || [])
+const activeTags     = (n) => !n ? [] : (detailLang.value === 'CKB' ? (n.tags?.ckb || n.tagsCkb || []) : (n.tags?.kmr || n.tagsKmr || []))
+const activeKeywords = (n) => !n ? [] : (detailLang.value === 'CKB' ? (n.keywords?.ckb || n.keywordsCkb || []) : (n.keywords?.kmr || n.keywordsKmr || []))
 
 const mediaIcon = (type) => ({
   IMAGE:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
@@ -535,14 +580,12 @@ const mediaIcon = (type) => ({
 
 const showToast   = (type, msg) => { toast.value = { show: true, type, msg }; setTimeout(() => { toast.value.show = false }, 3500) }
 const fmtDate     = (d) => d ? new Date(d).toLocaleDateString('ar-IQ') : '—'
-const fmtDatetime = (d) => d ? new Date(d).toLocaleString('ar-IQ', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'
+const fmtDatetime = (d) => d ? new Date(d).toLocaleString('ar-IQ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
 
 onMounted(load)
 </script>
 
 <style scoped>
-
-/* ── TABLE / LIST ── */
 .nlist { direction: rtl; max-width: 1400px; margin: 0 auto; }
 .nlist__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; gap:1rem; flex-wrap:wrap; }
 .nlist__title { font-size:1.55rem; font-weight:700; color:var(--text); }
@@ -570,7 +613,7 @@ onMounted(load)
 .toast--error { background:rgba(140,21,21,.07); border:1px solid rgba(140,21,21,.18); color:var(--crimson); }
 .skeletons { display:flex; flex-direction:column; gap:.55rem; }
 .skel { height:58px; border-radius:var(--radius-sm); background:linear-gradient(90deg,var(--cream-dk) 25%,#eae8e4 50%,var(--cream-dk) 75%); background-size:200% 100%; animation:shimmer 1.4s ease infinite; }
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 .state-box { display:flex; flex-direction:column; align-items:center; gap:.85rem; padding:4rem 2rem; color:var(--muted); text-align:center; background:var(--white); border:1px solid var(--border); border-radius:var(--radius-md); font-size:.9rem; }
 .state-box--error { color:var(--crimson); }
 .state-box__ico { width:58px; height:58px; border-radius:50%; background:var(--cream-dk); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; }
@@ -592,20 +635,15 @@ onMounted(load)
 .cover-wrap { width:50px; height:38px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
 .cover-img { width:100%; height:100%; object-fit:cover; display:block; }
 .cover-empty { width:50px; height:38px; border-radius:8px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--border); }
-
-/* Category / SubCategory pills */
 .pill { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .55rem; border-radius:99px; font-size:.73rem; font-weight:700; white-space:nowrap; }
 .pill--cat    { background:rgba(140,21,21,.08); color:var(--crimson); border:1px solid rgba(140,21,21,.14); }
 .pill--subcat { background:rgba(80,40,140,.08); color:#5028a0; border:1px solid rgba(80,40,140,.16); }
-
-/* Status pill in table */
 .status-pill { display:inline-flex; align-items:center; gap:.38rem; padding:.25rem .65rem; border-radius:99px; font-size:.74rem; font-weight:700; white-space:nowrap; }
 .status-pill__dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 .status-pill--published { background:rgba(39,174,96,.09); color:#186040; border:1px solid rgba(39,174,96,.28); }
 .status-pill--published .status-pill__dot { background:#27ae60; box-shadow:0 0 5px rgba(39,174,96,.6); }
 .status-pill--draft { background:rgba(127,140,141,.1); color:#4a5568; border:1px solid rgba(127,140,141,.3); }
 .status-pill--draft .status-pill__dot { background:#7f8c8d; box-shadow:0 0 5px rgba(127,140,141,.5); }
-
 .lang-dot { display:inline-flex; padding:.18rem .5rem; border-radius:6px; font-size:.72rem; font-weight:700; }
 .lang-dot--ckb { background:rgba(254,221,0,.2); color:#806e00; border:1px solid rgba(254,221,0,.4); }
 .lang-dot--kmr { background:rgba(30,90,200,.1); color:#1a47a0; border:1px solid rgba(30,90,200,.2); }
@@ -615,7 +653,7 @@ onMounted(load)
 .act { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--cream); color:var(--muted); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; transition:var(--transition); }
 .act--view:hover { background:rgba(30,90,200,.08); border-color:rgba(30,90,200,.28); color:#1a47a0; }
 .act--edit:hover { background:rgba(30,150,80,.08); border-color:rgba(30,150,80,.28); color:#166044; }
-.act--del:hover { background:rgba(140,21,21,.08); border-color:rgba(140,21,21,.25); color:var(--crimson); }
+.act--del:hover  { background:rgba(140,21,21,.08); border-color:rgba(140,21,21,.25); color:var(--crimson); }
 .pager { display:flex; align-items:center; gap:.4rem; margin-top:1.25rem; flex-wrap:wrap; }
 .pager__btn { min-width:36px; height:36px; padding:0 .6rem; border-radius:8px; border:1px solid var(--border); background:var(--white); color:var(--text); font-weight:600; font-size:.87rem; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition:var(--transition); font-family:inherit; }
 .pager__btn:hover:not(:disabled) { border-color:var(--crimson); color:var(--crimson); }
@@ -628,22 +666,20 @@ onMounted(load)
 .del-modal__body { color:var(--muted); font-size:.9rem; line-height:1.7; margin-bottom:1.5rem; }
 .del-modal__acts { display:flex; gap:.75rem; justify-content:center; }
 .spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; }
-@keyframes spin{to{transform:rotate(360deg)}}
-.fade-enter-active,.fade-leave-active{transition:opacity .15s}
-.fade-enter-from,.fade-leave-to{opacity:0}
-.slide-down-enter-active,.slide-down-leave-active{transition:.3s ease}
-.slide-down-enter-from,.slide-down-leave-to{opacity:0;transform:translateY(-8px)}
-.modal-enter-active,.modal-leave-active{transition:.25s ease}
-.modal-enter-from,.modal-leave-to{opacity:0}
-.modal-enter-active .del-modal,.modal-leave-active .del-modal{transition:.25s ease}
-.modal-enter-from .del-modal,.modal-leave-to .del-modal{transform:scale(.94) translateY(8px)}
+@keyframes spin { to { transform:rotate(360deg) } }
+.fade-enter-active,.fade-leave-active { transition:opacity .15s }
+.fade-enter-from,.fade-leave-to { opacity:0 }
+.slide-down-enter-active,.slide-down-leave-active { transition:.3s ease }
+.slide-down-enter-from,.slide-down-leave-to { opacity:0; transform:translateY(-8px) }
+.modal-enter-active,.modal-leave-active { transition:.25s ease }
+.modal-enter-from,.modal-leave-to { opacity:0 }
+.modal-enter-active .del-modal,.modal-leave-active .del-modal { transition:.25s ease }
+.modal-enter-from .del-modal,.modal-leave-to .del-modal { transform:scale(.94) translateY(8px) }
 
-/* ════════════════════════════════════════════
-   NEWS DETAIL MODAL  (exact mirror of project detail modal)
-════════════════════════════════════════════ */
+/* ════ DETAIL MODAL ════ */
 .pdm-overlay { position:fixed; inset:0; z-index:400; background:rgba(5,2,2,.78); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:1.5rem; overflow-y:auto; }
 .pdm { position:relative; width:100%; max-width:1080px; max-height:calc(100vh - 3rem); background:#141010; border-radius:20px; overflow:hidden; display:grid; grid-template-columns:1fr 420px; box-shadow:0 0 0 1px rgba(255,255,255,.07),0 40px 120px rgba(0,0,0,.75),0 8px 32px rgba(0,0,0,.5); }
-@media (max-width:820px){ .pdm{grid-template-columns:1fr;max-height:none;} }
+@media (max-width:820px) { .pdm { grid-template-columns:1fr; max-height:none; } }
 .pdm-x { position:absolute; top:1rem; left:1rem; z-index:50; width:36px; height:36px; border-radius:50%; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.85); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .22s ease; backdrop-filter:blur(8px); }
 .pdm-x:hover { background:rgba(140,21,21,.8); border-color:rgba(200,60,60,.5); color:#fff; transform:rotate(90deg) scale(1.08); }
 .pdm-media { display:flex; flex-direction:column; background:#0c0808; position:relative; min-height:480px; }
@@ -653,7 +689,7 @@ onMounted(load)
 .pdm-stage { flex:1; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:360px; }
 .pdm-stage__image-wrap { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; min-height:360px; }
 .pdm-stage__image { max-width:100%; max-height:500px; object-fit:contain; display:block; animation:pdm-img-in .35s ease; }
-@keyframes pdm-img-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@keyframes pdm-img-in { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
 .pdm-stage__video-wrap { width:100%; height:100%; display:flex; flex-direction:column; align-items:stretch; justify-content:center; min-height:360px; position:relative; }
 .pdm-stage__video { width:100%; max-height:500px; background:#000; outline:none; display:block; border:none; }
 .pdm-stage__caption { position:absolute; bottom:0; left:0; right:0; padding:.65rem 1rem; background:linear-gradient(transparent,rgba(0,0,0,.82)); color:rgba(255,255,255,.82); font-size:.8rem; font-weight:500; }
@@ -661,7 +697,7 @@ onMounted(load)
 .pdm-audio-player { display:flex; flex-direction:column; align-items:center; gap:1.25rem; width:100%; max-width:360px; }
 .pdm-audio-player__wave { display:flex; align-items:flex-end; gap:3px; height:56px; }
 .pdm-audio-player__bar { width:4px; background:linear-gradient(to top,#8c1515,#e06060); border-radius:2px; animation:audio-wave 1.2s ease-in-out infinite alternate; display:block; min-height:4px; }
-@keyframes audio-wave{from{transform:scaleY(.3);opacity:.5}to{transform:scaleY(1);opacity:1}}
+@keyframes audio-wave { from{transform:scaleY(.3);opacity:.5} to{transform:scaleY(1);opacity:1} }
 .pdm-audio-player__title { font-size:.9rem; font-weight:600; color:rgba(255,255,255,.7); text-align:center; }
 .pdm-audio-player__ctrl { width:100%; border-radius:8px; }
 .pdm-ext-link { display:inline-flex; align-items:center; gap:.35rem; color:rgba(255,255,255,.5); font-size:.78rem; text-decoration:none; transition:color .15s; }
@@ -682,38 +718,31 @@ onMounted(load)
 .pdm-arrow:disabled { opacity:.2; cursor:default; }
 .pdm-counter { position:absolute; bottom:1rem; right:1rem; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.65); font-size:.72rem; font-weight:700; padding:.28rem .6rem; border-radius:99px; backdrop-filter:blur(6px); z-index:10; }
 .pdm-thumbs { flex:0 0 auto; display:flex; gap:.4rem; padding:.65rem .75rem; background:rgba(0,0,0,.4); border-top:1px solid rgba(255,255,255,.06); overflow-x:auto; scrollbar-width:none; }
-.pdm-thumbs::-webkit-scrollbar{display:none}
+.pdm-thumbs::-webkit-scrollbar { display:none }
 .pdm-thumb { flex:0 0 64px; height:48px; border-radius:8px; overflow:hidden; border:2px solid transparent; background:rgba(255,255,255,.07); cursor:pointer; transition:all .2s ease; display:flex; align-items:center; justify-content:center; position:relative; padding:0; }
 .pdm-thumb:hover { border-color:rgba(255,255,255,.3); transform:translateY(-2px); }
 .pdm-thumb--on { border-color:#8c1515!important; box-shadow:0 0 0 1px rgba(140,21,21,.5); }
 .pdm-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
 .pdm-thumb__icon { display:flex; align-items:center; justify-content:center; width:100%; height:100%; color:rgba(255,255,255,.5); }
-.pdm-thumb__icon--video{color:#e05050}.pdm-thumb__icon--audio{color:#a060e0}.pdm-thumb__icon--doc{color:#6090e0}
+.pdm-thumb__icon--video { color:#e05050 }
+.pdm-thumb__icon--audio { color:#a060e0 }
+.pdm-thumb__icon--doc   { color:#6090e0 }
 .pdm-thumb__bar { position:absolute; bottom:0; left:0; right:0; height:2px; background:#8c1515; }
-
-/* ── DETAIL INFO PANEL ── */
 .pdm-info { display:flex; flex-direction:column; background:#faf8f5; border-right:1px solid rgba(0,0,0,.08); max-height:calc(100vh - 3rem); overflow:hidden; }
 .pdm-info__head { flex:0 0 auto; padding:1.6rem 1.4rem 1.1rem; background:#fff; border-bottom:1px solid #ece7df; }
 .pdm-info__head-meta { display:flex; align-items:center; gap:.5rem; margin-bottom:.7rem; flex-wrap:wrap; }
 .pdm-id-tag { font-size:.72rem; font-weight:700; color:#b0a898; letter-spacing:.06em; }
-
-/* Status badge in detail modal */
 .pdm-status-badge { display:inline-flex; align-items:center; gap:.38rem; padding:.22rem .65rem; border-radius:99px; font-size:.72rem; font-weight:700; }
 .pdm-status-badge__dot { width:7px; height:7px; border-radius:50%; }
 .pdm-status-badge--published { background:rgba(39,174,96,.1); color:#166040; border:1px solid rgba(39,174,96,.28); }
 .pdm-status-badge--published .pdm-status-badge__dot { background:#27ae60; }
 .pdm-status-badge--draft { background:rgba(127,140,141,.1); color:#4a5568; border:1px solid rgba(127,140,141,.28); }
 .pdm-status-badge--draft .pdm-status-badge__dot { background:#7f8c8d; }
-
-/* Date tag in header */
 .pdm-date-tag { display:inline-flex; align-items:center; gap:.3rem; font-size:.72rem; color:#a09888; font-weight:600; margin-right:auto; }
-
-/* Category tags in detail modal */
 .pdm-cats { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:.65rem; }
 .pdm-cat-tag { display:inline-flex; padding:.22rem .65rem; border-radius:99px; font-size:.73rem; font-weight:700; letter-spacing:.03em; }
 .pdm-cat-tag--main { background:rgba(140,21,21,.08); color:#8c1515; border:1px solid rgba(140,21,21,.16); }
 .pdm-cat-tag--sub  { background:rgba(80,40,140,.08); color:#5028a0; border:1px solid rgba(80,40,140,.16); }
-
 .pdm-title { font-size:1.35rem; font-weight:800; color:#1a1410; line-height:1.25; letter-spacing:-.02em; margin:0 0 .3rem; }
 .pdm-subtitle { font-size:.88rem; color:#9a9286; font-weight:500; margin:0 0 .7rem; }
 .pdm-langs { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:1rem; }
@@ -726,80 +755,79 @@ onMounted(load)
 .pdm-tab { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; padding:.65rem 1rem; border:none; background:none; color:#9a9286; font-weight:700; font-size:.83rem; cursor:pointer; transition:all .2s; font-family:inherit; border-bottom:2px solid transparent; }
 .pdm-tab--on { color:#8c1515; background:#faf8f5; border-bottom-color:#8c1515; }
 .pdm-tab__pip { width:7px; height:7px; border-radius:50%; }
-.pdm-tab__pip--ckb{background:#c8a800}.pdm-tab__pip--kmr{background:#4a7af0}
+.pdm-tab__pip--ckb { background:#c8a800 }
+.pdm-tab__pip--kmr { background:#4a7af0 }
 .pdm-info__body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0; scroll-behavior:smooth; padding-bottom:1.5rem; }
-.pdm-info__body::-webkit-scrollbar{width:3px}.pdm-info__body::-webkit-scrollbar-track{background:transparent}.pdm-info__body::-webkit-scrollbar-thumb{background:#d4cec6;border-radius:99px}
-
-/* ── ACCORDION ── */
+.pdm-info__body::-webkit-scrollbar { width:3px }
+.pdm-info__body::-webkit-scrollbar-track { background:transparent }
+.pdm-info__body::-webkit-scrollbar-thumb { background:#d4cec6; border-radius:99px }
 .acc { border-bottom:1px solid #ede8e0; }
-.acc:last-child{border-bottom:none}
+.acc:last-child { border-bottom:none }
 .acc__hd { width:100%; display:flex; align-items:center; justify-content:space-between; padding:.95rem 1.3rem; background:none; border:none; cursor:pointer; font-family:inherit; transition:background .18s ease; gap:.5rem; }
-.acc__hd:hover{background:rgba(140,21,21,.03)}
-.acc__hd--system:hover{background:rgba(100,80,50,.04)}
+.acc__hd:hover { background:rgba(140,21,21,.03) }
+.acc__hd--system:hover { background:rgba(100,80,50,.04) }
 .acc__hd-left { display:flex; align-items:center; gap:.7rem; flex:1; min-width:0; }
 .acc__ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .2s ease; }
-.acc__hd:hover .acc__ico{transform:scale(1.08)}
-.acc__ico--desc   {background:rgba(140,21,21,.09);color:#8c1515;border:1px solid rgba(140,21,21,.16)}
-.acc__ico--tag    {background:rgba(200,168,0,.12);color:#7a6200;border:1px solid rgba(200,168,0,.22)}
-.acc__ico--kw     {background:rgba(40,90,220,.09);color:#2848b0;border:1px solid rgba(40,90,220,.16)}
-.acc__ico--media  {background:rgba(80,40,140,.09);color:#5028a0;border:1px solid rgba(80,40,140,.16)}
-.acc__ico--sys    {background:rgba(80,80,80,.08);color:#505050;border:1px solid rgba(80,80,80,.14)}
+.acc__hd:hover .acc__ico { transform:scale(1.08) }
+.acc__ico--desc  { background:rgba(140,21,21,.09); color:#8c1515; border:1px solid rgba(140,21,21,.16) }
+.acc__ico--tag   { background:rgba(200,168,0,.12); color:#7a6200; border:1px solid rgba(200,168,0,.22) }
+.acc__ico--kw    { background:rgba(40,90,220,.09); color:#2848b0; border:1px solid rgba(40,90,220,.16) }
+.acc__ico--media { background:rgba(80,40,140,.09); color:#5028a0; border:1px solid rgba(80,40,140,.16) }
+.acc__ico--sys   { background:rgba(80,80,80,.08); color:#505050; border:1px solid rgba(80,80,80,.14) }
 .acc__title { font-size:.92rem; font-weight:700; color:#1e1812; letter-spacing:-.01em; }
 .acc__badge { display:inline-flex; padding:.18rem .58rem; border-radius:99px; font-size:.71rem; font-weight:800; letter-spacing:.04em; background:rgba(140,21,21,.08); color:#8c1515; border:1px solid rgba(140,21,21,.14); }
-.acc__badge--tag  {background:rgba(200,168,0,.12);color:#7a6200;border-color:rgba(200,168,0,.22)}
-.acc__badge--kw   {background:rgba(40,90,220,.09);color:#2848b0;border-color:rgba(40,90,220,.16)}
-.acc__badge--media{background:rgba(80,40,140,.09);color:#5028a0;border-color:rgba(80,40,140,.16)}
+.acc__badge--tag   { background:rgba(200,168,0,.12); color:#7a6200; border-color:rgba(200,168,0,.22) }
+.acc__badge--kw    { background:rgba(40,90,220,.09); color:#2848b0; border-color:rgba(40,90,220,.16) }
+.acc__badge--media { background:rgba(80,40,140,.09); color:#5028a0; border-color:rgba(80,40,140,.16) }
 .acc__chevron { color:#c8c0b4; flex-shrink:0; transition:transform .28s cubic-bezier(.34,1.56,.64,1),color .18s; }
-.acc__chevron--open{transform:rotate(180deg);color:#8c1515}
-.acc__hd:hover .acc__chevron{color:#8c1515}
+.acc__chevron--open { transform:rotate(180deg); color:#8c1515 }
+.acc__hd:hover .acc__chevron { color:#8c1515 }
 .acc__body { overflow:hidden; padding:0 1.3rem 1.1rem; }
 .acc__body--flush { padding:0 0 .5rem; }
-.acc-body-enter-active{transition:all .3s cubic-bezier(.22,1,.36,1)}
-.acc-body-leave-active{transition:all .22s ease}
-.acc-body-enter-from,.acc-body-leave-to{opacity:0;transform:translateY(-6px)}
+.acc-body-enter-active { transition:all .3s cubic-bezier(.22,1,.36,1) }
+.acc-body-leave-active { transition:all .22s ease }
+.acc-body-enter-from,.acc-body-leave-to { opacity:0; transform:translateY(-6px) }
 .acc__text--desc { font-size:.9rem; color:#2e2418; line-height:1.85; white-space:pre-line; margin:0; padding:.2rem 0; max-height:260px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#d4cec6 transparent; }
 .acc__chips { display:flex; flex-wrap:wrap; gap:.42rem; }
 .acc__chip { display:inline-flex; align-items:center; gap:.3rem; padding:.32rem .78rem; border-radius:8px; font-size:.82rem; font-weight:600; letter-spacing:.01em; cursor:default; transition:transform .15s ease,box-shadow .15s ease; }
-.acc__chip:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
-.acc__chip--tag    {background:rgba(200,168,0,.11);color:#7a6200;border:1px solid rgba(200,168,0,.22)}
-.acc__chip--kw     {background:rgba(40,90,220,.08);color:#2848b0;border:1px solid rgba(40,90,220,.15)}
+.acc__chip:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.1) }
+.acc__chip--tag { background:rgba(200,168,0,.11); color:#7a6200; border:1px solid rgba(200,168,0,.22) }
+.acc__chip--kw  { background:rgba(40,90,220,.08); color:#2848b0; border:1px solid rgba(40,90,220,.15) }
 .acc__media-row { display:flex; align-items:center; gap:.8rem; padding:.8rem 1.3rem; border-bottom:1px solid #f5f0e8; cursor:pointer; transition:background .15s ease; }
-.acc__media-row:last-child{border-bottom:none}
-.acc__media-row:hover{background:#faf6f0}
-.acc__media-row--on{background:rgba(140,21,21,.04)}
+.acc__media-row:last-child { border-bottom:none }
+.acc__media-row:hover { background:#faf6f0 }
+.acc__media-row--on { background:rgba(140,21,21,.04) }
 .acc__media-ico { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.acc__media-ico--image   {background:rgba(140,21,21,.08);color:#8c1515;border:1px solid rgba(140,21,21,.15)}
-.acc__media-ico--video   {background:rgba(220,50,50,.08);color:#c0392b;border:1px solid rgba(220,50,50,.15)}
-.acc__media-ico--audio   {background:rgba(130,60,200,.08);color:#7030a0;border:1px solid rgba(130,60,200,.15)}
-.acc__media-ico--pdf     {background:rgba(220,80,0,.08);color:#c05000;border:1px solid rgba(220,80,0,.15)}
-.acc__media-ico--document{background:rgba(30,100,200,.08);color:#1a55aa;border:1px solid rgba(30,100,200,.15)}
-.acc__media-info{flex:1;min-width:0}
-.acc__media-type{font-size:.68rem;font-weight:800;color:#b8b0a4;letter-spacing:.07em;text-transform:uppercase;margin-bottom:.18rem}
-.acc__media-cap{font-size:.84rem;color:#2e2418;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.acc__media-cap--url{font-size:.72rem;color:#b8b0a4;font-family:'Courier New',monospace;font-weight:400}
-.acc__media-playing{display:flex;align-items:flex-end;gap:2.5px;height:16px;flex-shrink:0}
-.acc__media-playing__dot{width:3px;border-radius:2px;background:#8c1515;animation:playing-bar .9s ease-in-out infinite alternate;display:block}
-.acc__media-playing__dot:nth-child(1){height:8px;animation-delay:0s}
-.acc__media-playing__dot:nth-child(2){height:14px;animation-delay:.18s}
-.acc__media-playing__dot:nth-child(3){height:6px;animation-delay:.34s}
-@keyframes playing-bar{from{transform:scaleY(.3);opacity:.5}to{transform:scaleY(1);opacity:1}}
-.acc--system{background:#faf7f2}
-.acc__sys-grid{display:grid;grid-template-columns:1fr 1fr;padding:0 1.3rem .75rem;gap:0}
-.acc__sys-cell{padding:.72rem .65rem .72rem 0;border-bottom:1px solid #ede8e0;border-left:1px solid #ede8e0}
-.acc__sys-cell:nth-child(odd){border-left:none;padding-right:.65rem}
-.acc__sys-cell--full{grid-column:1/-1;border-left:none}
-.acc__sys-cell:last-child,.acc__sys-cell:nth-last-child(2):not(.acc__sys-cell--full){border-bottom:none}
-.acc__sys-k{font-size:.68rem;font-weight:700;color:#c0b8ac;letter-spacing:.05em;margin-bottom:.25rem;text-transform:uppercase}
-.acc__sys-v{font-size:.84rem;color:#2e2418;font-weight:600;line-height:1.4}
-.acc__sys-v--mono{font-family:'Courier New',monospace;font-size:.78rem;letter-spacing:.04em}
-.acc__sys-v--link{color:#8c1515;font-size:.73rem;font-weight:500;word-break:break-all;text-decoration:none;display:block}
-.acc__sys-v--link:hover{text-decoration:underline}
-
-/* Transitions */
-.pdm-fade-enter-active,.pdm-fade-leave-active{transition:opacity .3s ease}
-.pdm-fade-enter-from,.pdm-fade-leave-to{opacity:0}
-.pdm-rise-enter-active{transition:opacity .38s ease,transform .38s cubic-bezier(.22,1,.36,1)}
-.pdm-rise-leave-active{transition:opacity .22s ease,transform .22s ease}
-.pdm-rise-enter-from{opacity:0;transform:scale(.94) translateY(20px)}
-.pdm-rise-leave-to{opacity:0;transform:scale(.97) translateY(10px)}
+.acc__media-ico--image    { background:rgba(140,21,21,.08); color:#8c1515; border:1px solid rgba(140,21,21,.15) }
+.acc__media-ico--video    { background:rgba(220,50,50,.08);  color:#c0392b; border:1px solid rgba(220,50,50,.15) }
+.acc__media-ico--audio    { background:rgba(130,60,200,.08); color:#7030a0; border:1px solid rgba(130,60,200,.15) }
+.acc__media-ico--pdf      { background:rgba(220,80,0,.08);   color:#c05000; border:1px solid rgba(220,80,0,.15) }
+.acc__media-ico--document { background:rgba(30,100,200,.08); color:#1a55aa; border:1px solid rgba(30,100,200,.15) }
+.acc__media-info { flex:1; min-width:0 }
+.acc__media-type { font-size:.68rem; font-weight:800; color:#b8b0a4; letter-spacing:.07em; text-transform:uppercase; margin-bottom:.18rem }
+.acc__media-cap { font-size:.84rem; color:#2e2418; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.acc__media-cap--url { font-size:.72rem; color:#b8b0a4; font-family:'Courier New',monospace; font-weight:400 }
+.acc__media-playing { display:flex; align-items:flex-end; gap:2.5px; height:16px; flex-shrink:0 }
+.acc__media-playing__dot { width:3px; border-radius:2px; background:#8c1515; animation:playing-bar .9s ease-in-out infinite alternate; display:block }
+.acc__media-playing__dot:nth-child(1) { height:8px;  animation-delay:0s }
+.acc__media-playing__dot:nth-child(2) { height:14px; animation-delay:.18s }
+.acc__media-playing__dot:nth-child(3) { height:6px;  animation-delay:.34s }
+@keyframes playing-bar { from{transform:scaleY(.3);opacity:.5} to{transform:scaleY(1);opacity:1} }
+.acc--system { background:#faf7f2 }
+.acc__sys-grid { display:grid; grid-template-columns:1fr 1fr; padding:0 1.3rem .75rem; gap:0 }
+.acc__sys-cell { padding:.72rem .65rem .72rem 0; border-bottom:1px solid #ede8e0; border-left:1px solid #ede8e0 }
+.acc__sys-cell:nth-child(odd) { border-left:none; padding-right:.65rem }
+.acc__sys-cell--full { grid-column:1/-1; border-left:none }
+.acc__sys-cell:last-child,.acc__sys-cell:nth-last-child(2):not(.acc__sys-cell--full) { border-bottom:none }
+.acc__sys-k { font-size:.68rem; font-weight:700; color:#c0b8ac; letter-spacing:.05em; margin-bottom:.25rem; text-transform:uppercase }
+.acc__sys-v { font-size:.84rem; color:#2e2418; font-weight:600; line-height:1.4 }
+.acc__sys-v--mono { font-family:'Courier New',monospace; font-size:.78rem; letter-spacing:.04em }
+.acc__sys-v--link { color:#8c1515; font-size:.73rem; font-weight:500; word-break:break-all; text-decoration:none; display:block }
+.acc__sys-v--link:hover { text-decoration:underline }
+.pdm-fade-enter-active,.pdm-fade-leave-active { transition:opacity .3s ease }
+.pdm-fade-enter-from,.pdm-fade-leave-to { opacity:0 }
+.pdm-rise-enter-active { transition:opacity .38s ease,transform .38s cubic-bezier(.22,1,.36,1) }
+.pdm-rise-leave-active { transition:opacity .22s ease,transform .22s ease }
+.pdm-rise-enter-from { opacity:0; transform:scale(.94) translateY(20px) }
+.pdm-rise-leave-to   { opacity:0; transform:scale(.97) translateY(10px) }
 </style>

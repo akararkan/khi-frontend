@@ -1,3 +1,4 @@
+// src/router.js
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 
@@ -25,22 +26,30 @@ import ResourceEditor from './components/AdminDashboard/pages/ResourceEditor.vue
 import ProjectList   from './components/AdminDashboard/pages/projects/ProjectList.vue'
 import ProjectEditor from './components/AdminDashboard/pages/projects/ProjectEditor.vue'
 
-
+// Admin — News
 import NewsList   from './components/AdminDashboard/pages/news/NewsList.vue'
 import NewsEditor from './components/AdminDashboard/pages/news/NewsEditor.vue'
 
+// Admin — Image Collections
+import ImageCollectionList   from './components/AdminDashboard/pages/publishment/image/ImagecollectionList.vue'
+import ImageCollectionEditor from './components/AdminDashboard/pages/publishment/image/ImagecollectionEditor.vue'
+
+// Admin — SoundTracks (NEW)
+import SoundTrackList   from './components/AdminDashboard/pages/publishment/sound/SoundTrackList.vue'
+import SoundTrackEditor from './components/AdminDashboard/pages/publishment/sound/SoundTrackEditor.vue'
+
 const routes = [
   // =========================
-  // Public  (flat — Navbar/Footer shown by App.vue)
+  // Public (flat — Navbar/Footer shown by App.vue)
   // =========================
-  { path: '/',             name: 'Home',         component: Home         },
-  { path: '/about',        name: 'About',        component: About        },
-  { path: '/contact',      name: 'Contact',      component: Contact      },
-  { path: '/services',     name: 'Services',     component: Services     },
-  { path: '/archive',      name: 'Archive',      component: Archive      },
-  { path: '/library',      name: 'Library',      component: Library      },
+  { path: '/',             name: 'Home',         component: Home },
+  { path: '/about',        name: 'About',        component: About },
+  { path: '/contact',      name: 'Contact',      component: Contact },
+  { path: '/services',     name: 'Services',     component: Services },
+  { path: '/archive',      name: 'Archive',      component: Archive },
+  { path: '/library',      name: 'Library',      component: Library },
   { path: '/publishments', name: 'Publishments', component: Publishments },
-  { path: '/projects',     name: 'Projects',     component: Projects     },
+  { path: '/projects',     name: 'Projects',     component: Projects },
 
   // =========================
   // Auth
@@ -49,28 +58,40 @@ const routes = [
   { path: '/register', name: 'Register', component: Register, meta: { guestOnly: true } },
 
   // =========================
-  // Admin  (Navbar/Footer hidden by App.vue isAdmin check)
+  // Admin (Navbar/Footer hidden by App.vue isAdmin check)
   // =========================
   {
     path: '/admin',
     component: AdminLayout,
     meta: { requiresAuth: true, roles: ['EMPLOYEE', 'ADMIN', 'SUPER_ADMIN'] },
     children: [
-      { path: '',                  name: 'AdminHome',           component: AdminHome      },
-      { path: 'projects',          name: 'AdminProjectList',    component: ProjectList    },
-      { path: 'projects/new',      name: 'AdminProjectCreate',  component: ProjectEditor  },
-      { path: 'projects/:id/edit', name: 'AdminProjectEdit',    component: ProjectEditor  },
-      { path: ':resource',          name: 'AdminResourceList',   component: ResourceList   },
-      { path: ':resource/new',      name: 'AdminResourceCreate', component: ResourceEditor },
-      { path: ':resource/:id/edit', name: 'AdminResourceEdit',   component: ResourceEditor },
+      // Home
+      { path: '', name: 'AdminHome', component: AdminHome },
+
+      // Projects
+      { path: 'projects',          name: 'AdminProjectList',   component: ProjectList },
+      { path: 'projects/new',      name: 'AdminProjectCreate', component: ProjectEditor },
+      { path: 'projects/:id/edit', name: 'AdminProjectEdit',   component: ProjectEditor, props: true },
 
       // News
-      { path: 'news',           name: 'AdminNewsList',   component: NewsList },
-      { path: 'news/new',       name: 'AdminNewsCreate', component: NewsEditor },
+      { path: 'news',          name: 'AdminNewsList',   component: NewsList },
+      { path: 'news/new',      name: 'AdminNewsCreate', component: NewsEditor },
       { path: 'news/:id/edit', name: 'AdminNewsEdit',   component: NewsEditor, props: true },
-      { path: ':resource',          name: 'AdminResourceList',   component: ResourceList   },
+
+      // Image Collections
+      { path: 'image-collections',          name: 'AdminImageCollectionList',   component: ImageCollectionList },
+      { path: 'image-collections/new',      name: 'AdminImageCollectionCreate', component: ImageCollectionEditor },
+      { path: 'image-collections/:id/edit', name: 'AdminImageCollectionEdit',   component: ImageCollectionEditor, props: true },
+
+      // SoundTracks (NEW)
+      { path: 'soundtracks',          name: 'AdminSoundTrackList',   component: SoundTrackList },
+      { path: 'soundtracks/new',      name: 'AdminSoundTrackCreate', component: SoundTrackEditor },
+      { path: 'soundtracks/:id/edit', name: 'AdminSoundTrackEdit',   component: SoundTrackEditor, props: true },
+
+      // Generic dynamic resources (MUST be last)
+      { path: ':resource',          name: 'AdminResourceList',   component: ResourceList },
       { path: ':resource/new',      name: 'AdminResourceCreate', component: ResourceEditor },
-      { path: ':resource/:id/edit', name: 'AdminResourceEdit',   component: ResourceEditor },
+      { path: ':resource/:id/edit', name: 'AdminResourceEdit',   component: ResourceEditor, props: true },
     ],
   },
 
