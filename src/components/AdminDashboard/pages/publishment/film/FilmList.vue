@@ -4,14 +4,14 @@
     <!-- ── HEADER ── -->
     <div class="stl__head">
       <div>
-        <h1 class="stl__title">دەنگەکان (Sound Tracks)</h1>
-        <p class="stl__sub">بینین، گەڕان و بەڕێوەبردنی هەموو دەنگەکان</p>
+        <h1 class="stl__title">فیلمەکان (Films)</h1>
+        <p class="stl__sub">بینین، گەڕان و بەڕێوەبردنی هەموو فیلمەکان</p>
       </div>
-      <RouterLink class="btn btn--primary" to="/admin/soundtracks/new">
+      <RouterLink class="btn btn--primary" to="/admin/films/new">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        دەنگی نوێ
+        فیلمی نوێ
       </RouterLink>
     </div>
 
@@ -21,7 +21,7 @@
         <svg class="search__ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
         </svg>
-        <input v-model="searchQ" class="search__input" placeholder="گەڕان بە ناونیشان / تاگ / کیووەرد…" @input="onSearch" />
+        <input v-model="searchQ" class="search__input" placeholder="گەڕان بە ناونیشان / تاگ / کیووەرد…" @keyup.enter="doSearch" />
         <Transition name="fade">
           <button v-if="searchQ" class="search__clear" @click="clearSearch">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -30,7 +30,7 @@
           </button>
         </Transition>
       </div>
-      <select v-model="filterLang" class="sel">
+      <select v-model="filterLang" class="sel" @change="applyFilter">
         <option value="">هەموو زمانەکان</option>
         <option value="CKB">سۆرانی</option>
         <option value="KMR">کورمانجی</option>
@@ -65,17 +65,17 @@
     <div v-else-if="!filteredItems.length" class="state-box">
       <div class="state-box__ico">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          <rect x="2" y="2" width="20" height="20" rx="2.18"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M17 7h5M2 17h5M17 17h5"/>
         </svg>
       </div>
-      <p>هیچ دەنگێک نەدۆزرایەوە</p>
-      <RouterLink class="btn btn--primary btn--sm" to="/admin/soundtracks/new">یەکەمین دەنگت زیاد بکە</RouterLink>
+      <p>هیچ فیلمێک نەدۆزرایەوە</p>
+      <RouterLink class="btn btn--primary btn--sm" to="/admin/films/new">یەکەمین فیلمت زیاد بکە</RouterLink>
     </div>
 
     <!-- ── TABLE ── -->
     <div v-else class="table-wrap">
       <div class="table-meta">
-        کۆی {{ filteredItems.length }} دەنگ
+        کۆی {{ page.totalElements }} فیلم
         <span v-if="searchQ"> — ئەنجامی گەڕان بۆ «{{ searchQ }}»</span>
       </div>
       <table class="tbl">
@@ -85,66 +85,54 @@
             <th style="width:66px">کڤەر</th>
             <th>ناونیشانی سۆرانی</th>
             <th>ناونیشانی کورمانجی</th>
-            <th style="width:132px">جۆر</th>
-            <th style="width:132px">دۆخ</th>
+            <th style="width:130px">جۆری فیلم</th>
             <th style="width:98px">زمان</th>
-            <th style="width:92px">فایل</th>
-            <th style="width:120px">کاتی گشتی</th>
+            <th style="width:80px">فۆرمات</th>
+            <th style="width:90px">کات</th>
+            <th style="width:110px">بەرواری بڵاوکردن</th>
             <th style="width:116px">کردار</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="t in filteredItems" :key="t.id" class="tbl__row" @click="openDetail(t)">
-            <td><span class="tbl__id">#{{ t.id }}</span></td>
+          <tr v-for="f in filteredItems" :key="f.id" class="tbl__row" @click="openDetail(f)">
+            <td><span class="tbl__id">#{{ f.id }}</span></td>
             <td>
-              <div class="cover-wrap" v-if="t.coverUrl">
-                <img class="cover-img" :src="t.coverUrl" loading="lazy" />
+              <div class="cover-wrap" v-if="f.coverUrl">
+                <img class="cover-img" :src="f.coverUrl" loading="lazy" />
               </div>
               <div class="cover-empty" v-else>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                  <rect x="2" y="2" width="20" height="20" rx="2"/><polygon points="10 8 16 12 10 16 10 8"/>
                 </svg>
               </div>
             </td>
-            <td><div class="tbl__name">{{ t.ckbContent?.title || '—' }}</div></td>
-            <td><div class="tbl__name tbl__name--kmr">{{ t.kmrContent?.title || '—' }}</div></td>
+            <td><div class="tbl__name">{{ f.ckbContent?.title || '—' }}</div></td>
+            <td><div class="tbl__name tbl__name--kmr">{{ f.kmrContent?.title || '—' }}</div></td>
             <td>
-              <span class="type-pill" :style="soundTypeStyle(t.soundType)">{{ t.soundType || '—' }}</span>
-            </td>
-            <td>
-              <span class="state-pill" :class="`state-pill--${(t.trackState||'').toLowerCase()}`">
-                {{ trackStateLabel(t.trackState) }}
-              </span>
+              <span class="type-pill" :style="filmTypeStyle(f.filmType)">{{ f.filmType || '—' }}</span>
             </td>
             <td>
               <div class="lang-row">
-                <span v-for="l in (t.contentLanguages||[])" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span>
+                <span v-for="l in (f.contentLanguages||[])" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span>
               </div>
             </td>
-            <td>
-              <span class="file-pill" v-if="(t.files||[]).length">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-                </svg>
-                {{ (t.files||[]).length }}
-              </span>
-              <span v-else class="tbl__dash">—</span>
-            </td>
-            <td class="tbl__date">{{ fmtDuration(t.totalDurationSeconds || 0) }}</td>
+            <td><span class="fmt-pill" v-if="f.fileFormat">{{ f.fileFormat }}</span><span v-else class="tbl__dash">—</span></td>
+            <td class="tbl__date">{{ f.durationFormatted || fmtSeconds(f.durationSeconds) }}</td>
+            <td class="tbl__date">{{ fmtDate(f.publishmentDate) }}</td>
             <td @click.stop>
               <div class="tbl__acts">
-                <button class="act act--view" title="تەواوی زانیاری" @click="openDetail(t)">
+                <button class="act act--view" @click="openDetail(f)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                   </svg>
                 </button>
-                <RouterLink class="act act--edit" :to="`/admin/soundtracks/${t.id}/edit`">
+                <RouterLink class="act act--edit" :to="`/admin/films/${f.id}/edit`">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
                   </svg>
                 </RouterLink>
-                <button class="act act--del" @click="confirmDelete(t)">
+                <button class="act act--del" @click="confirmDelete(f)">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
                     <path d="M10 11v6M14 11v6"/>
@@ -155,6 +143,23 @@
           </tr>
         </tbody>
       </table>
+
+      <!-- Pagination -->
+      <div class="pagination" v-if="page.totalPages > 1">
+        <button class="pg-btn" :disabled="page.number === 0" @click="goPage(page.number - 1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button
+          v-for="n in pageNumbers"
+          :key="n"
+          class="pg-btn"
+          :class="{ 'pg-btn--on': n === page.number }"
+          @click="goPage(n)"
+        >{{ n + 1 }}</button>
+        <button class="pg-btn" :disabled="page.number >= page.totalPages - 1" @click="goPage(page.number + 1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
     </div>
 
     <!-- ══ DELETE MODAL ══ -->
@@ -170,7 +175,7 @@
             </div>
             <h3 class="del-modal__title">دڵنیای لە سڕینەوە؟</h3>
             <p class="del-modal__body">
-              دەنگی <strong>«{{ bestTitle(delTarget) || '#'+delTarget.id }}»</strong><br/>
+              فیلمی <strong>«{{ bestTitle(delTarget) || '#'+delTarget.id }}»</strong><br/>
               بە تەواوی سڕاوەتەوە و ناگەڕێتەوە.
             </p>
             <div class="del-modal__acts">
@@ -191,136 +196,100 @@
           <Transition name="pdm-rise" appear>
             <div v-if="detail" class="pdm" role="dialog">
 
-              <button class="pdm-x" @click="closeDetail" aria-label="داخستن">
+              <button class="pdm-x" @click="closeDetail">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
 
-              <!-- ════ LEFT — PLAYER ════ -->
+              <!-- ════ LEFT — VIDEO PLAYER ════ -->
               <div class="pdm-media">
+                <!-- Cover background -->
+                <div class="pdm-media__bg" v-if="detail.coverUrl" :style="`background-image:url(${detail.coverUrl})`"></div>
 
-                <div class="pdm-media__empty" v-if="!detailFiles.length">
-                  <div class="pdm-media__empty-icon">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-                      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-                    </svg>
-                  </div>
-                  <span>هیچ فایلێک نییە</span>
-                  <img v-if="detail.coverUrl" :src="detail.coverUrl" class="pdm-media__cover-fallback" />
-                </div>
+                <div class="pdm-media__inner">
 
-                <div class="audio-stage" v-else>
-
-                  <!-- Cover + Title -->
-                  <div class="audio-stage__top">
-                    <div class="audio-stage__cover" v-if="detail.coverUrl">
-                      <img :src="detail.coverUrl" alt="cover" />
+                  <!-- No source at all -->
+                  <div class="no-source" v-if="!detail.sourceUrl && !detail.sourceEmbedUrl && !detail.sourceExternalUrl">
+                    <div class="no-source__ico">
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                        <rect x="2" y="2" width="20" height="20" rx="2"/><polygon points="10 8 16 12 10 16 10 8"/>
+                      </svg>
                     </div>
-                    <div class="audio-stage__meta">
-                      <div class="audio-stage__title">{{ bestTitle(detail) || '—' }}</div>
-                      <div class="audio-stage__sub">
-                        <span class="audio-type-badge" :style="soundTypeStyle(detail.soundType)">{{ detail.soundType || '—' }}</span>
-                        <span class="sep">•</span>{{ trackStateLabel(detail.trackState) }}
-                        <template v-if="selectedFile?.readerName">
-                          <span class="sep">•</span><span class="reader-name">{{ selectedFile.readerName }}</span>
-                        </template>
-                      </div>
-                      <div class="audio-stage__dims">
-                        <span v-if="selectedFile?.fileType" class="ftype-badge">{{ selectedFile.fileType }}</span>
-                        <span v-if="selectedFile?.durationSeconds">⏱ {{ fmtDuration(selectedFile.durationSeconds) }}</span>
-                        <span v-if="selectedFile?.sizeBytes">💾 {{ fmtBytes(selectedFile.sizeBytes) }}</span>
-                      </div>
-                    </div>
+                    <span>هیچ سەرچاوەیەک نییە</span>
+                    <img v-if="detail.coverUrl" :src="detail.coverUrl" class="fallback-cover" />
                   </div>
 
-                  <!-- ══ PLAYER ZONE ══ -->
-                  <div class="player-zone">
+                  <!-- Source blocks -->
+                  <div class="src-blocks" v-else>
 
-                    <!-- BLOCK 1: Direct file (S3 / CDN) -->
-                    <div v-if="selectedFile?.fileUrl" class="pblock pblock--file">
-                      <div class="pblock__hd">
+                    <!-- 1) Direct video (S3/CDN) -->
+                    <div v-if="detail.sourceUrl" class="src-block src-block--direct">
+                      <div class="src-block__hd">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        Direct Audio
+                        Direct Video
                       </div>
-                      <audio :src="selectedFile.fileUrl" controls preload="none" class="native-audio"></audio>
-                      <a :href="selectedFile.fileUrl" target="_blank" class="raw-link">
+                      <video :src="detail.sourceUrl" controls preload="none" class="native-video" :poster="detail.coverUrl || undefined"></video>
+                      <a :href="detail.sourceUrl" target="_blank" class="raw-link">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        {{ truncUrl(selectedFile.fileUrl) }}
+                        {{ truncUrl(detail.sourceUrl) }}
                       </a>
                     </div>
 
-                    <!-- BLOCK 2: Embed URL -->
-                    <div v-if="selectedFile?.embedUrl" class="pblock pblock--embed">
-                      <div class="pblock__hd">
+                    <!-- 2) Embed -->
+                    <div v-if="detail.sourceEmbedUrl" class="src-block src-block--embed">
+                      <div class="src-block__hd">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                         Embed Player
                       </div>
-                      <!-- If direct audio stream, use <audio> -->
-                      <audio v-if="isDirectAudio(selectedFile.embedUrl)" :src="selectedFile.embedUrl" controls preload="none" class="native-audio"></audio>
-                      <!-- Otherwise render iframe -->
-                      <div v-else class="iframe-wrap">
+                      <div class="iframe-wrap">
                         <iframe
-                          :src="selectedFile.embedUrl"
+                          :src="detail.sourceEmbedUrl"
                           frameborder="0"
-                          allow="autoplay; encrypted-media; fullscreen"
+                          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                           allowfullscreen
                           class="embed-iframe"
                         ></iframe>
                       </div>
-                      <a :href="selectedFile.embedUrl" target="_blank" class="raw-link">
+                      <a :href="detail.sourceEmbedUrl" target="_blank" class="raw-link">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        {{ truncUrl(selectedFile.embedUrl) }}
+                        {{ truncUrl(detail.sourceEmbedUrl) }}
                       </a>
                     </div>
 
-                    <!-- BLOCK 3: External link (YouTube, SoundCloud, etc.) -->
-                    <div v-if="selectedFile?.externalUrl" class="pblock pblock--ext">
-                      <div class="pblock__hd">
+                    <!-- 3) External link -->
+                    <div v-if="detail.sourceExternalUrl" class="src-block src-block--ext">
+                      <div class="src-block__hd">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
                         External Link
                       </div>
-                      <a :href="selectedFile.externalUrl" target="_blank" class="ext-btn">
-                        <span class="ext-btn__platform">{{ platformLabel(selectedFile.externalUrl) }}</span>
-                        <span class="ext-btn__url">{{ truncUrl(selectedFile.externalUrl) }}</span>
+                      <a :href="detail.sourceExternalUrl" target="_blank" class="ext-btn">
+                        <span class="ext-btn__platform">{{ platformLabel(detail.sourceExternalUrl) }}</span>
+                        <span class="ext-btn__url">{{ truncUrl(detail.sourceExternalUrl) }}</span>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ext-btn__arrow"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                       </a>
                     </div>
 
-                    <!-- No source at all -->
-                    <div v-if="!selectedFile?.fileUrl && !selectedFile?.embedUrl && !selectedFile?.externalUrl" class="no-src">
-                      هیچ لینکێک نییە بۆ ئەم فایلە
-                    </div>
                   </div>
 
-                  <!-- ══ FILE LIST (MULTI) ══ -->
-                  <div class="flist" v-if="detailFiles.length > 1">
-                    <div class="flist__label">{{ detailFiles.length }} فایل — یەکێک هەڵبژێرە</div>
-                    <button
-                      v-for="(f, idx) in detailFiles"
-                      :key="fileKey(f)"
-                      class="flist__item"
-                      :class="{ 'flist__item--on': fileKey(f) === fileKey(selectedFile) }"
-                      @click="selectedFile = f"
-                      type="button"
-                    >
-                      <div class="flist__item-left">
-                        <span class="flist__num">{{ idx + 1 }}</span>
-                        <div>
-                          <div class="flist__name">{{ f.readerName || ('فایل ' + (idx + 1)) }}</div>
-                          <div class="flist__tags">
-                            <span v-if="f.fileUrl"     class="utag utag--file">FILE</span>
-                            <span v-if="f.embedUrl"    class="utag utag--embed">EMBED</span>
-                            <span v-if="f.externalUrl" class="utag utag--ext">EXT</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flist__item-right">
-                        <span class="ftype-badge">{{ f.fileType || 'OTHER' }}</span>
-                        <span v-if="f.durationSeconds" class="flist__dur">{{ fmtDuration(f.durationSeconds) }}</span>
-                        <span v-if="f.sizeBytes"       class="flist__sz">{{ fmtBytes(f.sizeBytes) }}</span>
-                      </div>
-                    </button>
+                  <!-- Quick film stats -->
+                  <div class="film-stats" v-if="detail.durationSeconds || detail.resolution || detail.fileSizeMb || detail.fileFormat">
+                    <div class="film-stat" v-if="detail.fileFormat">
+                      <span class="film-stat__k">فۆرمات</span>
+                      <span class="film-stat__v">{{ detail.fileFormat }}</span>
+                    </div>
+                    <div class="film-stat" v-if="detail.durationSeconds">
+                      <span class="film-stat__k">کات</span>
+                      <span class="film-stat__v">{{ fmtSeconds(detail.durationSeconds) }}</span>
+                    </div>
+                    <div class="film-stat" v-if="detail.resolution">
+                      <span class="film-stat__k">ڕیزەڵوشن</span>
+                      <span class="film-stat__v">{{ detail.resolution }}</span>
+                    </div>
+                    <div class="film-stat" v-if="detail.fileSizeMb">
+                      <span class="film-stat__k">قەبارە</span>
+                      <span class="film-stat__v">{{ detail.fileSizeMb }} MB</span>
+                    </div>
                   </div>
 
                 </div>
@@ -331,9 +300,8 @@
                 <div class="pdm-info__head">
                   <div class="pdm-info__head-meta">
                     <span class="pdm-id-tag"># {{ detail.id }}</span>
-                    <span class="type-pill" :style="soundTypeStyle(detail.soundType)">{{ detail.soundType || '—' }}</span>
-                    <span class="state-pill" :class="`state-pill--${(detail.trackState||'').toLowerCase()}`">{{ trackStateLabel(detail.trackState) }}</span>
-                    <span class="inst-pill" v-if="isInstitute(detail)">پڕۆژەی ناوەند</span>
+                    <span class="type-pill" :style="filmTypeStyle(detail.filmType)">{{ detail.filmType || '—' }}</span>
+                    <span class="date-pill" v-if="detail.publishmentDate">📅 {{ fmtDate(detail.publishmentDate) }}</span>
                   </div>
 
                   <h2 class="pdm-title">{{ bestTitle(detail) || '—' }}</h2>
@@ -345,27 +313,11 @@
                     </span>
                   </div>
 
-                  <!-- Quick stats -->
-                  <div class="pdm-stats">
-                    <div class="pdm-stat">
-                      <div class="pdm-stat__k">فایل</div>
-                      <div class="pdm-stat__v">{{ (detail.files||[]).length }}</div>
-                    </div>
-                    <div class="pdm-stat" v-if="detail.totalDurationSeconds">
-                      <div class="pdm-stat__k">کاتی گشتی</div>
-                      <div class="pdm-stat__v">{{ fmtDuration(detail.totalDurationSeconds) }}</div>
-                    </div>
-                    <div class="pdm-stat" v-if="detail.totalSizeBytes">
-                      <div class="pdm-stat__k">قەبارەی گشتی</div>
-                      <div class="pdm-stat__v">{{ fmtBytes(detail.totalSizeBytes) }}</div>
-                    </div>
-                  </div>
-
-                  <RouterLink class="pdm-edit-btn" :to="`/admin/soundtracks/${detail.id}/edit`" @click="closeDetail">
+                  <RouterLink class="pdm-edit-btn" :to="`/admin/films/${detail.id}/edit`" @click="closeDetail">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
                     </svg>
-                    دەستکاری دەنگ
+                    دەستکاری فیلم
                   </RouterLink>
                 </div>
 
@@ -380,7 +332,7 @@
                 <div class="pdm-info__body">
 
                   <!-- Description -->
-                  <div class="acc" v-if="activeContent(detail)?.description">
+                  <div class="acc" v-if="activeLangContent(detail)?.description">
                     <button class="acc__hd" @click="toggleAcc('desc')">
                       <span class="acc__hd-left">
                         <span class="acc__ico acc__ico--desc">
@@ -395,13 +347,13 @@
                     </button>
                     <Transition name="acc-body">
                       <div v-if="openAccordions.has('desc')" class="acc__body">
-                        <p class="acc__text acc__text--desc">{{ activeContent(detail).description }}</p>
+                        <p class="acc__text acc__text--desc">{{ activeLangContent(detail).description }}</p>
                       </div>
                     </Transition>
                   </div>
 
-                  <!-- Reading + Director + Locations -->
-                  <div class="acc" v-if="activeContent(detail)?.reading || detail.director || (detail.locations||[]).length">
+                  <!-- Film details (topic, director, producer, location) -->
+                  <div class="acc" v-if="activeLangContent(detail)?.topic || activeLangContent(detail)?.director || activeLangContent(detail)?.producer || activeLangContent(detail)?.location">
                     <button class="acc__hd" @click="toggleAcc('meta')">
                       <span class="acc__hd-left">
                         <span class="acc__ico acc__ico--meta">
@@ -409,76 +361,64 @@
                             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                           </svg>
                         </span>
-                        <span class="acc__title">زانیاری زیاتر</span>
+                        <span class="acc__title">زانیاری فیلم</span>
                       </span>
                       <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('meta')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                     <Transition name="acc-body">
                       <div v-if="openAccordions.has('meta')" class="acc__body">
                         <div class="acc__meta-grid">
-                          <div class="acc__meta-row" v-if="activeContent(detail)?.reading">
-                            <span class="acc__meta-k">خوێندن</span>
-                            <span class="acc__meta-v">{{ activeContent(detail).reading }}</span>
+                          <div class="acc__meta-row" v-if="activeLangContent(detail)?.topic">
+                            <span class="acc__meta-k">بابەت</span>
+                            <span class="acc__meta-v">{{ activeLangContent(detail).topic }}</span>
                           </div>
-                          <div class="acc__meta-row" v-if="detail.director">
-                            <span class="acc__meta-k">Director</span>
-                            <span class="acc__meta-v">{{ detail.director }}</span>
+                          <div class="acc__meta-row" v-if="activeLangContent(detail)?.director">
+                            <span class="acc__meta-k">دەرهێنەر</span>
+                            <span class="acc__meta-v">{{ activeLangContent(detail).director }}</span>
                           </div>
-                          <div class="acc__meta-row" v-if="(detail.locations||[]).length">
+                          <div class="acc__meta-row" v-if="activeLangContent(detail)?.producer">
+                            <span class="acc__meta-k">بەرهەمهێنەر</span>
+                            <span class="acc__meta-v">{{ activeLangContent(detail).producer }}</span>
+                          </div>
+                          <div class="acc__meta-row" v-if="activeLangContent(detail)?.location">
                             <span class="acc__meta-k">
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                               شوێن
                             </span>
-                            <span class="acc__meta-v">{{ (detail.locations||[]).join('، ') }}</span>
+                            <span class="acc__meta-v">{{ activeLangContent(detail).location }}</span>
                           </div>
                         </div>
                       </div>
                     </Transition>
                   </div>
 
-                  <!-- All Files (URLs detail) -->
-                  <div class="acc" v-if="detailFiles.length">
-                    <button class="acc__hd" @click="toggleAcc('files')">
+                  <!-- Source URLs info -->
+                  <div class="acc" v-if="detail.sourceUrl || detail.sourceEmbedUrl || detail.sourceExternalUrl">
+                    <button class="acc__hd" @click="toggleAcc('src')">
                       <span class="acc__hd-left">
                         <span class="acc__ico acc__ico--files">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                            <rect x="2" y="2" width="20" height="20" rx="2"/><polygon points="10 8 16 12 10 16 10 8"/>
                           </svg>
                         </span>
-                        <span class="acc__title">زانیاری فایلەکان</span>
-                        <span class="acc__badge acc__badge--files">{{ detailFiles.length }}</span>
+                        <span class="acc__title">سەرچاوەکان</span>
                       </span>
-                      <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('files')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+                      <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('src')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                     <Transition name="acc-body">
-                      <div v-if="openAccordions.has('files')" class="acc__body acc__body--nop">
-                        <div class="fcard" v-for="(f, idx) in detailFiles" :key="f.id || idx">
-                          <!-- File header -->
-                          <div class="fcard__head">
-                            <span class="fcard__num">{{ idx + 1 }}</span>
-                            <span class="fcard__reader">{{ f.readerName || 'بێ ناوی خوێنەر' }}</span>
-                            <span class="ftype-badge ftype-badge--sm">{{ f.fileType || 'OTHER' }}</span>
+                      <div v-if="openAccordions.has('src')" class="acc__body">
+                        <div class="src-url-list">
+                          <div v-if="detail.sourceUrl" class="src-url-row">
+                            <span class="src-url-label src-url-label--direct">SOURCE URL</span>
+                            <a :href="detail.sourceUrl" target="_blank" class="src-url-link">{{ detail.sourceUrl }}</a>
                           </div>
-                          <!-- File stats row -->
-                          <div class="fcard__stats" v-if="f.durationSeconds || f.sizeBytes || f.id">
-                            <span v-if="f.id"              class="fstat">ID: {{ f.id }}</span>
-                            <span v-if="f.durationSeconds" class="fstat">⏱ {{ fmtDuration(f.durationSeconds) }}</span>
-                            <span v-if="f.sizeBytes"       class="fstat">💾 {{ fmtBytes(f.sizeBytes) }}</span>
+                          <div v-if="detail.sourceEmbedUrl" class="src-url-row">
+                            <span class="src-url-label src-url-label--embed">EMBED URL</span>
+                            <a :href="detail.sourceEmbedUrl" target="_blank" class="src-url-link">{{ detail.sourceEmbedUrl }}</a>
                           </div>
-                          <!-- fileUrl -->
-                          <div v-if="f.fileUrl" class="fcard__url-row">
-                            <span class="fcard__url-label fcard__url-label--file">FILE URL</span>
-                            <a :href="f.fileUrl" target="_blank" class="fcard__url-link">{{ f.fileUrl }}</a>
-                          </div>
-                          <!-- embedUrl -->
-                          <div v-if="f.embedUrl" class="fcard__url-row">
-                            <span class="fcard__url-label fcard__url-label--embed">EMBED URL</span>
-                            <a :href="f.embedUrl" target="_blank" class="fcard__url-link">{{ f.embedUrl }}</a>
-                          </div>
-                          <!-- externalUrl -->
-                          <div v-if="f.externalUrl" class="fcard__url-row">
-                            <span class="fcard__url-label fcard__url-label--ext">EXTERNAL URL</span>
-                            <a :href="f.externalUrl" target="_blank" class="fcard__url-link">{{ f.externalUrl }}</a>
+                          <div v-if="detail.sourceExternalUrl" class="src-url-row">
+                            <span class="src-url-label src-url-label--ext">EXTERNAL URL</span>
+                            <a :href="detail.sourceExternalUrl" target="_blank" class="src-url-link">{{ detail.sourceExternalUrl }}</a>
                           </div>
                         </div>
                       </div>
@@ -503,7 +443,7 @@
                     <Transition name="acc-body">
                       <div v-if="openAccordions.has('tags')" class="acc__body">
                         <div class="acc__chips">
-                          <span v-for="tg in activeTags(detail)" :key="tg" class="acc__chip acc__chip--tag">{{ tg }}</span>
+                          <span v-for="t in activeTags(detail)" :key="t" class="acc__chip acc__chip--tag">{{ t }}</span>
                         </div>
                       </div>
                     </Transition>
@@ -526,7 +466,7 @@
                     <Transition name="acc-body">
                       <div v-if="openAccordions.has('kw')" class="acc__body">
                         <div class="acc__chips">
-                          <span v-for="kw in activeKeywords(detail)" :key="kw" class="acc__chip acc__chip--kw">{{ kw }}</span>
+                          <span v-for="t in activeKeywords(detail)" :key="t" class="acc__chip acc__chip--kw">{{ t }}</span>
                         </div>
                       </div>
                     </Transition>
@@ -570,8 +510,8 @@
                     </Transition>
                   </div>
 
-                </div><!-- /pdm-info__body -->
-              </div><!-- /pdm-info -->
+                </div>
+              </div>
 
             </div>
           </Transition>
@@ -597,16 +537,16 @@ const toast           = ref({ show: false, type: 'success', msg: '' })
 const detail          = ref(null)
 const detailLang      = ref('CKB')
 const detailOverlayEl = ref(null)
-const openAccordions  = ref(new Set(['desc', 'meta', 'files', 'tags', 'kw']))
-const selectedFile    = ref(null)
-let searchTimer       = null
-let toastTimer        = null
+const openAccordions  = ref(new Set(['desc', 'meta', 'src', 'tags', 'kw']))
+const page            = ref({ number: 0, totalPages: 1, totalElements: 0, size: 10 })
 
-/* ── helpers ── */
+let toastTimer = null
+
+/* ── generic helpers ── */
 const ensureArray = (v) => Array.isArray(v) ? v : []
 const cleanUrl = (u) => (typeof u === 'string' ? u.trim() : '')
-const isHttpUrl = (u) => /^https?:\/\//i.test(cleanUrl(u))
 
+/* ── HTML/embed helpers (fix pasted iframe + youtube link) ── */
 const decodeHtmlEntities = (str = '') =>
   String(str)
     .replace(/&amp;/g, '&')
@@ -614,6 +554,8 @@ const decodeHtmlEntities = (str = '') =>
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+
+const isHttpUrl = (u) => /^https?:\/\//i.test(cleanUrl(u))
 
 const getUrlObj = (u) => {
   try { return new URL(cleanUrl(u)) } catch { return null }
@@ -626,65 +568,67 @@ const extractIframeSrcFromHtml = (raw = '') => {
   return m?.[1] ? decodeHtmlEntities(m[1]) : ''
 }
 
+const parseYouTubeTimeToSeconds = (t = '') => {
+  const s = String(t || '').trim().toLowerCase()
+  if (!s) return 0
+  if (/^\d+$/.test(s)) return Number(s)
+
+  const m = s.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/)
+  if (!m) return 0
+  return (Number(m[1] || 0) * 3600) + (Number(m[2] || 0) * 60) + Number(m[3] || 0)
+}
+
 const extractYouTubeId = (raw = '') => {
   const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
   const u = getUrlObj(input)
   if (!u) return ''
 
   const host = u.hostname.toLowerCase()
+
   if (host.includes('youtu.be')) {
-    return u.pathname.replace('/', '').split('/')[0] || ''
+    return u.pathname.replace(/^\/+/, '').split('/')[0] || ''
   }
 
   if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
     if (u.searchParams.get('v')) return u.searchParams.get('v')
+
     const parts = u.pathname.split('/').filter(Boolean)
     const idxEmbed = parts.indexOf('embed')
     if (idxEmbed !== -1 && parts[idxEmbed + 1]) return parts[idxEmbed + 1]
+
     const idxShorts = parts.indexOf('shorts')
     if (idxShorts !== -1 && parts[idxShorts + 1]) return parts[idxShorts + 1]
+
     const idxLive = parts.indexOf('live')
     if (idxLive !== -1 && parts[idxLive + 1]) return parts[idxLive + 1]
   }
+
   return ''
 }
 
-const extractSpotifyEmbed = (raw = '') => {
+const extractVimeoId = (raw = '') => {
   const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
   const u = getUrlObj(input)
   if (!u) return ''
   const host = u.hostname.toLowerCase()
-  if (!host.includes('spotify.com')) return ''
-
-  // already embed url
-  if (u.pathname.includes('/embed/')) return u.toString()
-
-  // open.spotify.com/track/... -> open.spotify.com/embed/track/...
+  if (!host.includes('vimeo.com')) return ''
   const parts = u.pathname.split('/').filter(Boolean)
-  if (parts.length >= 2) {
-    return `${u.protocol}//${u.hostname}/embed/${parts.join('/')}`
-  }
-  return u.toString()
+  return [...parts].reverse().find(p => /^\d+$/.test(p)) || ''
 }
 
-const extractSoundCloudEmbed = (raw = '') => {
+const extractGoogleDriveFileId = (raw = '') => {
   const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
   const u = getUrlObj(input)
   if (!u) return ''
   const host = u.hostname.toLowerCase()
+  if (!host.includes('drive.google.com')) return ''
 
-  // already soundcloud widget
-  if (host.includes('w.soundcloud.com')) return u.toString()
-
-  // normal soundcloud link -> widget URL
-  if (host.includes('soundcloud.com')) {
-    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(u.toString())}`
-  }
-
-  return ''
+  const m = u.pathname.match(/\/file\/d\/([^/]+)/)
+  if (m?.[1]) return m[1]
+  return u.searchParams.get('id') || ''
 }
 
-const toEmbeddableAudioUrl = (raw = '') => {
+const toEmbeddableUrl = (raw = '') => {
   let u = decodeHtmlEntities(cleanUrl(raw))
   if (!u) return ''
 
@@ -693,187 +637,244 @@ const toEmbeddableAudioUrl = (raw = '') => {
 
   if (!isHttpUrl(u)) return ''
 
+  const obj = getUrlObj(u)
+  if (!obj) return ''
+
+  const host = obj.hostname.toLowerCase()
+  const pathname = obj.pathname.toLowerCase()
+
+  // already embed/player
+  if (pathname.includes('/embed/') || pathname.includes('/player/')) return obj.toString()
+
+  // YouTube
   const ytId = extractYouTubeId(u)
-  if (ytId) return `https://www.youtube.com/embed/${ytId}`
+  if (ytId) {
+    const srcObj = getUrlObj(u)
+    const embed = new URL(`https://www.youtube.com/embed/${ytId}`)
 
-  const spotify = extractSpotifyEmbed(u)
-  if (spotify) return spotify
+    const start = srcObj?.searchParams.get('start')
+    const t = srcObj?.searchParams.get('t')
+    const si = srcObj?.searchParams.get('si')
 
-  const soundcloud = extractSoundCloudEmbed(u)
-  if (soundcloud) return soundcloud
+    if (start) embed.searchParams.set('start', start)
+    else if (t) {
+      const sec = parseYouTubeTimeToSeconds(t)
+      if (sec > 0) embed.searchParams.set('start', String(sec))
+    }
+    if (si) embed.searchParams.set('si', si)
 
-  return u
-}
-
-const getExt = (u = '') => {
-  const s = extractIframeSrcFromHtml(u) || decodeHtmlEntities(u)
-  const obj = getUrlObj(s)
-  const path = obj?.pathname || s.split('?')[0] || ''
-  const m = path.toLowerCase().match(/\.([a-z0-9]+)$/i)
-  return m?.[1] || ''
-}
-
-const AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'opus', 'weba']
-const inferAudioMime = (url = '') => {
-  const ext = getExt(url)
-  const map = {
-    mp3: 'audio/mpeg',
-    wav: 'audio/wav',
-    ogg: 'audio/ogg',
-    aac: 'audio/aac',
-    flac: 'audio/flac',
-    m4a: 'audio/mp4',
-    opus: 'audio/ogg',
-    weba: 'audio/webm',
+    return embed.toString()
   }
-  return map[ext] || ''
+
+  // Vimeo
+  const vimeoId = extractVimeoId(u)
+  if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`
+
+  // Google Drive preview
+  const gdid = extractGoogleDriveFileId(u)
+  if (gdid) return `https://drive.google.com/file/d/${gdid}/preview`
+
+  // known embeddable providers
+  if (
+    host.includes('dailymotion.com') ||
+    host.includes('soundcloud.com') ||
+    host.includes('w.soundcloud.com') ||
+    host.includes('spotify.com') ||
+    host.includes('open.spotify.com')
+  ) return obj.toString()
+
+  return ''
 }
 
-/* ── normalize backend data ── */
-const normalizeFile = (f = {}) => {
+const normalizeFilm = (f = {}) => {
   const out = { ...f }
-
-  // support multiple backend naming styles
-  out.fileUrl     = cleanUrl(out.fileUrl || out.url || '')
-  out.embedUrl    = cleanUrl(out.embedUrl || out.embed || '')
-  out.externalUrl = cleanUrl(out.externalUrl || out.link || '')
-  out.fileType    = (out.fileType || out.type || 'OTHER').toString().toUpperCase()
-
-  const directCandidate = out.fileUrl || out.externalUrl || ''
-  const embedCandidate  = out.embedUrl || out.externalUrl || out.fileUrl || ''
-
-  const normalized = {
-    ...out,
-    directUrl: '',
-    embedPreviewUrl: '',
-    openUrl: out.externalUrl || out.fileUrl || out.embedUrl || '',
-    mimeType: '',
-  }
-
-  // if fileUrl accidentally contains iframe HTML, treat as embed
-  if (extractIframeSrcFromHtml(out.fileUrl)) {
-    normalized.embedPreviewUrl = toEmbeddableAudioUrl(out.fileUrl)
-  }
-
-  if (!normalized.embedPreviewUrl && out.embedUrl) {
-    normalized.embedPreviewUrl = toEmbeddableAudioUrl(out.embedUrl)
-  }
-
-  if (isDirectAudio(directCandidate)) {
-    normalized.directUrl = decodeHtmlEntities(directCandidate)
-    normalized.mimeType = inferAudioMime(normalized.directUrl)
-  } else if (!normalized.embedPreviewUrl && embedCandidate) {
-    normalized.embedPreviewUrl = toEmbeddableAudioUrl(embedCandidate)
-  }
-
-  return normalized
-}
-
-const normalizeItem = (t = {}) => {
-  const out = { ...t }
 
   if (!out.ckbContent && out.content?.ckb) out.ckbContent = out.content.ckb
   if (!out.kmrContent && out.content?.kmr) out.kmrContent = out.content.kmr
 
   if (!ensureArray(out.contentLanguages).length) {
     const langs = []
-    if (out.ckbContent?.title || out.ckbContent?.description) langs.push('CKB')
-    if (out.kmrContent?.title || out.kmrContent?.description) langs.push('KMR')
+    if (out.ckbContent?.title || out.ckbContent?.description || out.content?.ckb) langs.push('CKB')
+    if (out.kmrContent?.title || out.kmrContent?.description || out.content?.kmr) langs.push('KMR')
     out.contentLanguages = langs
   }
 
-  out.tags = out.tags || {}
-  out.tags.ckb = ensureArray(out.tags?.ckb || out.tagsCkb)
-  out.tags.kmr = ensureArray(out.tags?.kmr || out.tagsKmr)
+  out.tagsCkb = ensureArray(out.tagsCkb || out.tags?.ckb)
+  out.tagsKmr = ensureArray(out.tagsKmr || out.tags?.kmr)
+  out.keywordsCkb = ensureArray(out.keywordsCkb || out.keywords?.ckb)
+  out.keywordsKmr = ensureArray(out.keywordsKmr || out.keywords?.kmr)
 
-  out.keywords = out.keywords || {}
-  out.keywords.ckb = ensureArray(out.keywords?.ckb || out.keywordsCkb)
-  out.keywords.kmr = ensureArray(out.keywords?.kmr || out.keywordsKmr)
+  // Normalize source links fields (support backend variants)
+  out.sourceUrl =
+    out.sourceUrl ||
+    out.url ||
+    out.link ||
+    out.watchUrl ||
+    out.videoUrl ||
+    ''
 
-  out.locations = ensureArray(out.locations)
+  out.sourceEmbedUrl =
+    out.sourceEmbedUrl ||
+    out.embedUrl ||
+    out.trailerEmbedUrl ||
+    out.playerEmbedUrl ||
+    ''
 
-  out.files = ensureArray(out.files || out.soundFiles || out.tracks || []).map(normalizeFile)
+  out.sourceExternalUrl =
+    out.sourceExternalUrl ||
+    out.externalUrl ||
+    out.trailerUrl ||
+    out.platformUrl ||
+    ''
+
+  // If someone pasted iframe HTML into any field, convert nicely
+  if (!out.sourceEmbedUrl) {
+    const iframeSrc =
+      extractIframeSrcFromHtml(out.sourceUrl) ||
+      extractIframeSrcFromHtml(out.sourceExternalUrl)
+    if (iframeSrc) out.sourceEmbedUrl = iframeSrc
+  }
+
+  out.embeddableUrl =
+    toEmbeddableUrl(out.sourceEmbedUrl) ||
+    toEmbeddableUrl(out.sourceUrl) ||
+    toEmbeddableUrl(out.sourceExternalUrl) ||
+    ''
 
   return out
 }
 
-/* ── Filtered list ── */
 const filteredItems = computed(() => {
   let list = ensureArray(items.value)
-
-  if (searchQ.value.trim()) {
-    const q = searchQ.value.trim().toLowerCase()
-    list = list.filter(t => {
-      const t1   = (t.ckbContent?.title  || '').toLowerCase()
-      const t2   = (t.kmrContent?.title  || '').toLowerCase()
-      const d1   = (t.ckbContent?.description || '').toLowerCase()
-      const d2   = (t.kmrContent?.description || '').toLowerCase()
-      const tags = [...ensureArray(t.tags?.ckb), ...ensureArray(t.tags?.kmr)].join(' ').toLowerCase()
-      const kws  = [...ensureArray(t.keywords?.ckb), ...ensureArray(t.keywords?.kmr)].join(' ').toLowerCase()
-      const locs = ensureArray(t.locations).join(' ').toLowerCase()
-      const type = (t.soundType || '').toLowerCase()
-      const reading = (t.reading || '').toLowerCase()
-      const director = (t.director || '').toLowerCase()
-      return t1.includes(q) || t2.includes(q) || d1.includes(q) || d2.includes(q) || tags.includes(q) || kws.includes(q) || locs.includes(q) || type.includes(q) || reading.includes(q) || director.includes(q)
-    })
-  }
-
   if (filterLang.value) {
-    list = list.filter(t => ensureArray(t.contentLanguages).includes(filterLang.value))
+    list = list.filter(f => ensureArray(f.contentLanguages).includes(filterLang.value))
   }
-
   return list
 })
 
-/* ── API ── */
-const load = async () => {
+const pageNumbers = computed(() => {
+  const total = Number(page.value.totalPages || 1)
+  const cur   = Number(page.value.number || 0)
+  const pages = []
+  const from  = Math.max(0, cur - 2)
+  const to    = Math.min(total - 1, cur + 2)
+  for (let i = from; i <= to; i++) pages.push(i)
+  return pages
+})
+
+const load = async (pageNum = 0) => {
   loading.value = true
   error.value = ''
-  try {
-    const { data } = await api.get('/api/v1/soundtracks')
-    const payload = data?.data ?? data ?? []
 
-    if (Array.isArray(payload)) {
-      items.value = payload.map(normalizeItem)
-    } else if (Array.isArray(payload?.content)) {
-      items.value = payload.content.map(normalizeItem)
-    } else if (Array.isArray(payload?.data?.content)) {
-      items.value = payload.data.content.map(normalizeItem)
+  try {
+    const q = (searchQ?.value || '').trim()
+    let res
+
+    if (!q) {
+      // normal paginated list
+      res = await api.get('/api/v1/films', {
+        params: { page: pageNum, size: 10 }
+      })
     } else {
-      items.value = []
+      // 1) try keyword search first (FilmController expects q)
+      let keywordRes = null
+      let keywordContent = []
+
+      try {
+        keywordRes = await api.get('/api/v1/films/search/keyword', {
+          params: {
+            q,
+            page: pageNum,
+            size: 10
+          }
+        })
+
+        const kdata = keywordRes?.data ?? {}
+        const kroot = kdata?.data ?? kdata ?? {}
+        keywordContent = ensureArray(kroot?.content ?? kdata?.content ?? [])
+      } catch (_) {
+        // ignore and fallback to tag search
+      }
+
+      if (keywordRes && keywordContent.length > 0) {
+        res = keywordRes
+      } else {
+        // 2) fallback tag search (FilmController also expects q)
+        res = await api.get('/api/v1/films/search/tag', {
+          params: {
+            q,
+            page: pageNum,
+            size: 10
+          }
+        })
+      }
+    }
+
+    const data = res?.data ?? {}
+    const root = data?.data ?? data ?? {}
+    const content = root?.content ?? data?.content ?? []
+
+    items.value = ensureArray(content).map(normalizeFilm)
+
+    page.value = {
+      number:        root?.number        ?? data?.number        ?? pageNum,
+      totalPages:    root?.totalPages    ?? data?.totalPages    ?? 1,
+      totalElements: root?.totalElements ?? data?.totalElements ?? items.value.length,
+      size:          root?.size          ?? data?.size          ?? 10
     }
   } catch (e) {
     error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
+    items.value = []
+    page.value = {
+      number: pageNum,
+      totalPages: 1,
+      totalElements: 0,
+      size: 10
+    }
   } finally {
     loading.value = false
   }
 }
 
-const onSearch = () => {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    // client-side filter only
-  }, 250)
+/* ✅ FIXED: use load() so keyword -> tag fallback works */
+const doSearch = async () => {
+  page.value.number = 0
+  await load(0)
 }
 
-const clearSearch = () => { searchQ.value = '' }
+const clearSearch = () => {
+  searchQ.value = ''
+  load(0)
+}
 
-/* ── Delete ── */
-const confirmDelete = (t) => { delTarget.value = t }
+const applyFilter = () => {}
+
+const goPage = (n) => {
+  if (n < 0 || n >= (page.value.totalPages || 1)) return
+  load(n)
+}
+
+const confirmDelete = (f) => { delTarget.value = f }
 
 const doDelete = async () => {
   if (!delTarget.value) return
   deleting.value = true
+
   const deletingId = delTarget.value.id
 
   try {
-    await api.delete(`/api/v1/soundtracks/${deletingId}`)
-    showToast('success', 'دەنگەکە بە سەرکەوتنی سڕایەوە')
+    await api.delete(`/api/v1/films/${deletingId}`)
+    showToast('success', 'فیلمەکە بە سەرکەوتنی سڕایەوە')
 
     if (detail.value?.id === deletingId) closeDetail()
 
     delTarget.value = null
-    await load()
+    await load(page.value.number)
+
+    // if current page became empty after delete, go back one page
+    if (!items.value.length && page.value.number > 0) {
+      await load(page.value.number - 1)
+    }
   } catch (e) {
     showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
   } finally {
@@ -881,40 +882,33 @@ const doDelete = async () => {
   }
 }
 
-/* ── Detail ── */
-const openDetail = async (t) => {
-  const item = normalizeItem(t)
+const openDetail = (f) => {
+  const item = normalizeFilm(f)
   detail.value = item
   detailLang.value = ensureArray(item.contentLanguages).includes('CKB')
     ? 'CKB'
     : (ensureArray(item.contentLanguages)[0] || 'CKB')
 
-  openAccordions.value = new Set(['desc', 'meta', 'files', 'tags', 'kw'])
-  selectedFile.value = ensureArray(item.files)[0] || null
-
-  document.body.style.overflow = 'hidden'
-  window.addEventListener('keydown', onGlobalKeydown)
-
-  await nextTick()
-  detailOverlayEl.value?.focus?.()
+  openAccordions.value = new Set(['desc', 'meta', 'src', 'tags', 'kw'])
 }
 
-const closeDetail = () => {
-  detail.value = null
-  selectedFile.value = null
-  document.body.style.overflow = ''
-  window.removeEventListener('keydown', onGlobalKeydown)
-}
-
-watch(detail, () => {
-  if (detail.value) {
-    selectedFile.value = ensureArray(detail.value.files)[0] || null
-  }
-})
+const closeDetail = () => { detail.value = null }
 
 const onGlobalKeydown = (e) => {
   if (e.key === 'Escape' && detail.value) closeDetail()
 }
+
+watch(detail, async (v) => {
+  if (v) {
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onGlobalKeydown)
+    await nextTick()
+    detailOverlayEl.value?.focus?.()
+  } else {
+    document.body.style.overflow = ''
+    window.removeEventListener('keydown', onGlobalKeydown)
+  }
+})
 
 const toggleAcc = (key) => {
   const s = new Set(openAccordions.value)
@@ -922,77 +916,69 @@ const toggleAcc = (key) => {
   openAccordions.value = s
 }
 
-/* ── Helpers ── */
-const detailFiles = computed(() => ensureArray(detail.value?.files))
+/* helpers */
+const bestTitle = (f) =>
+  f?.ckbContent?.title || f?.kmrContent?.title || f?.content?.ckb?.title || f?.content?.kmr?.title || ''
 
-const bestTitle = (t) =>
-  t?.ckbContent?.title || t?.kmrContent?.title || t?.content?.ckb?.title || t?.content?.kmr?.title || ''
-
-const altTitle = (t) => {
-  const ckb = t?.ckbContent?.title || t?.content?.ckb?.title || ''
-  const kmr = t?.kmrContent?.title || t?.content?.kmr?.title || ''
+const altTitle = (f) => {
+  const ckb = f?.ckbContent?.title || f?.content?.ckb?.title || ''
+  const kmr = f?.kmrContent?.title || f?.content?.kmr?.title || ''
   if (ckb && kmr && ckb !== kmr) return detailLang.value === 'CKB' ? kmr : ckb
   return ''
 }
 
-const activeContent = (t) =>
+const activeLangContent = (f) =>
   detailLang.value === 'CKB'
-    ? (t?.ckbContent || t?.content?.ckb || {})
-    : (t?.kmrContent || t?.content?.kmr || {})
+    ? (f?.ckbContent || f?.content?.ckb || {})
+    : (f?.kmrContent || f?.content?.kmr || {})
 
-const activeTags = (t) =>
+const activeTags = (f) =>
   detailLang.value === 'CKB'
-    ? [...ensureArray(t?.tags?.ckb || t?.tagsCkb)]
-    : [...ensureArray(t?.tags?.kmr || t?.tagsKmr)]
+    ? ensureArray(f?.tagsCkb || f?.tags?.ckb)
+    : ensureArray(f?.tagsKmr || f?.tags?.kmr)
 
-const activeKeywords = (t) =>
+const activeKeywords = (f) =>
   detailLang.value === 'CKB'
-    ? [...ensureArray(t?.keywords?.ckb || t?.keywordsCkb)]
-    : [...ensureArray(t?.keywords?.kmr || t?.keywordsKmr)]
+    ? ensureArray(f?.keywordsCkb || f?.keywords?.ckb)
+    : ensureArray(f?.keywordsKmr || f?.keywords?.kmr)
 
-const isInstitute = (t) => !!(t?.thisProjectOfInstitute ?? t?.isThisProjectOfInstitute ?? false)
-const trackStateLabel = (v) => ({ SINGLE:'تاک', MULTI:'چەند' }[v] || v || '—')
+/* normalized source helpers for template */
+const detailSourceInfo = computed(() => {
+  const f = detail.value
+  if (!f) return { embedUrl: '', openUrl: '', sourceText: '' }
 
-const fileKey = (f) =>
-  f ? `${f.id || ''}|${f.fileType || 'OTHER'}|${f.fileUrl || f.embedUrl || f.externalUrl || ''}` : ''
+  const embedUrl =
+    f.embeddableUrl ||
+    toEmbeddableUrl(f.sourceEmbedUrl) ||
+    toEmbeddableUrl(f.sourceUrl) ||
+    toEmbeddableUrl(f.sourceExternalUrl) ||
+    ''
 
-/* current file presentation for template */
-const selectedFilePresentation = computed(() => {
-  const f = selectedFile.value
-  if (!f) {
-    return {
-      directAudioUrl: '',
-      embedUrl: '',
-      openUrl: '',
-      mimeType: '',
-      isAudio: false,
-      hasPreview: false,
-    }
-  }
+  const openUrl =
+    cleanUrl(f.sourceExternalUrl) ||
+    cleanUrl(f.sourceUrl) ||
+    cleanUrl(f.sourceEmbedUrl) ||
+    ''
 
-  const normalized = normalizeFile(f)
-  return {
-    directAudioUrl: normalized.directUrl || '',
-    embedUrl: normalized.embedPreviewUrl || '',
-    openUrl: normalized.openUrl || '',
-    mimeType: normalized.mimeType || '',
-    isAudio: !!normalized.directUrl,
-    hasPreview: !!(normalized.directUrl || normalized.embedPreviewUrl),
-  }
+  const sourceText = truncUrl(openUrl || embedUrl)
+
+  return { embedUrl, openUrl, sourceText }
 })
 
-/* Dynamic color for any soundType string */
-const soundTypeStyle = (type) => {
+const filmTypeStyle = (type) => {
   if (!type) return {}
   const presets = {
-    LAWK:   { background:'rgba(40,90,220,.12)',  color:'#1a47a0', border:'1px solid rgba(40,90,220,.22)' },
-    HAIRAN: { background:'rgba(140,21,21,.10)',  color:'#8c1515', border:'1px solid rgba(140,21,21,.22)' },
+    DOCUMENTARY: { background:'rgba(22,120,70,.12)',  color:'#166044',  border:'1px solid rgba(22,120,70,.22)' },
+    SHORT:       { background:'rgba(40,90,220,.12)',  color:'#1a47a0',  border:'1px solid rgba(40,90,220,.22)' },
+    FEATURE:     { background:'rgba(140,21,21,.10)',  color:'#8c1515',  border:'1px solid rgba(140,21,21,.22)' },
+    ANIMATION:   { background:'rgba(200,100,0,.12)',  color:'#7a4500',  border:'1px solid rgba(200,100,0,.22)' },
+    SERIES:      { background:'rgba(80,40,160,.12)',  color:'#5028a0',  border:'1px solid rgba(80,40,160,.22)' },
   }
-  const key = String(type).toUpperCase()
-  if (presets[key]) return presets[key]
+  if (presets[String(type).toUpperCase()]) return presets[String(type).toUpperCase()]
 
   let hash = 0
-  for (let i = 0; i < String(type).length; i++) hash = String(type).charCodeAt(i) + ((hash << 5) - hash)
+  const s = String(type)
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash)
   const hue = Math.abs(hash) % 360
   return {
     background:`hsla(${hue},55%,45%,.12)`,
@@ -1001,79 +987,41 @@ const soundTypeStyle = (type) => {
   }
 }
 
-/* Detect direct audio stream URLs → use <audio>, else iframe */
-const isDirectAudio = (url) => {
-  const raw = cleanUrl(url)
-  if (!raw) return false
-
-  // If pasted iframe html -> not direct audio
-  if (extractIframeSrcFromHtml(raw)) return false
-
-  const decoded = decodeHtmlEntities(raw)
-  const lower = decoded.toLowerCase()
-  const ext = getExt(decoded)
-
-  if (AUDIO_EXTS.includes(ext)) return true
-
-  return (
-    lower.includes('/stream') ||
-    (lower.includes('s3.') && !lower.includes('youtube')) ||
-    lower.includes('audio')
-  )
-}
-
-/* Platform label for external link button */
 const platformLabel = (url) => {
-  const u = decodeHtmlEntities(url || '').toLowerCase()
-  if (!u) return '🔗 Open link'
+  if (!url) return '🔗 Open'
+  const u = String(url).toLowerCase()
   if (u.includes('youtube.com') || u.includes('youtu.be')) return '▶ YouTube'
-  if (u.includes('soundcloud.com')) return '☁ SoundCloud'
-  if (u.includes('spotify.com'))    return '🎵 Spotify'
-  if (u.includes('deezer.com'))     return '🎶 Deezer'
-  if (u.includes('apple.com'))      return '🍎 Apple Music'
+  if (u.includes('vimeo.com')) return '🎬 Vimeo'
+  if (u.includes('dailymotion')) return '🎥 Dailymotion'
+  if (u.includes('drive.google.com')) return '📁 Drive'
   return '🔗 Open link'
 }
 
 const truncUrl = (url) => {
-  const raw = decodeHtmlEntities(url || '')
-  if (!raw) return ''
+  if (!url) return ''
   try {
-    const u = new URL(raw)
-    const path = u.pathname.length > 28 ? u.pathname.slice(0, 28) + '…' : u.pathname
-    return u.hostname + path
+    const u = new URL(url)
+    const p = u.pathname.length > 28 ? u.pathname.slice(0, 28) + '…' : u.pathname
+    return u.hostname + p
   } catch {
-    return raw.slice(0, 42) + (raw.length > 42 ? '…' : '')
+    return url.slice(0, 42) + (url.length > 42 ? '…' : '')
   }
 }
 
-const fmtDuration = (sec) => {
-  const s  = Math.max(0, Number(sec || 0))
-  const hh = Math.floor(s / 3600)
-  const mm = Math.floor((s % 3600) / 60)
+const fmtSeconds = (s) => {
+  if (!s) return '—'
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
   const ss = Math.floor(s % 60)
-  const p  = (x) => String(x).padStart(2, '0')
-  return hh > 0 ? `${hh}:${p(mm)}:${p(ss)}` : `${mm}:${p(ss)}`
+  const p = (x) => String(x).padStart(2, '0')
+  return h > 0 ? `${h}:${p(m)}:${p(ss)}` : `${m}:${p(ss)}`
 }
 
-const fmtBytes = (b) => {
-  const n = Math.max(0, Number(b || 0))
-  if (!n) return '0 B'
-  const u = ['B', 'KB', 'MB', 'GB']
-  let i = 0, v = n
-  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++ }
-  return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${u[i]}`
-}
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString('ar-IQ', { year:'numeric', month:'short', day:'numeric' }) : '—'
 
 const fmtDatetime = (d) =>
-  d
-    ? new Date(d).toLocaleString('ar-IQ', {
-        year:'numeric',
-        month:'short',
-        day:'numeric',
-        hour:'2-digit',
-        minute:'2-digit'
-      })
-    : '—'
+  d ? new Date(d).toLocaleString('ar-IQ', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'
 
 const showToast = (type, msg) => {
   clearTimeout(toastTimer)
@@ -1081,10 +1029,9 @@ const showToast = (type, msg) => {
   toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
 }
 
-onMounted(load)
+onMounted(() => load())
 
 onBeforeUnmount(() => {
-  clearTimeout(searchTimer)
   clearTimeout(toastTimer)
   document.body.style.overflow = ''
   window.removeEventListener('keydown', onGlobalKeydown)
@@ -1120,7 +1067,6 @@ onBeforeUnmount(() => {
 .toast { display:flex; align-items:center; gap:.65rem; padding:.75rem 1.1rem; border-radius:var(--radius-sm); font-weight:600; font-size:.87rem; margin-bottom:1rem; }
 .toast--success { background:rgba(22,120,70,.09); border:1px solid rgba(22,120,70,.22); color:#166044; }
 .toast--error   { background:rgba(140,21,21,.07); border:1px solid rgba(140,21,21,.18); color:var(--crimson); }
-
 .skeletons { display:flex; flex-direction:column; gap:.55rem; }
 .skel { height:58px; border-radius:var(--radius-sm); background:linear-gradient(90deg,var(--cream-dk) 25%,#eae8e4 50%,var(--cream-dk) 75%); background-size:200% 100%; animation:shimmer 1.4s ease infinite; }
 @keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
@@ -1148,15 +1094,12 @@ onBeforeUnmount(() => {
 .cover-img   { width:100%; height:100%; object-fit:cover; display:block; }
 .cover-empty { width:50px; height:38px; border-radius:8px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--border); }
 
-.type-pill  { display:inline-flex; padding:.22rem .65rem; border-radius:99px; font-size:.73rem; font-weight:700; white-space:nowrap; }
-.state-pill { display:inline-flex; padding:.22rem .65rem; border-radius:99px; font-size:.73rem; font-weight:800; white-space:nowrap; }
-.state-pill--single { background:rgba(22,120,70,.09); color:#166044; border:1px solid rgba(22,120,70,.18); }
-.state-pill--multi  { background:rgba(80,40,140,.08); color:#5028a0; border:1px solid rgba(80,40,140,.16); }
+.type-pill { display:inline-flex; padding:.22rem .65rem; border-radius:99px; font-size:.73rem; font-weight:700; white-space:nowrap; }
+.fmt-pill  { display:inline-flex; padding:.18rem .5rem; border-radius:6px; font-size:.72rem; font-weight:700; background:var(--cream-dk); border:1px solid var(--border); color:var(--muted); }
 .lang-dot      { display:inline-flex; padding:.18rem .5rem; border-radius:6px; font-size:.72rem; font-weight:700; }
 .lang-dot--ckb { background:rgba(254,221,0,.2); color:#806e00; border:1px solid rgba(254,221,0,.4); }
 .lang-dot--kmr { background:rgba(30,90,200,.1);  color:#1a47a0; border:1px solid rgba(30,90,200,.2); }
-.lang-row  { display:flex; gap:.3rem; flex-wrap:wrap; }
-.file-pill { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem; color:var(--muted); font-weight:700; }
+.lang-row { display:flex; gap:.3rem; flex-wrap:wrap; }
 
 .tbl__acts { display:flex; gap:.35rem; }
 .act { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--cream); color:var(--muted); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; transition:var(--transition); }
@@ -1164,7 +1107,14 @@ onBeforeUnmount(() => {
 .act--edit:hover { background:rgba(30,150,80,.08); border-color:rgba(30,150,80,.28); color:#166044; }
 .act--del:hover  { background:rgba(140,21,21,.08); border-color:rgba(140,21,21,.25); color:var(--crimson); }
 
-/* ── DELETE MODAL ── */
+/* Pagination */
+.pagination { display:flex; align-items:center; justify-content:center; gap:.4rem; padding:.9rem; border-top:1px solid var(--border); }
+.pg-btn { width:34px; height:34px; border-radius:8px; border:1px solid var(--border); background:var(--white); color:var(--muted); cursor:pointer; font-weight:700; font-size:.82rem; display:flex; align-items:center; justify-content:center; transition:var(--transition); font-family:inherit; }
+.pg-btn:hover:not(:disabled) { border-color:var(--crimson); color:var(--crimson); }
+.pg-btn--on { background:var(--crimson); border-color:var(--crimson); color:#fff; }
+.pg-btn:disabled { opacity:.35; cursor:default; }
+
+/* Delete modal */
 .overlay   { position:fixed; inset:0; z-index:200; background:rgba(20,10,10,.5); display:flex; align-items:center; justify-content:center; padding:1rem; }
 .del-modal { background:var(--white); border-radius:var(--radius-lg); padding:2rem; max-width:400px; width:100%; box-shadow:0 30px 80px rgba(0,0,0,.25); text-align:center; }
 .del-modal__ico   { width:62px; height:62px; border-radius:50%; background:rgba(140,21,21,.07); border:1px solid rgba(140,21,21,.14); display:flex; align-items:center; justify-content:center; margin:0 auto .85rem; }
@@ -1174,138 +1124,93 @@ onBeforeUnmount(() => {
 .spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg) } }
 .fade-enter-active,.fade-leave-active { transition:opacity .15s }
-.fade-enter-from,.fade-leave-to       { opacity:0 }
+.fade-enter-from,.fade-leave-to { opacity:0 }
 .slide-down-enter-active,.slide-down-leave-active { transition:.3s ease }
-.slide-down-enter-from,.slide-down-leave-to       { opacity:0; transform:translateY(-8px) }
+.slide-down-enter-from,.slide-down-leave-to { opacity:0; transform:translateY(-8px) }
 .modal-enter-active,.modal-leave-active { transition:.25s ease }
-.modal-enter-from,.modal-leave-to       { opacity:0 }
+.modal-enter-from,.modal-leave-to { opacity:0 }
 .modal-enter-active .del-modal,.modal-leave-active .del-modal { transition:.25s ease }
 .modal-enter-from .del-modal,.modal-leave-to .del-modal { transform:scale(.94) translateY(8px) }
 
-/* ══════════════════════════════════════════════════
-   DETAIL MODAL
-══════════════════════════════════════════════════ */
+/* ══════════════ DETAIL MODAL ══════════════ */
 .pdm-overlay { position:fixed; inset:0; z-index:400; background:rgba(5,2,2,.78); backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:1.5rem; overflow-y:auto; }
 .pdm { position:relative; width:100%; max-width:1100px; max-height:calc(100vh - 3rem); background:#141010; border-radius:20px; overflow:hidden; display:grid; grid-template-columns:1fr 430px; box-shadow:0 0 0 1px rgba(255,255,255,.07),0 40px 120px rgba(0,0,0,.75); }
 @media (max-width:840px) { .pdm { grid-template-columns:1fr; max-height:none; } }
 
-.pdm-x { position:absolute; top:1rem; left:1rem; z-index:50; width:36px; height:36px; border-radius:50%; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.85); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .22s ease; backdrop-filter:blur(8px); }
+.pdm-x { position:absolute; top:1rem; left:1rem; z-index:50; width:36px; height:36px; border-radius:50%; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.85); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .22s ease; }
 .pdm-x:hover { background:rgba(140,21,21,.8); color:#fff; transform:rotate(90deg) scale(1.08); }
 
-/* ── Left / Media ── */
-.pdm-media { display:flex; flex-direction:column; background:#0c0808; min-height:480px; overflow-y:auto; }
+/* Left / Media */
+.pdm-media { position:relative; display:flex; flex-direction:column; background:#0c0808; min-height:480px; overflow-y:auto; }
+.pdm-media__bg { position:absolute; inset:0; background-size:cover; background-position:center; opacity:.12; filter:blur(20px); transform:scale(1.05); }
+.pdm-media__inner { position:relative; z-index:1; flex:1; display:flex; flex-direction:column; gap:.85rem; padding:1.25rem 1.15rem 1.4rem; }
 .pdm-media::-webkit-scrollbar { width:3px } .pdm-media::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:99px; }
-.pdm-media__empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.75rem; color:rgba(255,255,255,.25); font-size:.85rem; padding:2rem; position:relative; }
-.pdm-media__empty-icon { width:72px; height:72px; border-radius:50%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; }
-.pdm-media__cover-fallback { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.18; }
 
-/* Audio Stage */
-.audio-stage { flex:1; display:flex; flex-direction:column; gap:1rem; padding:1.25rem 1.15rem 1.5rem; }
-.audio-stage__top  { display:flex; gap:.9rem; align-items:center; }
-.audio-stage__cover{ width:80px; height:80px; border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); flex-shrink:0; }
-.audio-stage__cover img { width:100%; height:100%; object-fit:cover; display:block; }
-.audio-stage__meta { min-width:0; }
-.audio-stage__title{ color:rgba(255,255,255,.92); font-weight:800; font-size:1.05rem; line-height:1.25; }
-.audio-stage__sub  { color:rgba(255,255,255,.5); font-size:.8rem; margin-top:.3rem; display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; }
-.audio-stage__dims { color:rgba(255,255,255,.3); font-size:.74rem; margin-top:.3rem; display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; }
-.sep         { opacity:.3; }
-.reader-name { color:rgba(255,255,255,.75); font-weight:700; }
-.audio-type-badge { display:inline-flex; padding:.16rem .52rem; border-radius:8px; font-size:.72rem; font-weight:800; }
-.ftype-badge      { display:inline-flex; padding:.14rem .45rem; border-radius:6px; font-size:.7rem; font-weight:900; background:rgba(254,221,0,.12); border:1px solid rgba(254,221,0,.22); color:rgba(254,221,0,.9); }
-.ftype-badge--sm  { font-size:.65rem; padding:.1rem .36rem; }
+.no-source { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.7rem; color:rgba(255,255,255,.25); font-size:.85rem; position:relative; }
+.no-source__ico { width:72px; height:72px; border-radius:50%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; }
+.fallback-cover { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.2; border-radius:0; }
 
-/* Player blocks */
-.player-zone { display:flex; flex-direction:column; gap:.7rem; }
+.src-blocks { display:flex; flex-direction:column; gap:.7rem; }
+.src-block { border-radius:14px; padding:.85rem 1rem; display:flex; flex-direction:column; gap:.55rem; }
+.src-block--direct { background:rgba(22,180,90,.06);  border:1px solid rgba(22,180,90,.14); }
+.src-block--embed  { background:rgba(80,120,255,.06); border:1px solid rgba(80,120,255,.14); }
+.src-block--ext    { background:rgba(255,180,30,.05); border:1px solid rgba(255,180,30,.14); }
+.src-block__hd { display:flex; align-items:center; gap:.4rem; font-size:.69rem; font-weight:900; letter-spacing:.05em; text-transform:uppercase; }
+.src-block--direct .src-block__hd { color:rgba(22,200,90,.75); }
+.src-block--embed  .src-block__hd { color:rgba(80,140,255,.75); }
+.src-block--ext    .src-block__hd { color:rgba(255,190,50,.75); }
 
-.pblock { border-radius:14px; padding:.85rem 1rem; display:flex; flex-direction:column; gap:.55rem; }
-.pblock--file  { background:rgba(22,180,90,.06);  border:1px solid rgba(22,180,90,.14); }
-.pblock--embed { background:rgba(80,120,255,.06); border:1px solid rgba(80,120,255,.14); }
-.pblock--ext   { background:rgba(255,180,30,.05); border:1px solid rgba(255,180,30,.14); }
+.native-video { width:100%; border-radius:10px; max-height:220px; background:#000; }
+.iframe-wrap  { border-radius:10px; overflow:hidden; background:#000; }
+.embed-iframe { width:100%; height:210px; border:none; display:block; }
+.raw-link { display:inline-flex; align-items:center; gap:.35rem; font-size:.71rem; color:rgba(255,255,255,.28); text-decoration:none; transition:.18s; word-break:break-all; }
+.raw-link:hover { color:rgba(255,255,255,.65); }
 
-.pblock__hd { display:flex; align-items:center; gap:.4rem; font-size:.69rem; font-weight:900; letter-spacing:.05em; text-transform:uppercase; }
-.pblock--file  .pblock__hd { color:rgba(22,200,90,.75); }
-.pblock--embed .pblock__hd { color:rgba(80,140,255,.75); }
-.pblock--ext   .pblock__hd { color:rgba(255,190,50,.75); }
-
-.native-audio { width:100%; border-radius:8px; }
-
-/* iframe embed */
-.iframe-wrap  { border-radius:10px; overflow:hidden; background:#000; line-height:0; }
-.embed-iframe { width:100%; height:165px; border:none; display:block; }
-
-/* raw link under players */
-.raw-link { display:inline-flex; align-items:center; gap:.35rem; font-size:.71rem; color:rgba(255,255,255,.3); text-decoration:none; transition:.18s; word-break:break-all; }
-.raw-link:hover { color:rgba(255,255,255,.7); }
-
-/* External link big button */
 .ext-btn { display:flex; flex-direction:column; gap:.2rem; padding:.8rem 1rem; border-radius:12px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.88); text-decoration:none; transition:.2s; position:relative; }
 .ext-btn:hover { background:rgba(140,21,21,.55); border-color:rgba(140,21,21,.8); }
 .ext-btn__platform { font-weight:800; font-size:.92rem; }
 .ext-btn__url      { font-size:.72rem; color:rgba(255,255,255,.35); word-break:break-all; }
-.ext-btn__arrow    { position:absolute; top:.7rem; left:.8rem; color:rgba(255,255,255,.35); }
+.ext-btn__arrow    { position:absolute; top:.75rem; left:.8rem; color:rgba(255,255,255,.3); }
 
-.no-src { padding:.8rem; text-align:center; color:rgba(255,255,255,.18); font-size:.82rem; background:rgba(255,255,255,.03); border-radius:12px; border:1px dashed rgba(255,255,255,.07); }
+/* Film stats strip */
+.film-stats { display:flex; gap:.5rem; flex-wrap:wrap; padding:.65rem .8rem; background:rgba(255,255,255,.04); border-radius:12px; border:1px solid rgba(255,255,255,.08); }
+.film-stat  { display:flex; flex-direction:column; gap:.1rem; flex:1; min-width:55px; }
+.film-stat__k { font-size:.66rem; font-weight:700; color:rgba(255,255,255,.3); text-transform:uppercase; letter-spacing:.04em; }
+.film-stat__v { font-size:.82rem; font-weight:800; color:rgba(255,255,255,.78); }
 
-/* File list (multi) */
-.flist { display:flex; flex-direction:column; gap:.4rem; }
-.flist__label { font-size:.7rem; font-weight:800; color:rgba(255,255,255,.28); text-transform:uppercase; letter-spacing:.05em; padding:.15rem 0; }
-.flist__item  { display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.6rem .75rem; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); color:rgba(255,255,255,.75); cursor:pointer; transition:.2s; font-family:inherit; text-align:right; }
-.flist__item:hover { border-color:rgba(255,255,255,.18); transform:translateY(-1px); }
-.flist__item--on   { border-color:rgba(140,21,21,.85)!important; box-shadow:0 0 0 1px rgba(140,21,21,.35); }
-.flist__item-left  { display:flex; align-items:center; gap:.55rem; min-width:0; }
-.flist__item-right { display:flex; align-items:center; gap:.4rem; flex-shrink:0; }
-.flist__num  { width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,.08); color:rgba(255,255,255,.45); font-size:.7rem; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.flist__name { font-weight:700; font-size:.83rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.flist__tags { display:flex; gap:.22rem; margin-top:.18rem; }
-.flist__dur  { font-size:.72rem; color:rgba(255,255,255,.38); font-weight:600; }
-.flist__sz   { font-size:.72rem; color:rgba(255,255,255,.28); font-weight:600; }
-
-.utag       { font-size:.62rem; font-weight:900; padding:.1rem .33rem; border-radius:4px; letter-spacing:.04em; }
-.utag--file  { background:rgba(22,180,90,.15);  color:rgba(22,200,90,.9);  border:1px solid rgba(22,180,90,.25); }
-.utag--embed { background:rgba(80,120,255,.15); color:rgba(80,150,255,.9); border:1px solid rgba(80,120,255,.25); }
-.utag--ext   { background:rgba(255,180,0,.12);  color:rgba(255,195,40,.9); border:1px solid rgba(255,180,0,.22); }
-
-/* ── Right info panel ── */
+/* Right info panel */
 .pdm-info { display:flex; flex-direction:column; background:#faf8f5; border-right:1px solid rgba(0,0,0,.08); max-height:calc(100vh - 3rem); overflow:hidden; }
 .pdm-info__head { flex:0 0 auto; padding:1.6rem 1.4rem 1.1rem; background:#fff; border-bottom:1px solid #ece7df; }
 .pdm-info__head-meta { display:flex; align-items:center; gap:.5rem; margin-bottom:.7rem; flex-wrap:wrap; }
 .pdm-id-tag  { font-size:.72rem; font-weight:700; color:#b0a898; letter-spacing:.06em; }
+.date-pill   { display:inline-flex; padding:.2rem .6rem; border-radius:99px; font-size:.72rem; font-weight:700; background:var(--cream-dk,#f0ece5); color:var(--muted,#9a9286); border:1px solid #e4dfd7; }
 .pdm-title   { font-size:1.35rem; font-weight:800; color:#1a1410; line-height:1.25; letter-spacing:-.02em; margin:0 0 .3rem; }
 .pdm-subtitle{ font-size:.88rem; color:#9a9286; font-weight:500; margin:0 0 .65rem; }
-.pdm-langs   { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:.8rem; }
+.pdm-langs   { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:.85rem; }
 .pdm-lang    { display:inline-flex; padding:.2rem .65rem; border-radius:6px; font-size:.72rem; font-weight:700; }
 .pdm-lang--ckb { background:rgba(254,221,0,.14); color:#7a6200; border:1px solid rgba(254,221,0,.35); }
 .pdm-lang--kmr { background:rgba(40,90,220,.08); color:#2848b0; border:1px solid rgba(40,90,220,.18); }
-.inst-pill   { display:inline-flex; padding:.2rem .6rem; border-radius:99px; font-size:.72rem; font-weight:900; background:rgba(22,120,70,.1); color:#186040; border:1px solid rgba(22,120,70,.22); }
-
-/* Quick stats bar */
-.pdm-stats { display:flex; gap:0; margin-bottom:.9rem; border-radius:10px; overflow:hidden; border:1px solid #ece7df; }
-.pdm-stat  { flex:1; padding:.55rem .7rem; background:#faf8f5; border-left:1px solid #ece7df; }
-.pdm-stat:first-child { border-left:none; }
-.pdm-stat__k { font-size:.67rem; font-weight:700; color:#b8b0a4; text-transform:uppercase; letter-spacing:.04em; }
-.pdm-stat__v { font-size:.88rem; font-weight:800; color:#1a1410; margin-top:.12rem; }
-
-.pdm-edit-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.1rem; border-radius:10px; background:#8c1515; color:#fff; border:none; font-size:.82rem; font-weight:700; text-decoration:none; cursor:pointer; transition:all .2s ease; width:100%; justify-content:center; font-family:inherit; box-shadow:0 4px 16px rgba(140,21,21,.28); }
+.pdm-edit-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.1rem; border-radius:10px; background:#8c1515; color:#fff; border:none; font-size:.82rem; font-weight:700; text-decoration:none; cursor:pointer; transition:all .2s; width:100%; justify-content:center; font-family:inherit; box-shadow:0 4px 16px rgba(140,21,21,.28); }
 .pdm-edit-btn:hover { background:#a61c1c; transform:translateY(-1px); }
 
 .pdm-tabs { flex:0 0 auto; display:flex; background:#f0ece5; border-bottom:1px solid #e4dfd7; }
 .pdm-tab  { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; padding:.65rem 1rem; border:none; background:none; color:#9a9286; font-weight:700; font-size:.83rem; cursor:pointer; transition:all .2s; font-family:inherit; border-bottom:2px solid transparent; }
 .pdm-tab--on { color:#8c1515; background:#faf8f5; border-bottom-color:#8c1515; }
-.pdm-tab__pip     { width:7px; height:7px; border-radius:50%; }
-.pdm-tab__pip--ckb{ background:#c8a800; }
-.pdm-tab__pip--kmr{ background:#4a7af0; }
+.pdm-tab__pip      { width:7px; height:7px; border-radius:50%; }
+.pdm-tab__pip--ckb { background:#c8a800; }
+.pdm-tab__pip--kmr { background:#4a7af0; }
 
-.pdm-info__body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0; scroll-behavior:smooth; padding-bottom:1.5rem; }
+.pdm-info__body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0; padding-bottom:1.5rem; }
 .pdm-info__body::-webkit-scrollbar { width:3px } .pdm-info__body::-webkit-scrollbar-thumb { background:#d4cec6; border-radius:99px; }
 
 /* Accordions */
 .acc { border-bottom:1px solid #ede8e0; }
 .acc:last-child { border-bottom:none; }
-.acc__hd { width:100%; display:flex; align-items:center; justify-content:space-between; padding:.95rem 1.3rem; background:none; border:none; cursor:pointer; font-family:inherit; transition:background .18s ease; gap:.5rem; }
+.acc__hd { width:100%; display:flex; align-items:center; justify-content:space-between; padding:.95rem 1.3rem; background:none; border:none; cursor:pointer; font-family:inherit; transition:background .18s; gap:.5rem; }
 .acc__hd:hover { background:rgba(140,21,21,.03); }
 .acc__hd--system:hover { background:rgba(100,80,50,.04); }
 .acc__hd-left { display:flex; align-items:center; gap:.7rem; flex:1; min-width:0; }
-.acc__ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .2s ease; }
+.acc__ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .2s; }
 .acc__hd:hover .acc__ico { transform:scale(1.08); }
 .acc__ico--desc  { background:rgba(140,21,21,.09); color:#8c1515;  border:1px solid rgba(140,21,21,.16); }
 .acc__ico--meta  { background:rgba(22,120,70,.09);  color:#166044;  border:1px solid rgba(22,120,70,.18); }
@@ -1313,51 +1218,40 @@ onBeforeUnmount(() => {
 .acc__ico--tag   { background:rgba(200,168,0,.12);  color:#7a6200;  border:1px solid rgba(200,168,0,.22); }
 .acc__ico--kw    { background:rgba(40,90,220,.09);  color:#2848b0;  border:1px solid rgba(40,90,220,.16); }
 .acc__ico--sys   { background:rgba(80,80,80,.08);   color:#505050;  border:1px solid rgba(80,80,80,.14);  }
-.acc__title  { font-size:.92rem; font-weight:700; color:#1e1812; letter-spacing:-.01em; }
-.acc__badge  { display:inline-flex; padding:.18rem .58rem; border-radius:99px; font-size:.71rem; font-weight:800; letter-spacing:.04em; }
-.acc__badge--tag   { background:rgba(200,168,0,.12); color:#7a6200; border:1px solid rgba(200,168,0,.22); }
-.acc__badge--kw    { background:rgba(40,90,220,.09); color:#2848b0; border:1px solid rgba(40,90,220,.16); }
-.acc__badge--files { background:rgba(80,40,160,.09); color:#5028a0; border:1px solid rgba(80,40,160,.18); }
+.acc__title { font-size:.92rem; font-weight:700; color:#1e1812; }
+.acc__badge { display:inline-flex; padding:.18rem .58rem; border-radius:99px; font-size:.71rem; font-weight:800; }
+.acc__badge--tag { background:rgba(200,168,0,.12); color:#7a6200; border:1px solid rgba(200,168,0,.22); }
+.acc__badge--kw  { background:rgba(40,90,220,.09); color:#2848b0; border:1px solid rgba(40,90,220,.16); }
 .acc__chevron { color:#c8c0b4; flex-shrink:0; transition:transform .28s cubic-bezier(.34,1.56,.64,1),color .18s; }
 .acc__chevron--open { transform:rotate(180deg); color:#8c1515; }
 .acc__hd:hover .acc__chevron { color:#8c1515; }
-
-.acc__body       { overflow:hidden; padding:0 1.3rem 1.1rem; }
-.acc__body--flush{ padding:0 0 .5rem; }
-.acc__body--nop  { padding:0; }
+.acc__body { overflow:hidden; padding:0 1.3rem 1.1rem; }
+.acc__body--flush { padding:0 0 .5rem; }
 .acc-body-enter-active { transition:all .3s cubic-bezier(.22,1,.36,1); }
 .acc-body-leave-active { transition:all .22s ease; }
 .acc-body-enter-from,.acc-body-leave-to { opacity:0; transform:translateY(-6px); }
-
-.acc__text--desc { font-size:.9rem; color:#2e2418; line-height:1.85; white-space:pre-line; margin:0; padding:.2rem 0; max-height:260px; overflow-y:auto; scrollbar-width:thin; }
+.acc__text--desc { font-size:.9rem; color:#2e2418; line-height:1.85; white-space:pre-line; margin:0; max-height:260px; overflow-y:auto; }
 .acc__meta-grid { display:flex; flex-direction:column; gap:.5rem; }
 .acc__meta-row  { display:flex; align-items:baseline; gap:.75rem; font-size:.88rem; }
-.acc__meta-k    { flex:0 0 auto; font-size:.74rem; font-weight:700; color:#b8b0a4; text-transform:uppercase; letter-spacing:.04em; display:inline-flex; align-items:center; gap:.25rem; min-width:80px; }
+.acc__meta-k    { flex:0 0 auto; font-size:.74rem; font-weight:700; color:#b8b0a4; text-transform:uppercase; letter-spacing:.04em; display:inline-flex; align-items:center; gap:.25rem; min-width:90px; }
 .acc__meta-v    { color:#2e2418; font-weight:600; line-height:1.4; }
 
-/* File cards (inside accordion) */
-.fcard { padding:.7rem 1.3rem; border-bottom:1px solid #f0ebe3; }
-.fcard:last-child { border-bottom:none; }
-.fcard__head  { display:flex; align-items:center; gap:.5rem; margin-bottom:.4rem; flex-wrap:wrap; }
-.fcard__num   { width:22px; height:22px; border-radius:50%; background:#8c1515; color:#fff; font-size:.7rem; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.fcard__reader{ font-weight:700; font-size:.86rem; color:#1e1812; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.fcard__stats { display:flex; gap:.55rem; flex-wrap:wrap; margin-bottom:.45rem; }
-.fstat        { font-size:.74rem; color:#a0998e; font-weight:600; }
-
-.fcard__url-row   { display:flex; align-items:flex-start; gap:.5rem; padding:.25rem 0; border-top:1px dashed #ede8e0; }
-.fcard__url-label { font-size:.63rem; font-weight:900; letter-spacing:.05em; flex-shrink:0; padding:.15rem .42rem; border-radius:5px; margin-top:.1rem; }
-.fcard__url-label--file  { background:rgba(22,180,90,.12); color:#186040; border:1px solid rgba(22,180,90,.22); }
-.fcard__url-label--embed { background:rgba(80,120,255,.1); color:#2848b0; border:1px solid rgba(80,120,255,.22); }
-.fcard__url-label--ext   { background:rgba(200,140,0,.1);  color:#7a5200; border:1px solid rgba(200,140,0,.2);  }
-.fcard__url-link { font-size:.76rem; color:#8c1515; word-break:break-all; text-decoration:none; font-weight:500; line-height:1.5; }
-.fcard__url-link:hover { text-decoration:underline; }
+/* Source URLs inside accordion */
+.src-url-list { display:flex; flex-direction:column; gap:.3rem; }
+.src-url-row  { display:flex; align-items:flex-start; gap:.5rem; padding:.25rem 0; border-top:1px dashed #ede8e0; }
+.src-url-row:first-child { border-top:none; }
+.src-url-label { font-size:.63rem; font-weight:900; letter-spacing:.05em; flex-shrink:0; padding:.15rem .42rem; border-radius:5px; margin-top:.1rem; }
+.src-url-label--direct { background:rgba(22,180,90,.12); color:#186040; border:1px solid rgba(22,180,90,.22); }
+.src-url-label--embed  { background:rgba(80,120,255,.1);  color:#2848b0; border:1px solid rgba(80,120,255,.22); }
+.src-url-label--ext    { background:rgba(200,140,0,.1);   color:#7a5200; border:1px solid rgba(200,140,0,.2);  }
+.src-url-link { font-size:.76rem; color:#8c1515; word-break:break-all; text-decoration:none; font-weight:500; }
+.src-url-link:hover { text-decoration:underline; }
 
 .acc__chips { display:flex; flex-wrap:wrap; gap:.42rem; }
-.acc__chip  { display:inline-flex; align-items:center; gap:.3rem; padding:.32rem .78rem; border-radius:8px; font-size:.82rem; font-weight:600; cursor:default; transition:transform .15s ease; }
+.acc__chip  { display:inline-flex; padding:.32rem .78rem; border-radius:8px; font-size:.82rem; font-weight:600; cursor:default; transition:transform .15s; }
 .acc__chip:hover { transform:translateY(-2px); }
 .acc__chip--tag { background:rgba(200,168,0,.11); color:#7a6200; border:1px solid rgba(200,168,0,.22); }
 .acc__chip--kw  { background:rgba(40,90,220,.08); color:#2848b0; border:1px solid rgba(40,90,220,.15); }
-
 .acc--system { background:#faf7f2; }
 .acc__sys-grid { display:grid; grid-template-columns:1fr 1fr; padding:0 1.3rem .75rem; gap:0; }
 .acc__sys-cell { padding:.72rem .65rem .72rem 0; border-bottom:1px solid #ede8e0; border-left:1px solid #ede8e0; }
@@ -1366,12 +1260,12 @@ onBeforeUnmount(() => {
 .acc__sys-cell:last-child,.acc__sys-cell:nth-last-child(2):not(.acc__sys-cell--full) { border-bottom:none; }
 .acc__sys-k { font-size:.68rem; font-weight:700; color:#c0b8ac; letter-spacing:.05em; margin-bottom:.25rem; text-transform:uppercase; }
 .acc__sys-v { font-size:.84rem; color:#2e2418; font-weight:600; line-height:1.4; }
-.acc__sys-v--mono { font-family:'Courier New',monospace; font-size:.78rem; letter-spacing:.04em; }
-.acc__sys-v--link { color:#8c1515; font-size:.73rem; font-weight:500; word-break:break-all; text-decoration:none; display:block; }
+.acc__sys-v--mono { font-family:'Courier New',monospace; font-size:.78rem; }
+.acc__sys-v--link { color:#8c1515; font-size:.73rem; word-break:break-all; text-decoration:none; display:block; }
 .acc__sys-v--link:hover { text-decoration:underline; }
 
 .pdm-fade-enter-active,.pdm-fade-leave-active { transition:opacity .3s ease; }
-.pdm-fade-enter-from,.pdm-fade-leave-to       { opacity:0; }
+.pdm-fade-enter-from,.pdm-fade-leave-to { opacity:0; }
 .pdm-rise-enter-active { transition:opacity .38s ease,transform .38s cubic-bezier(.22,1,.36,1); }
 .pdm-rise-leave-active { transition:opacity .22s ease,transform .22s ease; }
 .pdm-rise-enter-from   { opacity:0; transform:scale(.94) translateY(20px); }

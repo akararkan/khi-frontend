@@ -31,23 +31,24 @@
         <!-- ═══════════════ MAIN COLUMN ═══════════════ -->
         <div class="col-main">
 
-          <!-- Sound Type -->
+          <!-- Sound Type (UPDATED: free text instead of fixed radio options) -->
           <section class="card">
             <div class="card__hd"><span class="card__hd-ico">🎵</span> جۆری دەنگ</div>
-            <div class="type-picks">
-              <label class="type-pick" :class="{ 'type-pick--on': form.soundType === 'LAWK', 'type-pick--lawk': true }">
-                <input type="radio" value="LAWK" v-model="form.soundType" />
-                <span class="type-pick__icon">🎶</span>
-                <span class="type-pick__label">لاوک (LAWK)</span>
-                <span class="type-pick__hint">دەنگی لاوکی کوردی</span>
-              </label>
-              <label class="type-pick" :class="{ 'type-pick--on': form.soundType === 'HAIRAN', 'type-pick--hairan': true }">
-                <input type="radio" value="HAIRAN" v-model="form.soundType" />
-                <span class="type-pick__icon">🪕</span>
-                <span class="type-pick__label">حەیران (HAIRAN)</span>
-                <span class="type-pick__hint">دەنگی حەیران</span>
-              </label>
+
+            <div class="field">
+              <label class="lbl lbl--req">Sound Type</label>
+              <input
+                v-model.trim="form.soundType"
+                class="inp"
+                placeholder="جۆری دەنگ بنووسە… (نمونە: LAWK / HAIRAN / any custom type)"
+                list="sound-type-options"
+              />
+              <datalist id="sound-type-options">
+                <option value="LAWK"></option>
+                <option value="HAIRAN"></option>
+              </datalist>
             </div>
+
             <div v-if="errors.soundType" class="err">{{ errors.soundType }}</div>
           </section>
 
@@ -429,7 +430,7 @@ const errors       = ref({})
 let _keyCounter    = 0
 
 const form = reactive({
-  soundType: '',
+  soundType: '', // UPDATED: now free-text input from UI (not fixed radio)
   trackState: 'SINGLE',
   contentLanguages: ['CKB'],
   coverUrl: '',
@@ -584,7 +585,7 @@ const applyTrack = (t) => {
 const validate = () => {
   const e = {}
 
-  if (!form.soundType) e.soundType = 'جۆری دەنگ پێویستە'
+  if (!String(form.soundType || '').trim()) e.soundType = 'جۆری دەنگ پێویستە'
   if (!form.trackState) e.trackState = 'TrackState پێویستە'
   if (!form.contentLanguages.length) e.contentLanguages = 'کەمی یەک زمانیکی هەڵبژێرە'
 
@@ -613,6 +614,7 @@ const validate = () => {
 }
 
 /* ── Submit ── */
+/* ── Submit ── */
 const submit = async () => {
   if (!validate()) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
   saving.value = true
@@ -638,7 +640,9 @@ const submit = async () => {
 
       locations: form.locations,
       director: form.director || null,
-      isThisProjectOfInstitute: !!form.isThisProjectOfInstitute,
+
+      // ✅ FIXED KEY NAME for backend DTO/Jackson
+      thisProjectOfInstitute: !!form.isThisProjectOfInstitute,
 
       tags: {
         ckb: form.contentLanguages.includes('CKB') ? form.tagsCkb : [],

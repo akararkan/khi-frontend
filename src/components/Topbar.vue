@@ -47,23 +47,74 @@ import { useAuthStore } from '@/stores/useAuthStore'
 const route = useRoute()
 const auth  = useAuthStore()
 
-const map = {
-  projects:'پڕۆژەکان', news:'هەواڵ', films:'فیلم',
-  'image-collections':'کۆمەڵە وێنە', soundtracks:'دەنگ',
-  albums:'ئالبوم', writings:'نووسراوەکان',
+// ✅ Section label map
+const sectionLabels = {
+  projects:            'پڕۆژەکان',
+  news:                'هەواڵەکان',
+  films:               'فیلمەکان',
+  'image-collections': 'کۆمەڵە وێنەکان',
+  soundtracks:         'دەنگەکان',
+  albums:              'ئەلبوومەکان',
+  writings:            'نووسراوەکان',
+}
+
+// ✅ Map every dedicated route name → { section, action }
+const routeNameMap = {
+  AdminHome:                    { section: 'داشبۆرد',           action: '' },
+  // Projects
+  AdminProjectList:             { section: 'پڕۆژەکان',          action: 'لیست' },
+  AdminProjectCreate:           { section: 'پڕۆژەکان',          action: 'زیادکردنی نوێ' },
+  AdminProjectEdit:             { section: 'پڕۆژەکان',          action: 'دەستکاریکردن' },
+  // News
+  AdminNewsList:                { section: 'هەواڵەکان',          action: 'لیست' },
+  AdminNewsCreate:              { section: 'هەواڵەکان',          action: 'زیادکردنی نوێ' },
+  AdminNewsEdit:                { section: 'هەواڵەکان',          action: 'دەستکاریکردن' },
+  // Films
+  AdminFilmList:                { section: 'فیلمەکان',           action: 'لیست' },
+  AdminFilmCreate:              { section: 'فیلمەکان',           action: 'زیادکردنی نوێ' },
+  AdminFilmEdit:                { section: 'فیلمەکان',           action: 'دەستکاریکردن' },
+  // Image Collections
+  AdminImageCollectionList:     { section: 'کۆمەڵە وێنەکان',    action: 'لیست' },
+  AdminImageCollectionCreate:   { section: 'کۆمەڵە وێنەکان',    action: 'زیادکردنی نوێ' },
+  AdminImageCollectionEdit:     { section: 'کۆمەڵە وێنەکان',    action: 'دەستکاریکردن' },
+  // SoundTracks
+  AdminSoundTrackList:          { section: 'دەنگەکان',           action: 'لیست' },
+  AdminSoundTrackCreate:        { section: 'دەنگەکان',           action: 'زیادکردنی نوێ' },
+  AdminSoundTrackEdit:          { section: 'دەنگەکان',           action: 'دەستکاریکردن' },
+  // Albums
+  AdminAlbumList:               { section: 'ئەلبوومەکان',        action: 'لیست' },
+  AdminAlbumCreate:             { section: 'ئەلبوومەکان',        action: 'زیادکردنی نوێ' },
+  AdminAlbumEdit:               { section: 'ئەلبوومەکان',        action: 'دەستکاریکردن' },
+  // Writings
+  AdminWritingList:             { section: 'نووسراوەکان',        action: 'لیست' },
+  AdminWritingCreate:           { section: 'نووسراوەکان',        action: 'زیادکردنی نوێ' },
+  AdminWritingEdit:             { section: 'نووسراوەکان',        action: 'دەستکاریکردن' },
+  // Generic resources
+  AdminResourceList:            { section: null, action: 'لیست' },
+  AdminResourceCreate:          { section: null, action: 'زیادکردنی نوێ' },
+  AdminResourceEdit:            { section: null, action: 'دەستکاریکردن' },
 }
 
 const pageTitle = computed(() => {
-  if (route.name === 'AdminHome') return 'داشبۆرد'
-  const r = route.params.resource
-  return r ? (map[r] || String(r)) : 'بەڕێوەبردن'
+  const name = route.name
+  const mapped = routeNameMap[name]
+
+  if (mapped) {
+    // For generic resources, resolve section from route param
+    if (mapped.section === null) {
+      const r = route.params.resource
+      return r ? (sectionLabels[r] || String(r)) : 'بەڕێوەبردن'
+    }
+    return mapped.section
+  }
+
+  return 'بەڕێوەبردن'
 })
 
 const pageSub = computed(() => {
-  if (route.name === 'AdminResourceCreate') return 'زیادکردنی نوێ'
-  if (route.name === 'AdminResourceEdit')   return 'دەستکاری'
-  if (route.name === 'AdminResourceList')   return 'لیست'
-  return ''
+  const name = route.name
+  const mapped = routeNameMap[name]
+  return mapped?.action || ''
 })
 
 // Live clock

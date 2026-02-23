@@ -334,41 +334,171 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import api from '@/api.js'
 
 /* ── state ── */
-const items          = ref([])
-const loading        = ref(false)
-const error          = ref('')
-const searchQ        = ref('')
-const filterLang     = ref('')
-const filterType     = ref('')
-const delTarget      = ref(null)
-const deleting       = ref(false)
-const detail         = ref(null)
-const detailLang     = ref('CKB')
-const imgIdx         = ref(0)
-const toast          = ref({ show: false, type: 'success', msg: '' })
-const openAccordions = ref(new Set(['desc', 'meta', 'imginfo', 'tags', 'kw']))
-let searchTimer      = null
+const items           = ref([])
+const loading         = ref(false)
+const error           = ref('')
+const searchQ         = ref('')
+const filterLang      = ref('')
+const filterType      = ref('')
+const delTarget       = ref(null)
+const deleting        = ref(false)
+const detail          = ref(null)
+const detailLang      = ref('CKB')
+const detailOverlayEl = ref(null)
+const imgIdx          = ref(0)
+const toast           = ref({ show: false, type: 'success', msg: '' })
+const openAccordions  = ref(new Set(['desc', 'meta', 'imginfo', 'tags', 'kw']))
+let searchTimer       = null
+let toastTimer        = null
+
+/* ── helpers ── */
+const ensureArray = (v) => Array.isArray(v) ? v : []
+const cleanUrl = (u) => (typeof u === 'string' ? u.trim() : '')
+
+const decodeHtmlEntities = (str = '') =>
+  String(str)
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+
+const isHttpUrl = (u) => /^https?:\/\//i.test(cleanUrl(u))
+
+const getUrlObj = (u) => {
+  try { return new URL(cleanUrl(u)) } catch { return null }
+}
+
+const extractIframeSrcFromHtml = (raw = '') => {
+  const s = String(raw || '')
+  if (!/<iframe[\s\S]*?>/i.test(s)) return ''
+  const m = s.match(/src\s*=\s*["']([^"']+)["']/i)
+  return m?.[1] ? decodeHtmlEntities(m[1]) : ''
+}
+
+const extractGoogleDriveFileId = (raw = '') => {
+  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
+  const u = getUrlObj(input)
+  if (!u) return ''
+  if (!u.hostname.toLowerCase().includes('drive.google.com')) return ''
+
+  const m = u.pathname.match(/\/file\/d\/([^/]+)/)
+  if (m?.[1]) return m[1]
+
+  return u.searchParams.get('id') || ''
+}
+
+const extractDropboxRawUrl = (raw = '') => {
+  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
+  const u = getUrlObj(input)
+  if (!u) return ''
+  const host = u.hostname.toLowerCase()
+  if (!host.includes('dropbox.com')) return ''
+
+  u.searchParams.delete('dl')
+  u.searchParams.set('raw', '1')
+  return u.toString()
+}
+
+const toEmbeddableImageUrl = (raw = '') => {
+  let u = decodeHtmlEntities(cleanUrl(raw))
+  if (!u) return ''
+
+  const iframeSrc = extractIframeSrcFromHtml(u)
+  if (iframeSrc) u = iframeSrc
+
+  if (!isHttpUrl(u)) return ''
+
+  // Google Drive file preview
+  const gdid = extractGoogleDriveFileId(u)
+  if (gdid) return `https://drive.google.com/file/d/${gdid}/preview`
+
+  // Dropbox raw image file
+  const dropboxRaw = extractDropboxRawUrl(u)
+  if (dropboxRaw) return dropboxRaw
+
+  return u
+}
+
+/* ── normalize item from backend ── */
+const normalizeCollection = (c = {}) => {
+  const out = { ...c }
+
+  // multilingual content normalization
+  if (!out.ckbContent && out.content?.ckb) out.ckbContent = out.content.ckb
+  if (!out.kmrContent && out.content?.kmr) out.kmrContent = out.content.kmr
+
+  // infer content languages if backend omitted
+  if (!ensureArray(out.contentLanguages).length) {
+    const langs = []
+    if (out.ckbContent?.title || out.ckbContent?.description || out.content?.ckb) langs.push('CKB')
+    if (out.kmrContent?.title || out.kmrContent?.description || out.content?.kmr) langs.push('KMR')
+    out.contentLanguages = langs
+  }
+
+  // tags / keywords normalization
+  out.tags = out.tags || {}
+  out.tags.ckb = ensureArray(out.tags?.ckb || out.tagsCkb)
+  out.tags.kmr = ensureArray(out.tags?.kmr || out.tagsKmr)
+
+  out.keywords = out.keywords || {}
+  out.keywords.ckb = ensureArray(out.keywords?.ckb || out.keywordsCkb)
+  out.keywords.kmr = ensureArray(out.keywords?.kmr || out.keywordsKmr)
+
+  // cover normalization
+  out.coverUrl =
+    out.coverUrl ||
+    out.coverImageUrl ||
+    out.imageUrl ||
+    ''
+
+  // image album normalization (different possible names)
+  const rawAlbum = ensureArray(
+    out.imageAlbum?.length ? out.imageAlbum
+    : out.images?.length ? out.images
+    : out.albumItems?.length ? out.albumItems
+    : out.items?.length ? out.items
+    : []
+  )
+
+  out.imageAlbum = rawAlbum.map((i = {}) => ({
+    ...i,
+    imageUrl: i.imageUrl || i.url || '',
+    externalUrl: i.externalUrl || i.link || '',
+    embedUrl: i.embedUrl || i.embed || '',
+    captionCkb: i.captionCkb || i.caption?.ckb || '',
+    captionKmr: i.captionKmr || i.caption?.kmr || '',
+    descriptionCkb: i.descriptionCkb || i.description?.ckb || '',
+    descriptionKmr: i.descriptionKmr || i.description?.kmr || '',
+    sortOrder: i.sortOrder ?? 0
+  }))
+
+  return out
+}
 
 /* ── client-side filters ── */
 const filteredItems = computed(() => {
-  let list = items.value
+  let list = ensureArray(items.value)
 
   if (searchQ.value.trim()) {
     const q = searchQ.value.trim().toLowerCase()
     list = list.filter(c => {
       const t1 = (c.ckbContent?.title || '').toLowerCase()
       const t2 = (c.kmrContent?.title || '').toLowerCase()
-      const tags = [...(c.tags?.ckb || []), ...(c.tags?.kmr || [])].join(' ').toLowerCase()
-      return t1.includes(q) || t2.includes(q) || tags.includes(q)
+      const d1 = (c.ckbContent?.description || '').toLowerCase()
+      const d2 = (c.kmrContent?.description || '').toLowerCase()
+      const tags = [...ensureArray(c.tags?.ckb), ...ensureArray(c.tags?.kmr)].join(' ').toLowerCase()
+      const kws  = [...ensureArray(c.keywords?.ckb), ...ensureArray(c.keywords?.kmr)].join(' ').toLowerCase()
+      return t1.includes(q) || t2.includes(q) || d1.includes(q) || d2.includes(q) || tags.includes(q) || kws.includes(q)
     })
   }
 
   if (filterLang.value) {
-    list = list.filter(c => (c.contentLanguages || []).includes(filterLang.value))
+    list = list.filter(c => ensureArray(c.contentLanguages).includes(filterLang.value))
   }
 
   if (filterType.value) {
@@ -387,30 +517,79 @@ const toggleAcc = (key) => {
 /* ── album items for detail modal ── */
 const albumItems = computed(() => {
   if (!detail.value) return []
-  const raw = (detail.value.imageAlbum || [])
-    .slice()
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
-  const list = raw.map(i => ({
-    displayUrl:     i.imageUrl || i.externalUrl || i.embedUrl || '',
-    captionCkb:     i.captionCkb || '',
-    captionKmr:     i.captionKmr || '',
-    descriptionCkb: i.descriptionCkb || '',
-    descriptionKmr: i.descriptionKmr || '',
-  })).filter(i => i.displayUrl)
+  const raw = ensureArray(detail.value.imageAlbum)
+    .slice()
+    .sort((a, b) => (a?.sortOrder ?? 0) - (b?.sortOrder ?? 0))
+
+  const list = raw.map(i => {
+    const primary = cleanUrl(i.imageUrl || i.externalUrl || i.embedUrl || '')
+    const displayUrl = toEmbeddableImageUrl(primary)
+
+    return {
+      displayUrl,
+      originalUrl: primary,
+      captionCkb: cleanUrl(i.captionCkb),
+      captionKmr: cleanUrl(i.captionKmr),
+      descriptionCkb: cleanUrl(i.descriptionCkb),
+      descriptionKmr: cleanUrl(i.descriptionKmr),
+    }
+  }).filter(i => i.displayUrl)
 
   // Fallback to cover if no album images
-  if (!list.length && detail.value.coverUrl) {
-    list.push({ displayUrl: detail.value.coverUrl, captionCkb: '', captionKmr: '', descriptionCkb: '', descriptionKmr: '' })
+  if (!list.length) {
+    const cover = toEmbeddableImageUrl(detail.value.coverUrl)
+    if (cover) {
+      list.push({
+        displayUrl: cover,
+        originalUrl: detail.value.coverUrl || '',
+        captionCkb: '',
+        captionKmr: '',
+        descriptionCkb: '',
+        descriptionKmr: ''
+      })
+    }
   }
 
   return list
 })
 
-const currentAlbumItem = computed(() => albumItems.value[imgIdx.value] || { displayUrl: '', captionCkb: '', captionKmr: '', descriptionCkb: '', descriptionKmr: '' })
-const currentAlbumCaption = computed(() => detailLang.value === 'CKB' ? currentAlbumItem.value.captionCkb : currentAlbumItem.value.captionKmr)
+const currentAlbumItem = computed(() =>
+  albumItems.value[imgIdx.value] || {
+    displayUrl: '',
+    originalUrl: '',
+    captionCkb: '',
+    captionKmr: '',
+    descriptionCkb: '',
+    descriptionKmr: ''
+  }
+)
 
-watch(detail, () => { imgIdx.value = 0 })
+const currentAlbumCaption = computed(() =>
+  detailLang.value === 'CKB'
+    ? currentAlbumItem.value.captionCkb
+    : currentAlbumItem.value.captionKmr
+)
+
+const currentAlbumDescription = computed(() =>
+  detailLang.value === 'CKB'
+    ? currentAlbumItem.value.descriptionCkb
+    : currentAlbumItem.value.descriptionKmr
+)
+
+watch(detail, async (v) => {
+  imgIdx.value = 0
+
+  if (v) {
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onGlobalKeydown)
+    await nextTick()
+    detailOverlayEl.value?.focus?.()
+  } else {
+    document.body.style.overflow = ''
+    window.removeEventListener('keydown', onGlobalKeydown)
+  }
+})
 
 /* ── data loading ── */
 const load = async () => {
@@ -418,9 +597,19 @@ const load = async () => {
   error.value   = ''
   try {
     const { data } = await api.get('/api/v1/image-collections')
-    // Response: ApiResponse<List<Response>> → data.data is plain array
+
+    // Response: ApiResponse<List<Response>> OR paginated OR plain array
     const payload = data?.data ?? data ?? []
-    items.value = Array.isArray(payload) ? payload : (Array.isArray(payload?.content) ? payload.content : [])
+
+    if (Array.isArray(payload)) {
+      items.value = payload.map(normalizeCollection)
+    } else if (Array.isArray(payload?.content)) {
+      items.value = payload.content.map(normalizeCollection)
+    } else if (Array.isArray(payload?.data?.content)) {
+      items.value = payload.data.content.map(normalizeCollection)
+    } else {
+      items.value = []
+    }
   } catch (e) {
     error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
   } finally {
@@ -428,19 +617,32 @@ const load = async () => {
   }
 }
 
-const onSearch    = () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => {}, 0) } // client-side only
+const onSearch = () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    // client-side only, computed handles filtering
+  }, 250)
+}
+
 const clearSearch = () => { searchQ.value = '' }
 
 /* ── delete ── */
 const confirmDelete = (c) => { delTarget.value = c }
+
 const doDelete = async () => {
   if (!delTarget.value) return
   deleting.value = true
+
+  const deletingId = delTarget.value.id
+
   try {
-    await api.delete(`/api/v1/image-collections/${delTarget.value.id}`)
+    await api.delete(`/api/v1/image-collections/${deletingId}`)
     showToast('success', 'کۆکراوەکە بە سەرکەوتنی سڕایەوە')
+
+    if (detail.value?.id === deletingId) closeDetail()
+
     delTarget.value = null
-    load()
+    await load()
   } catch (e) {
     showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
   } finally {
@@ -450,35 +652,87 @@ const doDelete = async () => {
 
 /* ── detail modal ── */
 const openDetail = (c) => {
-  detail.value     = c
-  detailLang.value = (c.contentLanguages || []).includes('CKB') ? 'CKB' : ((c.contentLanguages || [])[0] || 'CKB')
+  const item = normalizeCollection(c)
+  detail.value     = item
+  detailLang.value = ensureArray(item.contentLanguages).includes('CKB')
+    ? 'CKB'
+    : (ensureArray(item.contentLanguages)[0] || 'CKB')
+
   openAccordions.value = new Set(['desc', 'meta', 'imginfo', 'tags', 'kw'])
-  document.body.style.overflow = 'hidden'
 }
-const closeDetail = () => { detail.value = null; document.body.style.overflow = '' }
+
+const closeDetail = () => {
+  detail.value = null
+}
+
+const onGlobalKeydown = (e) => {
+  if (e.key === 'Escape' && detail.value) closeDetail()
+  if (e.key === 'ArrowLeft' && detail.value) prevImg()
+  if (e.key === 'ArrowRight' && detail.value) nextImg()
+}
 
 const prevImg = () => { if (imgIdx.value > 0) imgIdx.value-- }
 const nextImg = () => { if (imgIdx.value < albumItems.value.length - 1) imgIdx.value++ }
 
 /* ── helpers ── */
-const bestTitle  = (c) => c?.ckbContent?.title || c?.kmrContent?.title || ''
+const bestTitle  = (c) =>
+  c?.ckbContent?.title || c?.kmrContent?.title || c?.content?.ckb?.title || c?.content?.kmr?.title || ''
+
 const altTitle   = (c) => {
-  const ckb = c?.ckbContent?.title || ''
-  const kmr = c?.kmrContent?.title || ''
+  const ckb = c?.ckbContent?.title || c?.content?.ckb?.title || ''
+  const kmr = c?.kmrContent?.title || c?.content?.kmr?.title || ''
   if (ckb && kmr && ckb !== kmr) return detailLang.value === 'CKB' ? kmr : ckb
   return ''
 }
-const activeContent  = (c) => detailLang.value === 'CKB' ? c?.ckbContent  : c?.kmrContent
-const activeTags     = (c) => detailLang.value === 'CKB' ? [...(c?.tags?.ckb || [])] : [...(c?.tags?.kmr || [])]
-const activeKeywords = (c) => detailLang.value === 'CKB' ? [...(c?.keywords?.ckb || [])] : [...(c?.keywords?.kmr || [])]
 
-const typeLabel = (t) => ({ SINGLE: 'تەنها وێنە', GALLERY: 'گەلەری', PHOTO_STORY: 'چیرۆکی وێنە' }[t] || t || '—')
+const activeContent  = (c) =>
+  detailLang.value === 'CKB'
+    ? (c?.ckbContent || c?.content?.ckb || {})
+    : (c?.kmrContent || c?.content?.kmr || {})
 
-const showToast   = (type, msg) => { toast.value = { show: true, type, msg }; setTimeout(() => { toast.value.show = false }, 3500) }
-const fmtDate     = (d) => d ? new Date(d).toLocaleDateString('ar-IQ') : '—'
-const fmtDatetime = (d) => d ? new Date(d).toLocaleString('ar-IQ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+const activeTags = (c) =>
+  detailLang.value === 'CKB'
+    ? [...ensureArray(c?.tags?.ckb || c?.tagsCkb)]
+    : [...ensureArray(c?.tags?.kmr || c?.tagsKmr)]
+
+const activeKeywords = (c) =>
+  detailLang.value === 'CKB'
+    ? [...ensureArray(c?.keywords?.ckb || c?.keywordsCkb)]
+    : [...ensureArray(c?.keywords?.kmr || c?.keywordsKmr)]
+
+const typeLabel = (t) => ({
+  SINGLE: 'تەنها وێنە',
+  GALLERY: 'گەلەری',
+  PHOTO_STORY: 'چیرۆکی وێنە'
+}[t] || t || '—')
+
+const showToast = (type, msg) => {
+  clearTimeout(toastTimer)
+  toast.value = { show: true, type, msg }
+  toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
+}
+
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ar-IQ') : '—'
+
+const fmtDatetime = (d) =>
+  d
+    ? new Date(d).toLocaleString('ar-IQ', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : '—'
 
 onMounted(load)
+
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  clearTimeout(toastTimer)
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', onGlobalKeydown)
+})
 </script>
 
 <style scoped>

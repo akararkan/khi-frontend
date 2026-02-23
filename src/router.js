@@ -34,14 +34,24 @@ import NewsEditor from './components/AdminDashboard/pages/news/NewsEditor.vue'
 import ImageCollectionList   from './components/AdminDashboard/pages/publishment/image/ImagecollectionList.vue'
 import ImageCollectionEditor from './components/AdminDashboard/pages/publishment/image/ImagecollectionEditor.vue'
 
-// Admin — SoundTracks (NEW)
+// Admin — SoundTracks
 import SoundTrackList   from './components/AdminDashboard/pages/publishment/sound/SoundTrackList.vue'
 import SoundTrackEditor from './components/AdminDashboard/pages/publishment/sound/SoundTrackEditor.vue'
 
+// Admin — Films
+import FilmList   from './components/AdminDashboard/pages/publishment/film/FilmList.vue'
+import FilmEditor from './components/AdminDashboard/pages/publishment/film/FilmEditor.vue'
+
+// Admin — Writings
+import WritingList   from './components/AdminDashboard/pages/publishment/writing/WritingList.vue'
+import WritingEditor from './components/AdminDashboard/pages/publishment/writing/WritingEditor.vue'
+
+// Admin — Albums of Memories ✅
+import AlbumsList  from './components/AdminDashboard/pages/publishment/album_of_memories/AlbumsList.vue'
+import AlbumEditor from './components/AdminDashboard/pages/publishment/album_of_memories/AlbumEditor.vue'
+
 const routes = [
-  // =========================
-  // Public (flat — Navbar/Footer shown by App.vue)
-  // =========================
+  // Public
   { path: '/',             name: 'Home',         component: Home },
   { path: '/about',        name: 'About',        component: About },
   { path: '/contact',      name: 'Contact',      component: Contact },
@@ -51,21 +61,16 @@ const routes = [
   { path: '/publishments', name: 'Publishments', component: Publishments },
   { path: '/projects',     name: 'Projects',     component: Projects },
 
-  // =========================
   // Auth
-  // =========================
   { path: '/login',    name: 'Login',    component: Login,    meta: { guestOnly: true } },
   { path: '/register', name: 'Register', component: Register, meta: { guestOnly: true } },
 
-  // =========================
-  // Admin (Navbar/Footer hidden by App.vue isAdmin check)
-  // =========================
+  // Admin
   {
     path: '/admin',
     component: AdminLayout,
     meta: { requiresAuth: true, roles: ['EMPLOYEE', 'ADMIN', 'SUPER_ADMIN'] },
     children: [
-      // Home
       { path: '', name: 'AdminHome', component: AdminHome },
 
       // Projects
@@ -83,10 +88,25 @@ const routes = [
       { path: 'image-collections/new',      name: 'AdminImageCollectionCreate', component: ImageCollectionEditor },
       { path: 'image-collections/:id/edit', name: 'AdminImageCollectionEdit',   component: ImageCollectionEditor, props: true },
 
-      // SoundTracks (NEW)
+      // SoundTracks
       { path: 'soundtracks',          name: 'AdminSoundTrackList',   component: SoundTrackList },
       { path: 'soundtracks/new',      name: 'AdminSoundTrackCreate', component: SoundTrackEditor },
       { path: 'soundtracks/:id/edit', name: 'AdminSoundTrackEdit',   component: SoundTrackEditor, props: true },
+
+      // Films
+      { path: 'films',          name: 'AdminFilmList',   component: FilmList },
+      { path: 'films/new',      name: 'AdminFilmCreate', component: FilmEditor },
+      { path: 'films/:id/edit', name: 'AdminFilmEdit',   component: FilmEditor, props: true },
+
+      // Writings
+      { path: 'writings',          name: 'AdminWritingList',   component: WritingList },
+      { path: 'writings/new',      name: 'AdminWritingCreate', component: WritingEditor },
+      { path: 'writings/:id/edit', name: 'AdminWritingEdit',   component: WritingEditor, props: true },
+
+      // Albums of Memories ✅
+      { path: 'albums',          name: 'AdminAlbumList',   component: AlbumsList },
+      { path: 'albums/new',      name: 'AdminAlbumCreate', component: AlbumEditor },
+      { path: 'albums/:id/edit', name: 'AdminAlbumEdit',   component: AlbumEditor, props: true },
 
       // Generic dynamic resources (MUST be last)
       { path: ':resource',          name: 'AdminResourceList',   component: ResourceList },

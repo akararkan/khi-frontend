@@ -17,18 +17,25 @@
     <div class="nlist__bar">
       <div class="search">
         <svg class="search__ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input v-model="searchQ" class="search__input" placeholder="گەڕان بە ناونیشان، تاگ یا کیووەرد…" @input="onSearch" />
+        <input
+          v-model="searchQ"
+          class="search__input"
+          placeholder="گەڕان بە ناونیشان، تاگ یا کیووەرد…"
+          @input="onSearch"
+        />
         <Transition name="fade">
           <button v-if="searchQ" class="search__clear" @click="clearSearch">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </Transition>
       </div>
+
       <select v-model="filterLang" class="sel">
         <option value="">هەموو زمانەکان</option>
         <option value="CKB">سۆرانی</option>
         <option value="KMR">کورمانجی</option>
       </select>
+
       <select v-model="filterStatus" class="sel">
         <option value="">هەموو دۆخەکان</option>
         <option value="PUBLISHED">بڵاوکراوە</option>
@@ -51,14 +58,22 @@
 
     <!-- ── ERROR ── -->
     <div v-else-if="error" class="state-box state-box--error">
-      <div class="state-box__ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <div class="state-box__ico">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
       <p>{{ error }}</p>
       <button class="btn btn--ghost btn--sm" @click="load">دووبارەتەکەیەوە</button>
     </div>
 
     <!-- ── EMPTY ── -->
-    <div v-else-if="!filteredItems.length" class="state-box">
-      <div class="state-box__ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+    <div v-else-if="!visibleItems.length" class="state-box">
+      <div class="state-box__ico">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+        </svg>
+      </div>
       <p>هیچ هەواڵێک نەدۆزرایەوە</p>
       <RouterLink class="btn btn--primary btn--sm" to="/admin/news/new">یەکەمین هەواڵت زیاد بکە</RouterLink>
     </div>
@@ -66,9 +81,10 @@
     <!-- ── TABLE ── -->
     <div v-else class="table-wrap">
       <div class="table-meta">
-        کۆی {{ totalItems }} هەواڵ
+        کۆی {{ uiTotalItems }} هەواڵ
         <span v-if="searchQ"> — ئەنجامی گەڕان بۆ «{{ searchQ }}»</span>
       </div>
+
       <table class="tbl">
         <thead>
           <tr>
@@ -84,19 +100,30 @@
             <th style="width:116px">کردار</th>
           </tr>
         </thead>
+
         <tbody>
-          <tr v-for="n in filteredItems" :key="n.id" class="tbl__row" @click="openDetail(n)">
+          <tr v-for="n in visibleItems" :key="n.id" class="tbl__row" @click="openDetail(n)">
             <td><span class="tbl__id">#{{ n.id }}</span></td>
+
             <td>
-              <div class="cover-wrap" v-if="n.coverUrl"><img class="cover-img" :src="n.coverUrl" loading="lazy" /></div>
-              <div class="cover-empty" v-else><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div class="cover-wrap" v-if="n.coverUrl">
+                <img class="cover-img" :src="n.coverUrl" loading="lazy" />
+              </div>
+              <div class="cover-empty" v-else>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
             </td>
+
             <td>
               <div class="tbl__name">{{ n.ckbContent?.title || n.content?.ckb?.title || '—' }}</div>
             </td>
+
             <td>
               <div class="tbl__name tbl__name--kmr">{{ n.kmrContent?.title || n.content?.kmr?.title || '—' }}</div>
             </td>
+
             <td>
               <div v-if="bestCategory(n)" class="tbl__type-row">
                 <span class="pill pill--cat">{{ bestCategory(n) }}</span>
@@ -106,35 +133,57 @@
               </div>
               <span v-if="!bestCategory(n) && !bestSubCategory(n)" class="tbl__dash">—</span>
             </td>
+
             <td>
               <span class="status-pill" :class="n.status === 'DRAFT' ? 'status-pill--draft' : 'status-pill--published'">
                 <span class="status-pill__dot"></span>
                 {{ n.status === 'DRAFT' ? 'ڕەشنووس' : 'بڵاوکراوە' }}
               </span>
             </td>
+
             <td class="tbl__date">{{ fmtDate(n.datePublished) }}</td>
+
             <td>
               <div class="lang-row">
-                <span v-for="l in (n.contentLanguages||[])" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span>
+                <span
+                  v-for="l in (n.contentLanguages || [])"
+                  :key="l"
+                  class="lang-dot"
+                  :class="`lang-dot--${String(l).toLowerCase()}`"
+                >
+                  {{ l }}
+                </span>
               </div>
             </td>
+
             <td>
-              <span class="media-pill" v-if="n.media?.length">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                {{ n.media.length }}
+              <span class="media-pill" v-if="(n.media || []).length">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+                {{ (n.media || []).length }}
               </span>
               <span v-else class="tbl__dash">—</span>
             </td>
+
             <td @click.stop>
               <div class="tbl__acts">
                 <button class="act act--view" title="تەواوی زانیاری" @click="openDetail(n)">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
                 </button>
+
                 <RouterLink class="act act--edit" :to="`/admin/news/${n.id}/edit`">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
+                  </svg>
                 </RouterLink>
+
                 <button class="act act--del" @click="confirmDelete(n)">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
+                  </svg>
                 </button>
               </div>
             </td>
@@ -144,28 +193,52 @@
     </div>
 
     <!-- ── PAGINATION ── -->
-    <div v-if="totalPages > 1" class="pager">
-      <button class="pager__btn" :disabled="page===0" @click="changePage(page-1)">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <div v-if="showPager" class="pager">
+      <button class="pager__btn" :disabled="page === 0" @click="changePage(page - 1)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M10 3l-5 5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
       </button>
-      <button v-for="p in pageRange" :key="p" class="pager__btn" :class="{'pager__btn--on':p===page}" @click="changePage(p)">{{ p+1 }}</button>
-      <button class="pager__btn" :disabled="page>=totalPages-1" @click="changePage(page+1)">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+
+      <button
+        v-for="p in uiPageRange"
+        :key="p"
+        class="pager__btn"
+        :class="{ 'pager__btn--on': p === page }"
+        @click="changePage(p)"
+      >
+        {{ p + 1 }}
+      </button>
+
+      <button class="pager__btn" :disabled="page >= uiTotalPages - 1" @click="changePage(page + 1)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
       </button>
     </div>
 
     <!-- ══ DELETE MODAL ══ -->
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="delTarget" class="overlay" @click.self="delTarget=null">
+        <div v-if="delTarget" class="overlay" @click.self="delTarget = null">
           <div class="del-modal">
             <div class="del-modal__ico">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8C1515" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8C1515" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+              </svg>
             </div>
+
             <h3 class="del-modal__title">دڵنیای لە سڕینەوە؟</h3>
-            <p class="del-modal__body">هەواڵی <strong>«{{ bestTitle(delTarget) || '#'+delTarget.id }}»</strong><br/>بە تەواوی سڕاوەتەوە و ناگەڕێتەوە.</p>
+            <p class="del-modal__body">
+              هەواڵی <strong>«{{ bestTitle(delTarget) || '#' + delTarget.id }}»</strong><br/>
+              بە تەواوی سڕاوەتەوە و ناگەڕێتەوە.
+            </p>
+
             <div class="del-modal__acts">
-              <button class="btn btn--ghost" @click="delTarget=null">نەخێر</button>
+              <button class="btn btn--ghost" @click="delTarget = null">نەخێر</button>
               <button class="btn btn--danger" :disabled="deleting" @click="doDelete">
                 <span v-if="deleting" class="spinner"></span>
                 {{ deleting ? '…' : 'بەڵێ، بیسڕەوە' }}
@@ -179,19 +252,29 @@
     <!-- ══ NEWS DETAIL MODAL ══ -->
     <Teleport to="body">
       <Transition name="pdm-fade">
-        <div v-if="detail" class="pdm-overlay" @click.self="closeDetail" @keydown.esc="closeDetail">
+        <div
+          v-if="detail"
+          ref="detailOverlayEl"
+          class="pdm-overlay"
+          tabindex="0"
+          @click.self="closeDetail"
+        >
           <Transition name="pdm-rise" appear>
             <div v-if="detail" class="pdm" role="dialog" :aria-label="bestTitle(detail)">
 
               <button class="pdm-x" @click="closeDetail" aria-label="داخستن">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
               </button>
 
               <!-- ════ LEFT — MEDIA ════ -->
               <div class="pdm-media">
                 <div class="pdm-media__empty" v-if="!allMediaItems.length">
                   <div class="pdm-media__empty-icon">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                    </svg>
                   </div>
                   <span>هیچ میدیایەک نییە</span>
                   <img v-if="detail.coverUrl" :src="detail.coverUrl" class="pdm-media__cover-fallback" />
@@ -202,65 +285,121 @@
                     <img :src="currentMedia.url" :key="currentMedia.url" class="pdm-stage__image" :alt="currentMedia.caption || ''" />
                     <div class="pdm-stage__caption" v-if="currentMedia.caption">{{ currentMedia.caption }}</div>
                   </div>
+
                   <div v-else-if="currentMedia.type === 'VIDEO' && currentMedia.embedUrl" class="pdm-stage__video-wrap">
-                    <iframe :src="currentMedia.embedUrl" :key="currentMedia.embedUrl" class="pdm-stage__video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <iframe
+                      :src="currentMedia.embedUrl"
+                      :key="currentMedia.embedUrl"
+                      class="pdm-stage__video"
+                      frameborder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowfullscreen
+                    ></iframe>
                     <div class="pdm-stage__caption" v-if="currentMedia.caption">{{ currentMedia.caption }}</div>
                   </div>
+
                   <div v-else-if="currentMedia.type === 'VIDEO'" class="pdm-stage__video-wrap">
                     <video :key="currentMedia.url" class="pdm-stage__video" controls controlsList="nodownload" preload="metadata">
                       <source v-if="currentMedia.url" :src="currentMedia.url" />
                     </video>
                     <div class="pdm-stage__caption" v-if="currentMedia.caption">{{ currentMedia.caption }}</div>
                   </div>
+
                   <div v-else-if="currentMedia.type === 'AUDIO'" class="pdm-stage__audio-wrap">
                     <div class="pdm-audio-player">
                       <div class="pdm-audio-player__wave">
-                        <span v-for="i in 32" :key="i" class="pdm-audio-player__bar" :style="{ animationDelay: `${i * 0.06}s`, height: `${18 + Math.sin(i * 0.8) * 14}px` }"></span>
+                        <span
+                          v-for="i in 32"
+                          :key="i"
+                          class="pdm-audio-player__bar"
+                          :style="{ animationDelay: `${i * 0.06}s`, height: `${18 + Math.sin(i * 0.8) * 14}px` }"
+                        ></span>
                       </div>
+
                       <div class="pdm-audio-player__title">{{ currentMedia.caption || 'دەنگ' }}</div>
+
                       <audio :key="currentMedia.url" class="pdm-audio-player__ctrl" controls controlsList="nodownload" preload="metadata">
                         <source v-if="currentMedia.url" :src="currentMedia.url" />
                       </audio>
+
                       <a v-if="currentMedia.externalUrl" :href="currentMedia.externalUrl" target="_blank" class="pdm-ext-link">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                        </svg>
                         لینکی دەرەکی
                       </a>
                     </div>
                   </div>
+
                   <div v-else-if="currentMedia.type === 'PDF' || currentMedia.type === 'DOCUMENT'" class="pdm-stage__doc-wrap">
                     <div class="pdm-doc-card">
                       <div class="pdm-doc-card__icon">
-                        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
                       </div>
                       <div class="pdm-doc-card__type">{{ currentMedia.type }}</div>
                       <div class="pdm-doc-card__name">{{ currentMedia.caption || 'بەلگەنامە' }}</div>
                       <div class="pdm-doc-card__actions">
                         <a v-if="currentMedia.url" :href="currentMedia.url" target="_blank" class="pdm-doc-btn pdm-doc-btn--primary">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                          </svg>
                           کردنەوەی فایل
                         </a>
                       </div>
                     </div>
                   </div>
+
                   <div v-else-if="detail.coverUrl" class="pdm-stage__image-wrap">
                     <img :src="detail.coverUrl" class="pdm-stage__image" alt="cover" />
                   </div>
 
-                  <button v-if="allMediaItems.length > 1" class="pdm-arrow pdm-arrow--prev" @click="prevMedia" :disabled="mediaIdx === 0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
+                  <button
+                    v-if="allMediaItems.length > 1"
+                    class="pdm-arrow pdm-arrow--prev"
+                    @click="prevMedia"
+                    :disabled="mediaIdx === 0"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M15 18l-6-6 6-6"/>
+                    </svg>
                   </button>
-                  <button v-if="allMediaItems.length > 1" class="pdm-arrow pdm-arrow--next" @click="nextMedia" :disabled="mediaIdx === allMediaItems.length - 1">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
+
+                  <button
+                    v-if="allMediaItems.length > 1"
+                    class="pdm-arrow pdm-arrow--next"
+                    @click="nextMedia"
+                    :disabled="mediaIdx === allMediaItems.length - 1"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
                   </button>
-                  <div class="pdm-counter" v-if="allMediaItems.length > 1">{{ mediaIdx + 1 }} / {{ allMediaItems.length }}</div>
+
+                  <div class="pdm-counter" v-if="allMediaItems.length > 1">
+                    {{ mediaIdx + 1 }} / {{ allMediaItems.length }}
+                  </div>
                 </div>
 
                 <div class="pdm-thumbs" v-if="allMediaItems.length > 1">
-                  <button v-for="(m, i) in allMediaItems" :key="i" class="pdm-thumb" :class="{ 'pdm-thumb--on': i === mediaIdx }" @click="mediaIdx = i">
+                  <button
+                    v-for="(m, i) in allMediaItems"
+                    :key="`${m.type}-${m.url || m.embedUrl || i}`"
+                    class="pdm-thumb"
+                    :class="{ 'pdm-thumb--on': i === mediaIdx }"
+                    @click="mediaIdx = i"
+                  >
                     <img v-if="m.type === 'IMAGE' && m.url" :src="m.url" loading="lazy" />
-                    <span v-else-if="m.type === 'VIDEO'" class="pdm-thumb__icon pdm-thumb__icon--video"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
-                    <span v-else-if="m.type === 'AUDIO'" class="pdm-thumb__icon pdm-thumb__icon--audio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
-                    <span v-else class="pdm-thumb__icon pdm-thumb__icon--doc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+                    <span v-else-if="m.type === 'VIDEO'" class="pdm-thumb__icon pdm-thumb__icon--video">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </span>
+                    <span v-else-if="m.type === 'AUDIO'" class="pdm-thumb__icon pdm-thumb__icon--audio">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    </span>
+                    <span v-else class="pdm-thumb__icon pdm-thumb__icon--doc">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </span>
                     <span class="pdm-thumb__bar" v-if="i === mediaIdx"></span>
                   </button>
                 </div>
@@ -271,12 +410,16 @@
                 <div class="pdm-info__head">
                   <div class="pdm-info__head-meta">
                     <span class="pdm-id-tag"># {{ detail.id }}</span>
+
                     <span class="pdm-status-badge" :class="detail.status === 'DRAFT' ? 'pdm-status-badge--draft' : 'pdm-status-badge--published'">
                       <span class="pdm-status-badge__dot"></span>
                       {{ detail.status === 'DRAFT' ? 'ڕەشنووس' : 'بڵاوکراوە' }}
                     </span>
+
                     <span class="pdm-date-tag" v-if="detail.datePublished">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
                       {{ fmtDate(detail.datePublished) }}
                     </span>
                   </div>
@@ -290,20 +433,33 @@
                   <p class="pdm-subtitle" v-if="altTitle(detail)">{{ altTitle(detail) }}</p>
 
                   <div class="pdm-langs">
-                    <span v-for="l in (detail.contentLanguages||[])" :key="l" class="pdm-lang" :class="`pdm-lang--${l.toLowerCase()}`">
+                    <span
+                      v-for="l in (detail.contentLanguages || [])"
+                      :key="l"
+                      class="pdm-lang"
+                      :class="`pdm-lang--${String(l).toLowerCase()}`"
+                    >
                       {{ l === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
                     </span>
                   </div>
 
                   <RouterLink class="pdm-edit-btn" :to="`/admin/news/${detail.id}/edit`" @click="closeDetail">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
+                    </svg>
                     دەستکاری هەواڵ
                   </RouterLink>
                 </div>
 
-                <div class="pdm-tabs" v-if="detail.contentLanguages?.length > 1">
-                  <button v-for="l in detail.contentLanguages" :key="l" class="pdm-tab" :class="{ 'pdm-tab--on': detailLang === l }" @click="detailLang = l">
-                    <span class="pdm-tab__pip" :class="`pdm-tab__pip--${l.toLowerCase()}`"></span>
+                <div class="pdm-tabs" v-if="(detail.contentLanguages || []).length > 1">
+                  <button
+                    v-for="l in detail.contentLanguages"
+                    :key="l"
+                    class="pdm-tab"
+                    :class="{ 'pdm-tab--on': detailLang === l }"
+                    @click="detailLang = l"
+                  >
+                    <span class="pdm-tab__pip" :class="`pdm-tab__pip--${String(l).toLowerCase()}`"></span>
                     {{ l === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
                   </button>
                 </div>
@@ -312,7 +468,14 @@
 
                   <div class="acc" v-if="activeDescription(detail)">
                     <button class="acc__hd" @click="toggleAcc('desc')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--desc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="14 2 14 8 20 8"/></svg></span><span class="acc__title">وەسف</span></span>
+                      <span class="acc__hd-left">
+                        <span class="acc__ico acc__ico--desc">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="14 2 14 8 20 8"/>
+                          </svg>
+                        </span>
+                        <span class="acc__title">وەسف</span>
+                      </span>
                       <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('desc') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                     <Transition name="acc-body">
@@ -324,43 +487,86 @@
 
                   <div class="acc" v-if="activeTags(detail).length">
                     <button class="acc__hd" @click="toggleAcc('tags')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="acc__title">تاگەکان</span><span class="acc__badge acc__badge--tag">{{ activeTags(detail).length }}</span></span>
+                      <span class="acc__hd-left">
+                        <span class="acc__ico acc__ico--tag">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+                          </svg>
+                        </span>
+                        <span class="acc__title">تاگەکان</span>
+                        <span class="acc__badge acc__badge--tag">{{ activeTags(detail).length }}</span>
+                      </span>
                       <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('tags') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                     <Transition name="acc-body">
                       <div v-if="openAccordions.has('tags')" class="acc__body">
-                        <div class="acc__chips"><span v-for="t in activeTags(detail)" :key="t" class="acc__chip acc__chip--tag"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/></svg>{{ t }}</span></div>
+                        <div class="acc__chips">
+                          <span v-for="t in activeTags(detail)" :key="t" class="acc__chip acc__chip--tag">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/></svg>
+                            {{ t }}
+                          </span>
+                        </div>
                       </div>
                     </Transition>
                   </div>
 
                   <div class="acc" v-if="activeKeywords(detail).length">
                     <button class="acc__hd" @click="toggleAcc('kw')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--kw"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span><span class="acc__title">کیووەردەکان</span><span class="acc__badge acc__badge--kw">{{ activeKeywords(detail).length }}</span></span>
+                      <span class="acc__hd-left">
+                        <span class="acc__ico acc__ico--kw">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                          </svg>
+                        </span>
+                        <span class="acc__title">کیووەردەکان</span>
+                        <span class="acc__badge acc__badge--kw">{{ activeKeywords(detail).length }}</span>
+                      </span>
                       <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('kw') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                     <Transition name="acc-body">
                       <div v-if="openAccordions.has('kw')" class="acc__body">
-                        <div class="acc__chips"><span v-for="t in activeKeywords(detail)" :key="t" class="acc__chip acc__chip--kw">{{ t }}</span></div>
+                        <div class="acc__chips">
+                          <span v-for="t in activeKeywords(detail)" :key="t" class="acc__chip acc__chip--kw">{{ t }}</span>
+                        </div>
                       </div>
                     </Transition>
                   </div>
 
                   <div class="acc" v-if="allMediaItems.length">
                     <button class="acc__hd" @click="toggleAcc('media')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--media"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span><span class="acc__title">میدیاکان</span><span class="acc__badge acc__badge--media">{{ allMediaItems.length }}</span></span>
+                      <span class="acc__hd-left">
+                        <span class="acc__ico acc__ico--media">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                          </svg>
+                        </span>
+                        <span class="acc__title">میدیاکان</span>
+                        <span class="acc__badge acc__badge--media">{{ allMediaItems.length }}</span>
+                      </span>
                       <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('media') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
                     <Transition name="acc-body">
                       <div v-if="openAccordions.has('media')" class="acc__body acc__body--flush">
-                        <div v-for="(m, i) in allMediaItems" :key="i" class="acc__media-row" :class="{ 'acc__media-row--on': i === mediaIdx }" @click="mediaIdx = i">
-                          <div class="acc__media-ico" :class="`acc__media-ico--${(m.type||'').toLowerCase()}`"><span v-html="mediaIcon(m.type)"></span></div>
+                        <div
+                          v-for="(m, i) in allMediaItems"
+                          :key="`${m.type}-${m.url || m.embedUrl || i}`"
+                          class="acc__media-row"
+                          :class="{ 'acc__media-row--on': i === mediaIdx }"
+                          @click="mediaIdx = i"
+                        >
+                          <div class="acc__media-ico" :class="`acc__media-ico--${String(m.type || '').toLowerCase()}`">
+                            <span v-html="mediaIcon(m.type)"></span>
+                          </div>
                           <div class="acc__media-info">
                             <div class="acc__media-type">{{ m.type }}</div>
                             <div class="acc__media-cap" v-if="m.caption">{{ m.caption }}</div>
                             <div class="acc__media-cap acc__media-cap--url" v-else-if="m.url">{{ m.url }}</div>
                           </div>
-                          <div class="acc__media-playing" v-if="i === mediaIdx"><span class="acc__media-playing__dot"></span><span class="acc__media-playing__dot"></span><span class="acc__media-playing__dot"></span></div>
+                          <div class="acc__media-playing" v-if="i === mediaIdx">
+                            <span class="acc__media-playing__dot"></span>
+                            <span class="acc__media-playing__dot"></span>
+                            <span class="acc__media-playing__dot"></span>
+                          </div>
                         </div>
                       </div>
                     </Transition>
@@ -368,17 +574,44 @@
 
                   <div class="acc acc--system">
                     <button class="acc__hd acc__hd--system" @click="toggleAcc('sys')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--sys"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span><span class="acc__title">زانیاری سیستەم</span></span>
+                      <span class="acc__hd-left">
+                        <span class="acc__ico acc__ico--sys">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                          </svg>
+                        </span>
+                        <span class="acc__title">زانیاری سیستەم</span>
+                      </span>
                       <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('sys') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
                     </button>
+
                     <Transition name="acc-body">
                       <div v-if="openAccordions.has('sys')" class="acc__body acc__body--flush">
                         <div class="acc__sys-grid">
-                          <div class="acc__sys-cell" v-if="detail.createdAt"><div class="acc__sys-k">دروستکراوە لە</div><div class="acc__sys-v">{{ fmtDatetime(detail.createdAt) }}</div></div>
-                          <div class="acc__sys-cell" v-if="detail.updatedAt"><div class="acc__sys-k">دواین نوێکردنەوە</div><div class="acc__sys-v">{{ fmtDatetime(detail.updatedAt) }}</div></div>
-                          <div class="acc__sys-cell acc__sys-cell--full"><div class="acc__sys-k">شناسەی یەکتا (ID)</div><div class="acc__sys-v acc__sys-v--mono">{{ detail.id }}</div></div>
-                          <div class="acc__sys-cell acc__sys-cell--full" v-if="detail.coverUrl"><div class="acc__sys-k">Cover URL</div><a :href="detail.coverUrl" target="_blank" class="acc__sys-v acc__sys-v--link">{{ detail.coverUrl }}</a></div>
-                          <div class="acc__sys-cell acc__sys-cell--full" v-if="detail.datePublished"><div class="acc__sys-k">بەرواری بڵاوبوونەوە</div><div class="acc__sys-v">{{ detail.datePublished }}</div></div>
+                          <div class="acc__sys-cell" v-if="detail.createdAt">
+                            <div class="acc__sys-k">دروستکراوە لە</div>
+                            <div class="acc__sys-v">{{ fmtDatetime(detail.createdAt) }}</div>
+                          </div>
+
+                          <div class="acc__sys-cell" v-if="detail.updatedAt">
+                            <div class="acc__sys-k">دواین نوێکردنەوە</div>
+                            <div class="acc__sys-v">{{ fmtDatetime(detail.updatedAt) }}</div>
+                          </div>
+
+                          <div class="acc__sys-cell acc__sys-cell--full">
+                            <div class="acc__sys-k">شناسەی یەکتا (ID)</div>
+                            <div class="acc__sys-v acc__sys-v--mono">{{ detail.id }}</div>
+                          </div>
+
+                          <div class="acc__sys-cell acc__sys-cell--full" v-if="detail.coverUrl">
+                            <div class="acc__sys-k">Cover URL</div>
+                            <a :href="detail.coverUrl" target="_blank" class="acc__sys-v acc__sys-v--link">{{ detail.coverUrl }}</a>
+                          </div>
+
+                          <div class="acc__sys-cell acc__sys-cell--full" v-if="detail.datePublished">
+                            <div class="acc__sys-k">بەرواری بڵاوبوونەوە</div>
+                            <div class="acc__sys-v">{{ detail.datePublished }}</div>
+                          </div>
                         </div>
                       </div>
                     </Transition>
@@ -397,34 +630,262 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
 import api from '@/api.js'
 
 /* ── state ── */
-const items          = ref([])
-const page           = ref(0)
-const totalPages     = ref(0)
-const totalItems     = ref(0)
-const loading        = ref(false)
-const error          = ref('')
-const searchQ        = ref('')
-const filterLang     = ref('')
-const filterStatus   = ref('')
-const delTarget      = ref(null)
-const deleting       = ref(false)
-const detail         = ref(null)
-const detailLang     = ref('CKB')
-const mediaIdx       = ref(0)
-const toast          = ref({ show: false, type: 'success', msg: '' })
-const openAccordions = ref(new Set(['desc', 'tags', 'kw', 'media']))
-let   searchTimer    = null
+const items           = ref([])
+const page            = ref(0)
+const pageSize        = ref(10)
+const totalPages      = ref(0)
+const totalItems      = ref(0)
+const serverPaginated = ref(false)
 
-/* ── client-side filters (lang + status) ── */
-const filteredItems = computed(() => {
-  let list = items.value
-  if (filterStatus.value) list = list.filter(n => n.status === filterStatus.value)
-  if (filterLang.value)   list = list.filter(n => (n.contentLanguages || []).includes(filterLang.value))
+const loading         = ref(false)
+const error           = ref('')
+const searchQ         = ref('')
+const filterLang      = ref('')
+const filterStatus    = ref('')
+
+const delTarget       = ref(null)
+const deleting        = ref(false)
+
+const detail          = ref(null)
+const detailLang      = ref('CKB')
+const mediaIdx        = ref(0)
+const detailOverlayEl = ref(null)
+
+const toast           = ref({ show: false, type: 'success', msg: '' })
+const openAccordions  = ref(new Set(['desc', 'tags', 'kw', 'media']))
+let searchTimer       = null
+let toastTimer        = null
+
+/* ── helpers: normalize ── */
+const ensureArray = (v) => Array.isArray(v) ? v : []
+
+/* ── helpers: links/embed (FIX for YouTube iframe/link) ── */
+const decodeHtmlEntities = (str = '') =>
+  String(str)
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+
+const extractIframeSrc = (value = '') => {
+  const s = String(value || '').trim()
+  if (!s) return ''
+
+  // If user pasted full iframe HTML, extract src=""
+  if (/<iframe[\s\S]*?>/i.test(s)) {
+    const m = s.match(/src\s*=\s*["']([^"']+)["']/i)
+    return m ? decodeHtmlEntities(m[1]) : ''
+  }
+
+  return decodeHtmlEntities(s)
+}
+
+const parseYouTubeTimeToSeconds = (t = '') => {
+  const s = String(t || '').trim().toLowerCase()
+  if (!s) return 0
+
+  // 120
+  if (/^\d+$/.test(s)) return Number(s)
+
+  // 1h2m3s / 2m10s / 45s
+  const m = s.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/)
+  if (!m) return 0
+
+  const h = Number(m[1] || 0)
+  const min = Number(m[2] || 0)
+  const sec = Number(m[3] || 0)
+  return h * 3600 + min * 60 + sec
+}
+
+const isYouTubeUrl = (url = '') => {
+  const u = String(url || '').toLowerCase()
+  return (
+    u.includes('youtube.com') ||
+    u.includes('youtu.be') ||
+    u.includes('youtube-nocookie.com')
+  )
+}
+
+const toYouTubeEmbedUrl = (input = '') => {
+  const raw = extractIframeSrc(input)
+  if (!raw) return ''
+
+  try {
+    const url = new URL(raw)
+    const host = url.hostname.toLowerCase()
+
+    // already embed
+    if (
+      (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) &&
+      url.pathname.startsWith('/embed/')
+    ) {
+      return url.toString()
+    }
+
+    let videoId = ''
+
+    // youtu.be/<id>
+    if (host.includes('youtu.be')) {
+      videoId = url.pathname.replace(/^\/+/, '').split('/')[0] || ''
+    }
+
+    // youtube.com/watch?v=<id>
+    if (!videoId && url.pathname === '/watch') {
+      videoId = url.searchParams.get('v') || ''
+    }
+
+    // youtube.com/shorts/<id>
+    if (!videoId && url.pathname.startsWith('/shorts/')) {
+      videoId = url.pathname.split('/')[2] || ''
+    }
+
+    // youtube.com/live/<id>
+    if (!videoId && url.pathname.startsWith('/live/')) {
+      videoId = url.pathname.split('/')[2] || ''
+    }
+
+    if (!videoId) return raw
+
+    const embed = new URL(`https://www.youtube.com/embed/${videoId}`)
+
+    // keep useful params
+    const start = url.searchParams.get('start')
+    const t = url.searchParams.get('t')
+    const si = url.searchParams.get('si')
+
+    if (start) {
+      embed.searchParams.set('start', start)
+    } else if (t) {
+      const seconds = parseYouTubeTimeToSeconds(t)
+      if (seconds > 0) embed.searchParams.set('start', String(seconds))
+    }
+
+    if (si) embed.searchParams.set('si', si)
+
+    return embed.toString()
+  } catch {
+    return raw
+  }
+}
+
+const normalizeMediaItem = (m = {}) => {
+  const rawType = String(m.mediaType || m.type || '').toUpperCase()
+  const rawUrl = m.url || ''
+  const rawExternal = m.externalUrl || ''
+  const rawEmbed = m.embedUrl || ''
+
+  // Prefer embed if provided, otherwise external/url; also supports full iframe pasted in any field
+  const candidate = extractIframeSrc(rawEmbed || rawExternal || rawUrl)
+
+  let type = rawType
+  let embedUrl = rawEmbed ? extractIframeSrc(rawEmbed) : ''
+  let url = rawUrl
+  let externalUrl = rawExternal
+
+  // Auto-detect YouTube and normalize to VIDEO + embedUrl
+  if (candidate && isYouTubeUrl(candidate)) {
+    type = 'VIDEO'
+    embedUrl = toYouTubeEmbedUrl(candidate)
+    // keep a clickable external url too
+    externalUrl = candidate
+    // do not use raw iframe as normal file URL
+    if (/<iframe/i.test(String(rawUrl || ''))) url = ''
+  }
+
+  // If backend forgot type but embed exists, assume VIDEO
+  if (!type && embedUrl) type = 'VIDEO'
+  if (!type) type = 'IMAGE'
+
+  return {
+    ...m,
+    type,
+    mediaType: type,
+    url: url || '',
+    embedUrl: embedUrl || '',
+    externalUrl: externalUrl || '',
+    caption: m.caption || '',
+    sortOrder: m.sortOrder ?? 0
+  }
+}
+
+const normalizeNewsItem = (n = {}) => {
+  const out = { ...n }
+
+  // cover url normalization
+  out.coverUrl = out.coverUrl || out.coverImageUrl || out.imageUrl || out.thumbnailUrl || ''
+
+  // media normalization (with embed/youtube fix)
+  const rawMedia = ensureArray(out.media?.length ? out.media : out.mediaItems || out.attachments || out.files)
+  out.media = rawMedia.map(normalizeMediaItem)
+
+  // content normalization
+  if (!out.ckbContent && out.content?.ckb) out.ckbContent = out.content.ckb
+  if (!out.kmrContent && out.content?.kmr) out.kmrContent = out.content.kmr
+
+  // infer contentLanguages if backend omitted it
+  if (!ensureArray(out.contentLanguages).length) {
+    const langs = []
+    if (out.ckbContent?.title || out.ckbContent?.description || out.content?.ckb) langs.push('CKB')
+    if (out.kmrContent?.title || out.kmrContent?.description || out.content?.kmr) langs.push('KMR')
+    out.contentLanguages = langs
+  }
+
+  return out
+}
+
+/* ── filters + pagination ── */
+const filteredPool = computed(() => {
+  let list = ensureArray(items.value)
+
+  if (filterStatus.value) {
+    list = list.filter(n => n?.status === filterStatus.value)
+  }
+
+  if (filterLang.value) {
+    list = list.filter(n => ensureArray(n?.contentLanguages).includes(filterLang.value))
+  }
+
   return list
+})
+
+const uiTotalItems = computed(() => {
+  return serverPaginated.value ? totalItems.value : filteredPool.value.length
+})
+
+const uiTotalPages = computed(() => {
+  if (serverPaginated.value) return Math.max(0, Number(totalPages.value) || 0)
+  const count = filteredPool.value.length
+  return count > 0 ? Math.ceil(count / pageSize.value) : 0
+})
+
+const visibleItems = computed(() => {
+  if (serverPaginated.value) {
+    // if server paginated, items are already a page; client-side filters apply to current page only
+    return filteredPool.value
+  }
+
+  const start = page.value * pageSize.value
+  return filteredPool.value.slice(start, start + pageSize.value)
+})
+
+/* aliases so your old template names still work (if you haven't renamed them yet) */
+const filteredItems = visibleItems
+const totalItemsUi = uiTotalItems
+const totalPagesUi = uiTotalPages
+const pageRange = computed(() => uiPageRange.value)
+
+const showPager = computed(() => uiTotalPages.value > 1)
+
+const uiPageRange = computed(() => {
+  const r = []
+  const last = uiTotalPages.value - 1
+  for (let i = Math.max(0, page.value - 2); i <= Math.min(last, page.value + 2); i++) r.push(i)
+  return r
 })
 
 const toggleAcc = (key) => {
@@ -433,101 +894,207 @@ const toggleAcc = (key) => {
   openAccordions.value = s
 }
 
-const pageRange = computed(() => {
-  const r = []
-  for (let i = Math.max(0, page.value - 2); i <= Math.min(totalPages.value - 1, page.value + 2); i++) r.push(i)
-  return r
-})
-
+/* ── detail media list ── */
 const allMediaItems = computed(() => {
   if (!detail.value) return []
+
   const list = []
-  if (detail.value.coverUrl) {
-    list.push({ type: 'IMAGE', url: detail.value.coverUrl, caption: 'کڤەر', isCover: true })
+  const seen = new Set()
+
+  const pushUniq = (m) => {
+    const key = `${m.type || ''}|${m.url || ''}|${m.embedUrl || ''}|${m.externalUrl || ''}`
+    if (seen.has(key)) return
+    seen.add(key)
+    list.push(m)
   }
-  const media = Array.isArray(detail.value.media) ? detail.value.media : []
-  media
-    .slice()
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .forEach(m => {
-      if (m.url || m.embedUrl || m.externalUrl) {
-        list.push({
-          type:        m.mediaType || m.type || 'IMAGE',
-          url:         m.url         || m.externalUrl || '',
-          externalUrl: m.externalUrl || '',
-          embedUrl:    m.embedUrl    || '',
-          caption:     m.caption     || '',
-          sortOrder:   m.sortOrder   ?? 0,
-        })
-      }
+
+  if (detail.value.coverUrl) {
+    pushUniq({
+      type: 'IMAGE',
+      url: detail.value.coverUrl,
+      caption: 'کڤەر',
+      isCover: true
     })
+  }
+
+  const media = ensureArray(detail.value.media)
+    .map(normalizeMediaItem)
+    .slice()
+    .sort((a, b) => (a?.sortOrder ?? 0) - (b?.sortOrder ?? 0))
+
+  media.forEach(m => {
+    const type = (m?.mediaType || m?.type || 'IMAGE').toString().toUpperCase()
+    const url = m?.url || m?.externalUrl || ''
+    const embedUrl = m?.embedUrl || ''
+    const externalUrl = m?.externalUrl || ''
+
+    if (url || embedUrl || externalUrl) {
+      pushUniq({
+        type,
+        url,
+        embedUrl,
+        externalUrl,
+        caption: m?.caption || '',
+        sortOrder: m?.sortOrder ?? 0
+      })
+    }
+  })
+
   return list
 })
 
 const currentMedia = computed(() => allMediaItems.value[mediaIdx.value] || {})
-watch(detail, () => { mediaIdx.value = 0 })
+
+watch(detail, async (v) => {
+  mediaIdx.value = 0
+
+  if (v) {
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onGlobalKeydown)
+    await nextTick()
+    detailOverlayEl.value?.focus?.()
+  } else {
+    document.body.style.overflow = ''
+    window.removeEventListener('keydown', onGlobalKeydown)
+  }
+})
+
+watch(filteredPool, (list) => {
+  if (serverPaginated.value) return
+  const pages = list.length > 0 ? Math.ceil(list.length / pageSize.value) : 0
+  if (pages === 0) {
+    page.value = 0
+    return
+  }
+  if (page.value > pages - 1) {
+    page.value = pages - 1
+  }
+}, { deep: false })
+
+watch([filterLang, filterStatus], () => {
+  if (!serverPaginated.value) page.value = 0
+})
 
 /* ────────────────────────────────────────────────────────────────
-   DATA LOADING  — mirrors projects pattern exactly:
-     projects: GET /api/v1/projects/getAll  → data.data.content (paginated)
-     news:     GET /api/v1/news/all          → data.data (plain array)
-   We handle BOTH shapes so it works regardless.
+   DATA LOADING  — supports both:
+     1) plain array
+     2) paginated object { content, totalPages, totalElements }
 ──────────────────────────────────────────────────────────────── */
 const load = async () => {
   loading.value = true
-  error.value   = ''
+  error.value = ''
+
   try {
-    let url = '/api/v1/news/all'
-    if (searchQ.value.trim()) {
-      url = `/api/v1/news/search/keyword?keyword=${encodeURIComponent(searchQ.value)}&language=both`
-    }
+    const q = searchQ.value.trim()
+    let data
 
-    const { data } = await api.get(url)
-
-    // data.data can be:
-    //   (a) plain array          → List<NewsDto>  (getAllNews)
-    //   (b) paginated object     → { content: [], totalPages, totalElements }
-    const payload = data?.data ?? data ?? []
-
-    if (Array.isArray(payload)) {
-      // plain list — same as projects.getAll returns after flattening
-      items.value      = payload
-      totalItems.value = payload.length
-      totalPages.value = 0
-    } else if (payload?.content !== undefined) {
-      // paginated shape
-      items.value      = Array.isArray(payload.content) ? payload.content : []
-      totalPages.value = payload.totalPages    ?? 0
-      totalItems.value = payload.totalElements ?? items.value.length
+    if (!q) {
+      // normal list
+      const res = await api.get('/api/v1/news')
+      data = res.data
     } else {
-      // fallback: maybe wrapped one more level like projects
-      const inner = payload?.data ?? {}
-      items.value      = Array.isArray(inner.content) ? inner.content : (Array.isArray(inner) ? inner : [])
-      totalPages.value = inner.totalPages    ?? 0
-      totalItems.value = inner.totalElements ?? items.value.length
+      // 1) try keyword search first
+      let keywordRes = null
+      let keywordList = []
+
+      try {
+        keywordRes = await api.get('/api/v1/news/search/keyword', {
+          params: {
+            keyword: q,
+            language: 'both' // or map from filterLang if you want
+          }
+        })
+
+        const kp = keywordRes?.data?.data ?? keywordRes?.data ?? []
+        keywordList = Array.isArray(kp) ? kp : (Array.isArray(kp?.content) ? kp.content : [])
+      } catch (_) {
+        // ignore and try tag search
+      }
+
+      if (keywordList.length > 0) {
+        data = keywordRes.data
+      } else {
+        // 2) fallback to tag search
+        const tagRes = await api.get('/api/v1/news/search/tag', {
+          params: {
+            tag: q,
+            language: 'both' // or map from filterLang if needed
+          }
+        })
+        data = tagRes.data
+      }
     }
+
+    // normalize list response
+    const payload = data?.data ?? data ?? []
+    items.value = Array.isArray(payload)
+      ? payload
+      : (Array.isArray(payload?.content) ? payload.content : [])
+
+    // if your news page has client-side filter function:
+    if (typeof applyFilters === 'function') applyFilters()
 
   } catch (e) {
     error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
+    items.value = []
+    if (typeof applyFilters === 'function') applyFilters()
   } finally {
     loading.value = false
   }
 }
 
-const onSearch    = () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { page.value = 0; load() }, 400) }
-const clearSearch = () => { searchQ.value = ''; page.value = 0; load() }
-const changePage  = (p) => { page.value = p; load() }
+/* ── events ── */
+const onSearch = () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    page.value = 0
+    load()
+  }, 400)
+}
+
+const clearSearch = () => {
+  searchQ.value = ''
+  page.value = 0
+  load()
+}
+
+const changePage = (p) => {
+  const max = Math.max(0, uiTotalPages.value - 1)
+  const next = Math.min(max, Math.max(0, p))
+  if (next === page.value) return
+  page.value = next
+
+  // if server paginated, fetch next page; local pagination updates automatically
+  if (serverPaginated.value) load()
+}
 
 /* ── delete ── */
 const confirmDelete = (n) => { delTarget.value = n }
+
 const doDelete = async () => {
   if (!delTarget.value) return
   deleting.value = true
+
+  // save id before nulling target (important fix)
+  const deletingId = delTarget.value.id
+
   try {
-    await api.delete(`/api/v1/news/delete/${delTarget.value.id}`)
+    await api.delete(`/api/v1/news/delete/${deletingId}`)
     showToast('success', 'هەواڵەکە بە سەرکەوتنی سڕایەوە')
+
     delTarget.value = null
-    load()
+
+    // close detail if currently showing same record
+    if (detail.value?.id === deletingId) closeDetail()
+
+    await load()
+
+    // server-paginated edge case: if last item deleted on last page, move back one page and reload
+    if (serverPaginated.value && !items.value.length && page.value > 0) {
+      page.value -= 1
+      await load()
+    }
+
   } catch (e) {
     showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
   } finally {
@@ -537,12 +1104,23 @@ const doDelete = async () => {
 
 /* ── detail modal ── */
 const openDetail = (n) => {
-  detail.value     = n
-  detailLang.value = n.contentLanguages?.includes('CKB') ? 'CKB' : (n.contentLanguages?.[0] || 'CKB')
+  detail.value = n
+  detailLang.value = ensureArray(n?.contentLanguages).includes('CKB')
+    ? 'CKB'
+    : (ensureArray(n?.contentLanguages)[0] || 'CKB')
+
   openAccordions.value = new Set(['desc', 'tags', 'kw', 'media'])
-  document.body.style.overflow = 'hidden'
 }
-const closeDetail = () => { detail.value = null; document.body.style.overflow = '' }
+
+const closeDetail = () => {
+  detail.value = null
+}
+
+const onGlobalKeydown = (e) => {
+  if (e.key === 'Escape' && detail.value) closeDetail()
+  if (e.key === 'ArrowLeft' && detail.value && allMediaItems.value.length > 1) nextMedia()
+  if (e.key === 'ArrowRight' && detail.value && allMediaItems.value.length > 1) prevMedia()
+}
 
 const prevMedia = () => { if (mediaIdx.value > 0) mediaIdx.value-- }
 const nextMedia = () => { if (mediaIdx.value < allMediaItems.value.length - 1) mediaIdx.value++ }
@@ -552,6 +1130,7 @@ const bestTitle = (n) => {
   if (!n) return ''
   return n.ckbContent?.title || n.kmrContent?.title || n.content?.ckb?.title || n.content?.kmr?.title || n.title || ''
 }
+
 const altTitle = (n) => {
   if (!n) return ''
   const ckb = n.ckbContent?.title || n.content?.ckb?.title || ''
@@ -559,16 +1138,44 @@ const altTitle = (n) => {
   if (ckb && kmr && ckb !== kmr) return detailLang.value === 'CKB' ? kmr : ckb
   return ''
 }
-const bestCategory    = (n) => n?.category?.ckbName || n?.category?.kmrName || n?.categoryName || ''
-const bestSubCategory = (n) => n?.subCategory?.ckbName || n?.subCategory?.kmrName || n?.subCategoryName || ''
+
+const bestCategory = (n) =>
+  n?.category?.ckbName ||
+  n?.category?.kmrName ||
+  n?.category?.name ||
+  n?.categoryName ||
+  ''
+
+const bestSubCategory = (n) =>
+  n?.subCategory?.ckbName ||
+  n?.subCategory?.kmrName ||
+  n?.subCategory?.name ||
+  n?.subCategoryName ||
+  ''
 
 const activeDescription = (n) => {
   if (!n) return ''
-  const c = detailLang.value === 'CKB' ? (n.ckbContent || n.content?.ckb) : (n.kmrContent || n.content?.kmr)
+  const c = detailLang.value === 'CKB'
+    ? (n.ckbContent || n.content?.ckb)
+    : (n.kmrContent || n.content?.kmr)
   return c?.description || ''
 }
-const activeTags     = (n) => !n ? [] : (detailLang.value === 'CKB' ? (n.tags?.ckb || n.tagsCkb || []) : (n.tags?.kmr || n.tagsKmr || []))
-const activeKeywords = (n) => !n ? [] : (detailLang.value === 'CKB' ? (n.keywords?.ckb || n.keywordsCkb || []) : (n.keywords?.kmr || n.keywordsKmr || []))
+
+const activeTags = (n) => {
+  if (!n) return []
+  const ckb = n.tags?.ckb || n.tagsCkb || []
+  const kmr = n.tags?.kmr || n.tagsKmr || []
+  const raw = detailLang.value === 'CKB' ? ckb : kmr
+  return ensureArray(raw)
+}
+
+const activeKeywords = (n) => {
+  if (!n) return []
+  const ckb = n.keywords?.ckb || n.keywordsCkb || []
+  const kmr = n.keywords?.kmr || n.keywordsKmr || []
+  const raw = detailLang.value === 'CKB' ? ckb : kmr
+  return ensureArray(raw)
+}
 
 const mediaIcon = (type) => ({
   IMAGE:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
@@ -578,11 +1185,34 @@ const mediaIcon = (type) => ({
   DOCUMENT: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>`,
 }[type] || `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>`)
 
-const showToast   = (type, msg) => { toast.value = { show: true, type, msg }; setTimeout(() => { toast.value.show = false }, 3500) }
-const fmtDate     = (d) => d ? new Date(d).toLocaleDateString('ar-IQ') : '—'
-const fmtDatetime = (d) => d ? new Date(d).toLocaleString('ar-IQ', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+const showToast = (type, msg) => {
+  clearTimeout(toastTimer)
+  toast.value = { show: true, type, msg }
+  toastTimer = setTimeout(() => {
+    toast.value.show = false
+  }, 3500)
+}
+
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ar-IQ') : '—'
+const fmtDatetime = (d) =>
+  d
+    ? new Date(d).toLocaleString('ar-IQ', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : '—'
 
 onMounted(load)
+
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  clearTimeout(toastTimer)
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', onGlobalKeydown)
+})
 </script>
 
 <style scoped>
@@ -677,7 +1307,7 @@ onMounted(load)
 .modal-enter-from .del-modal,.modal-leave-to .del-modal { transform:scale(.94) translateY(8px) }
 
 /* ════ DETAIL MODAL ════ */
-.pdm-overlay { position:fixed; inset:0; z-index:400; background:rgba(5,2,2,.78); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:1.5rem; overflow-y:auto; }
+.pdm-overlay { position:fixed; inset:0; z-index:400; background:rgba(5,2,2,.78); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:1.5rem; overflow-y:auto; outline:none; }
 .pdm { position:relative; width:100%; max-width:1080px; max-height:calc(100vh - 3rem); background:#141010; border-radius:20px; overflow:hidden; display:grid; grid-template-columns:1fr 420px; box-shadow:0 0 0 1px rgba(255,255,255,.07),0 40px 120px rgba(0,0,0,.75),0 8px 32px rgba(0,0,0,.5); }
 @media (max-width:820px) { .pdm { grid-template-columns:1fr; max-height:none; } }
 .pdm-x { position:absolute; top:1rem; left:1rem; z-index:50; width:36px; height:36px; border-radius:50%; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.85); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .22s ease; backdrop-filter:blur(8px); }

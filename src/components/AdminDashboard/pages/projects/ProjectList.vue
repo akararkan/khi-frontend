@@ -178,16 +178,92 @@
                 <div class="pdm-stage" v-else>
                   <!-- IMAGE -->
                   <div v-if="currentMedia.type === 'IMAGE'" class="pdm-stage__image-wrap">
-                    <img :src="currentMedia.url" :key="currentMedia.url" class="pdm-stage__image" :alt="currentMedia.caption || ''" />
+                    <img
+                      v-if="currentMedia.imageUrl"
+                      :src="currentMedia.imageUrl"
+                      :key="currentMedia.imageUrl"
+                      class="pdm-stage__image"
+                      :alt="currentMedia.caption || ''"
+                    />
+
+                    <iframe
+                      v-else-if="currentMedia.iframeUrl"
+                      :src="currentMedia.iframeUrl"
+                      :key="currentMedia.iframeUrl"
+                      title="embedded image/media"
+                      style="width:100%; height:100%; min-height:360px; border:0; background:#000;"
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowfullscreen
+                    ></iframe>
+
+                    <div v-else class="pdm-doc-card">
+                      <div class="pdm-doc-card__icon">
+                        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                      </div>
+                      <div class="pdm-doc-card__type">IMAGE</div>
+                      <div class="pdm-doc-card__name">{{ currentMedia.caption || 'وێنە' }}</div>
+                      <div class="pdm-doc-card__actions" v-if="currentMedia.openUrl">
+                        <a :href="currentMedia.openUrl" target="_blank" class="pdm-doc-btn pdm-doc-btn--primary">کردنەوەی لینک</a>
+                      </div>
+                    </div>
+
                     <div class="pdm-stage__caption" v-if="currentMedia.caption">{{ currentMedia.caption }}</div>
                   </div>
+
                   <!-- VIDEO -->
                   <div v-else-if="currentMedia.type === 'VIDEO'" class="pdm-stage__video-wrap">
-                    <video :key="currentMedia.url" class="pdm-stage__video" controls controlsList="nodownload" preload="metadata">
-                      <source v-if="currentMedia.url" :src="currentMedia.url" />
+                    <!-- Prefer embed for YouTube / Vimeo / Drive preview -->
+                    <iframe
+                      v-if="currentMedia.iframeUrl"
+                      :src="currentMedia.iframeUrl"
+                      :key="currentMedia.iframeUrl"
+                      class="pdm-stage__video"
+                      title="embedded video"
+                      style="border:0;"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                      allowfullscreen
+                      referrerpolicy="strict-origin-when-cross-origin"
+                    ></iframe>
+
+                    <!-- Direct video file (.mp4/.webm/...) -->
+                    <video
+                      v-else-if="currentMedia.videoUrl"
+                      :key="currentMedia.videoUrl"
+                      class="pdm-stage__video"
+                      controls
+                      controlsList="nodownload"
+                      preload="metadata"
+                      playsinline
+                    >
+                      <source :src="currentMedia.videoUrl" :type="currentMedia.mimeType || undefined" />
+                      Your browser does not support the video tag.
                     </video>
+
+                    <!-- Fallback when only external link exists -->
+                    <div v-else class="pdm-stage__doc-wrap">
+                      <div class="pdm-doc-card">
+                        <div class="pdm-doc-card__icon">
+                          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                            <polygon points="23 7 16 12 23 17 23 7"/>
+                            <rect x="1" y="5" width="15" height="14" rx="2"/>
+                          </svg>
+                        </div>
+                        <div class="pdm-doc-card__type">VIDEO</div>
+                        <div class="pdm-doc-card__name">{{ currentMedia.caption || 'ڤیدیۆ' }}</div>
+                        <div class="pdm-doc-card__actions" v-if="currentMedia.openUrl">
+                          <a :href="currentMedia.openUrl" target="_blank" class="pdm-doc-btn pdm-doc-btn--primary">
+                            کردنەوەی ڤیدیۆ
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
                     <div class="pdm-stage__caption" v-if="currentMedia.caption">{{ currentMedia.caption }}</div>
                   </div>
+
                   <!-- AUDIO -->
                   <div v-else-if="currentMedia.type === 'AUDIO'" class="pdm-stage__audio-wrap">
                     <div class="pdm-audio-player">
@@ -195,31 +271,69 @@
                         <span v-for="i in 32" :key="i" class="pdm-audio-player__bar" :style="{ animationDelay: `${i * 0.06}s`, height: `${18 + Math.sin(i * 0.8) * 14}px` }"></span>
                       </div>
                       <div class="pdm-audio-player__title">{{ currentMedia.caption || 'دەنگ' }}</div>
-                      <audio :key="currentMedia.url" class="pdm-audio-player__ctrl" controls controlsList="nodownload" preload="metadata">
-                        <source v-if="currentMedia.url" :src="currentMedia.url" />
+
+                      <!-- Embed audio (e.g. SoundCloud/other players) -->
+                      <iframe
+                        v-if="currentMedia.iframeUrl"
+                        :src="currentMedia.iframeUrl"
+                        :key="currentMedia.iframeUrl"
+                        title="embedded audio"
+                        style="width:100%; min-height:130px; border:0; border-radius:8px; background:#111;"
+                        allow="autoplay"
+                      ></iframe>
+
+                      <!-- Direct audio file -->
+                      <audio
+                        v-else-if="currentMedia.audioUrl"
+                        :key="currentMedia.audioUrl"
+                        class="pdm-audio-player__ctrl"
+                        controls
+                        controlsList="nodownload"
+                        preload="metadata"
+                      >
+                        <source :src="currentMedia.audioUrl" :type="currentMedia.mimeType || undefined" />
+                        Your browser does not support the audio tag.
                       </audio>
-                      <a v-if="currentMedia.externalUrl" :href="currentMedia.externalUrl" target="_blank" class="pdm-ext-link">
+
+                      <!-- Fallback -->
+                      <div v-else style="color: rgba(255,255,255,.65); font-size:.85rem; text-align:center;">
+                        پێشبینینی دەنگ بەردەست نییە، بەڵام دەتوانیت لینکەکە بکەیتەوە.
+                      </div>
+
+                      <a v-if="currentMedia.openUrl" :href="currentMedia.openUrl" target="_blank" class="pdm-ext-link">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        لینکی دەرەکی
+                        لینک / پلەیەر دەرەکی
                       </a>
                     </div>
                   </div>
+
                   <!-- DOC/PDF -->
                   <div v-else-if="currentMedia.type === 'PDF' || currentMedia.type === 'DOCUMENT'" class="pdm-stage__doc-wrap">
-                    <div class="pdm-doc-card">
+                    <!-- Inline preview when possible -->
+                    <iframe
+                      v-if="currentMedia.docPreviewUrl"
+                      :src="currentMedia.docPreviewUrl"
+                      :key="currentMedia.docPreviewUrl"
+                      title="document preview"
+                      style="width:100%; height:100%; min-height:360px; border:0; background:#fff;"
+                    ></iframe>
+
+                    <!-- Fallback card -->
+                    <div v-else class="pdm-doc-card">
                       <div class="pdm-doc-card__icon">
                         <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                       </div>
                       <div class="pdm-doc-card__type">{{ currentMedia.type }}</div>
                       <div class="pdm-doc-card__name">{{ currentMedia.caption || 'بەلگەنامە' }}</div>
                       <div class="pdm-doc-card__actions">
-                        <a v-if="currentMedia.url" :href="currentMedia.url" target="_blank" class="pdm-doc-btn pdm-doc-btn--primary">
+                        <a v-if="currentMedia.openUrl" :href="currentMedia.openUrl" target="_blank" class="pdm-doc-btn pdm-doc-btn--primary">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                           کردنەوەی فایل
                         </a>
                       </div>
                     </div>
                   </div>
+
                   <div v-else-if="detail.coverUrl" class="pdm-stage__image-wrap">
                     <img :src="detail.coverUrl" class="pdm-stage__image" alt="cover" />
                   </div>
@@ -235,7 +349,7 @@
 
                 <div class="pdm-thumbs" v-if="allMediaItems.length > 1">
                   <button v-for="(m, i) in allMediaItems" :key="i" class="pdm-thumb" :class="{ 'pdm-thumb--on': i === mediaIdx }" @click="mediaIdx = i">
-                    <img v-if="m.type === 'IMAGE' && m.url" :src="m.url" loading="lazy" />
+                    <img v-if="m.type === 'IMAGE' && (m.imageUrl || m.url)" :src="m.imageUrl || m.url" loading="lazy" />
                     <span v-else-if="m.type === 'VIDEO'" class="pdm-thumb__icon pdm-thumb__icon--video"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>
                     <span v-else-if="m.type === 'AUDIO'" class="pdm-thumb__icon pdm-thumb__icon--audio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
                     <span v-else class="pdm-thumb__icon pdm-thumb__icon--doc"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
@@ -370,7 +484,7 @@
                           <div class="acc__media-info">
                             <div class="acc__media-type">{{ m.type }}</div>
                             <div class="acc__media-cap" v-if="m.caption">{{ m.caption }}</div>
-                            <div class="acc__media-cap acc__media-cap--url" v-else-if="m.url">{{ m.url }}</div>
+                            <div class="acc__media-cap acc__media-cap--url" v-else-if="m.openUrl">{{ m.openUrl }}</div>
                           </div>
                           <div class="acc__media-playing" v-if="i === mediaIdx"><span class="acc__media-playing__dot"></span><span class="acc__media-playing__dot"></span><span class="acc__media-playing__dot"></span></div>
                         </div>
@@ -409,32 +523,336 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
 import api from '@/api.js'
 
 /* ── state ── */
-const projects      = ref([])
-const page          = ref(0)
-const totalPages    = ref(0)
-const totalItems    = ref(0)
-const loading       = ref(false)
-const error         = ref('')
-const searchQ       = ref('')
-const filterLang    = ref('')
-const filterStatus  = ref('')   // ✅ new status filter
-const delTarget     = ref(null)
-const deleting      = ref(false)
-const detail        = ref(null)
-const detailLang    = ref('CKB')
-const mediaIdx      = ref(0)
-const toast         = ref({ show: false, type: 'success', msg: '' })
+const projects       = ref([])
+const page           = ref(0)
+const pageSize       = ref(15)
+const totalPages     = ref(0)
+const totalItems     = ref(0)
+const loading        = ref(false)
+const error          = ref('')
+const searchQ        = ref('')
+const filterLang     = ref('')
+const filterStatus   = ref('')
+const delTarget      = ref(null)
+const deleting       = ref(false)
+const detail         = ref(null)
+const detailLang     = ref('CKB')
+const mediaIdx       = ref(0)
+const detailOverlayEl= ref(null)
+const toast          = ref({ show: false, type: 'success', msg: '' })
 const openAccordions = ref(new Set(['desc', 'loc', 'contents', 'tags', 'kw', 'media']))
-let   searchTimer   = null
 
-/* ── client-side status filter (applied on top of server results) ── */
+let searchTimer = null
+let toastTimer  = null
+
+/* ── generic helpers ── */
+const ensureArray = (v) => Array.isArray(v) ? v : []
+const cleanUrl = (u) => (typeof u === 'string' ? u.trim() : '')
+
+/* ── HTML / embed helpers (fix pasted iframe + YouTube links) ── */
+const decodeHtmlEntities = (str = '') =>
+  String(str)
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+
+const isHttpUrl = (u) => /^https?:\/\//i.test(cleanUrl(u))
+
+const getUrlObj = (u) => {
+  try { return new URL(cleanUrl(u)) } catch { return null }
+}
+
+const extractIframeSrcFromHtml = (raw = '') => {
+  const s = String(raw || '')
+  if (!/<iframe[\s\S]*?>/i.test(s)) return ''
+  const m = s.match(/src\s*=\s*["']([^"']+)["']/i)
+  return m?.[1] ? decodeHtmlEntities(m[1]) : ''
+}
+
+const parseYouTubeTimeToSeconds = (t = '') => {
+  const s = String(t || '').trim().toLowerCase()
+  if (!s) return 0
+  if (/^\d+$/.test(s)) return Number(s)
+
+  const m = s.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/)
+  if (!m) return 0
+
+  return (Number(m[1] || 0) * 3600) + (Number(m[2] || 0) * 60) + Number(m[3] || 0)
+}
+
+/* ── normalize project shape ── */
+const normalizeProject = (p = {}) => {
+  const out = { ...p }
+
+  out.coverUrl = out.coverUrl || out.coverImageUrl || out.imageUrl || ''
+  out.media = ensureArray(out.media?.length ? out.media : (out.mediaItems || out.attachments || []))
+
+  if (!out.ckbContent && out.content?.ckb) out.ckbContent = out.content.ckb
+  if (!out.kmrContent && out.content?.kmr) out.kmrContent = out.content.kmr
+
+  if (!ensureArray(out.contentLanguages).length) {
+    const langs = []
+    if (out.ckbContent?.title || out.ckbContent?.description || out.content?.ckb) langs.push('CKB')
+    if (out.kmrContent?.title || out.kmrContent?.description || out.content?.kmr) langs.push('KMR')
+    out.contentLanguages = langs
+  }
+
+  out.tagsCkb = ensureArray(out.tagsCkb || out.tags?.ckb)
+  out.tagsKmr = ensureArray(out.tagsKmr || out.tags?.kmr)
+  out.keywordsCkb = ensureArray(out.keywordsCkb || out.keywords?.ckb)
+  out.keywordsKmr = ensureArray(out.keywordsKmr || out.keywords?.kmr)
+  out.contentsCkb = ensureArray(out.contentsCkb || out.contents?.ckb)
+  out.contentsKmr = ensureArray(out.contentsKmr || out.contents?.kmr)
+
+  return out
+}
+
+/* ── media url helpers (NO CSS CHANGES) ── */
+const getExt = (u = '') => {
+  const clean = cleanUrl(u)
+  const iframeSrc = extractIframeSrcFromHtml(clean)
+  const finalUrl = iframeSrc || decodeHtmlEntities(clean)
+  const obj = getUrlObj(finalUrl)
+  const path = obj?.pathname || finalUrl.split('?')[0] || ''
+  const m = path.toLowerCase().match(/\.([a-z0-9]+)$/i)
+  return m?.[1] || ''
+}
+
+const VIDEO_EXTS = ['mp4', 'webm', 'ogg', 'ogv', 'm4v', 'mov']
+const AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac']
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif']
+const DOC_EXTS   = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt']
+
+const isDirectVideoUrl = (u) => VIDEO_EXTS.includes(getExt(u))
+const isDirectAudioUrl = (u) => AUDIO_EXTS.includes(getExt(u))
+const isDirectImageUrl = (u) => IMAGE_EXTS.includes(getExt(u))
+const isDocLikeUrl     = (u) => DOC_EXTS.includes(getExt(u))
+
+const inferMimeType = (u = '', mediaType = '') => {
+  const ext = getExt(u)
+  const map = {
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    ogv: 'video/ogg',
+    ogg: mediaType === 'AUDIO' ? 'audio/ogg' : 'video/ogg',
+    m4v: 'video/mp4',
+    mov: 'video/quicktime',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    m4a: 'audio/mp4',
+    aac: 'audio/aac',
+    flac: 'audio/flac',
+    pdf: 'application/pdf'
+  }
+  return map[ext] || ''
+}
+
+const normalizeDirectFileUrl = (raw = '') => {
+  let u = decodeHtmlEntities(cleanUrl(raw))
+  if (!u) return ''
+
+  const iframeSrc = extractIframeSrcFromHtml(u)
+  if (iframeSrc) u = iframeSrc
+
+  if (!isHttpUrl(u)) return ''
+
+  const obj = getUrlObj(u)
+  if (!obj) return u
+
+  const host = obj.hostname.toLowerCase()
+
+  // Dropbox -> raw file
+  if (host.includes('dropbox.com')) {
+    obj.searchParams.delete('dl')
+    obj.searchParams.set('raw', '1')
+    return obj.toString()
+  }
+
+  return obj.toString()
+}
+
+const extractYouTubeId = (raw = '') => {
+  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
+  const u = getUrlObj(input)
+  if (!u) return ''
+
+  const host = u.hostname.toLowerCase()
+
+  if (host.includes('youtu.be')) {
+    return u.pathname.replace(/^\/+/, '').split('/')[0] || ''
+  }
+
+  if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
+    if (u.searchParams.get('v')) return u.searchParams.get('v')
+
+    const parts = u.pathname.split('/').filter(Boolean)
+
+    const idxEmbed = parts.indexOf('embed')
+    if (idxEmbed !== -1 && parts[idxEmbed + 1]) return parts[idxEmbed + 1]
+
+    const idxShorts = parts.indexOf('shorts')
+    if (idxShorts !== -1 && parts[idxShorts + 1]) return parts[idxShorts + 1]
+
+    const idxLive = parts.indexOf('live')
+    if (idxLive !== -1 && parts[idxLive + 1]) return parts[idxLive + 1]
+  }
+
+  return ''
+}
+
+const extractVimeoId = (raw = '') => {
+  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
+  const u = getUrlObj(input)
+  if (!u) return ''
+  const host = u.hostname.toLowerCase()
+  if (!host.includes('vimeo.com')) return ''
+
+  const parts = u.pathname.split('/').filter(Boolean)
+  return [...parts].reverse().find(p => /^\d+$/.test(p)) || ''
+}
+
+const extractGoogleDriveFileId = (raw = '') => {
+  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
+  const u = getUrlObj(input)
+  if (!u) return ''
+  const host = u.hostname.toLowerCase()
+  if (!host.includes('drive.google.com')) return ''
+
+  const m = u.pathname.match(/\/file\/d\/([^/]+)/)
+  if (m?.[1]) return m[1]
+
+  return u.searchParams.get('id') || ''
+}
+
+const toEmbeddableUrl = (raw = '') => {
+  let u = decodeHtmlEntities(cleanUrl(raw))
+  if (!u) return ''
+
+  const iframeSrc = extractIframeSrcFromHtml(u)
+  if (iframeSrc) u = iframeSrc
+
+  if (!isHttpUrl(u)) return ''
+
+  const obj = getUrlObj(u)
+  if (!obj) return ''
+
+  const host = obj.hostname.toLowerCase()
+  const pathname = obj.pathname.toLowerCase()
+
+  // already embed/player
+  if (pathname.includes('/embed/') || pathname.includes('/player/')) return obj.toString()
+
+  // YouTube (keep start/si if present)
+  const ytId = extractYouTubeId(u)
+  if (ytId) {
+    const srcObj = getUrlObj(u)
+    const embed = new URL(`https://www.youtube.com/embed/${ytId}`)
+
+    const start = srcObj?.searchParams.get('start')
+    const t = srcObj?.searchParams.get('t')
+    const si = srcObj?.searchParams.get('si')
+
+    if (start) embed.searchParams.set('start', start)
+    else if (t) {
+      const sec = parseYouTubeTimeToSeconds(t)
+      if (sec > 0) embed.searchParams.set('start', String(sec))
+    }
+    if (si) embed.searchParams.set('si', si)
+
+    return embed.toString()
+  }
+
+  // Vimeo
+  const vimeoId = extractVimeoId(u)
+  if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`
+
+  // Google Drive preview
+  const gdid = extractGoogleDriveFileId(u)
+  if (gdid) return `https://drive.google.com/file/d/${gdid}/preview`
+
+  // known embeddable providers
+  if (
+    host.includes('soundcloud.com') ||
+    host.includes('w.soundcloud.com') ||
+    host.includes('spotify.com') ||
+    host.includes('open.spotify.com')
+  ) return obj.toString()
+
+  return ''
+}
+
+const buildMediaPresentation = ({ type, url, embedUrl, externalUrl }) => {
+  const rawUrl      = cleanUrl(url)
+  const rawEmbed    = cleanUrl(embedUrl)
+  const rawExternal = cleanUrl(externalUrl)
+
+  const normalizedUrl = normalizeDirectFileUrl(rawUrl)
+  const normalizedExt = normalizeDirectFileUrl(rawExternal)
+
+  const iframeUrl =
+    toEmbeddableUrl(rawEmbed) ||
+    (
+      !isDirectVideoUrl(normalizedUrl) &&
+      !isDirectAudioUrl(normalizedUrl) &&
+      !isDirectImageUrl(normalizedUrl)
+        ? toEmbeddableUrl(normalizedUrl)
+        : ''
+    ) ||
+    toEmbeddableUrl(normalizedExt) ||
+    ''
+
+  const item = {
+    iframeUrl,
+    videoUrl: '',
+    audioUrl: '',
+    imageUrl: '',
+    docPreviewUrl: '',
+    openUrl: rawExternal || rawUrl || rawEmbed || '',
+    mimeType: ''
+  }
+
+  if (type === 'VIDEO') {
+    if (isDirectVideoUrl(normalizedUrl)) {
+      item.videoUrl = normalizedUrl
+      item.mimeType = inferMimeType(normalizedUrl, 'VIDEO')
+    }
+  } else if (type === 'AUDIO') {
+    if (isDirectAudioUrl(normalizedUrl)) {
+      item.audioUrl = normalizedUrl
+      item.mimeType = inferMimeType(normalizedUrl, 'AUDIO')
+    }
+  } else if (type === 'IMAGE') {
+    if (isDirectImageUrl(normalizedUrl)) item.imageUrl = normalizedUrl
+    else if (isDirectImageUrl(normalizedExt)) item.imageUrl = normalizedExt
+  } else if (type === 'PDF' || type === 'DOCUMENT') {
+    if (iframeUrl) item.docPreviewUrl = iframeUrl
+    else if (isHttpUrl(normalizedUrl) && (type === 'PDF' || isDocLikeUrl(normalizedUrl))) {
+      item.docPreviewUrl = normalizedUrl
+    }
+  }
+
+  return item
+}
+
+/* ── client-side status/lang filters (applied on top of server results) ── */
 const filteredProjects = computed(() => {
-  if (!filterStatus.value) return projects.value
-  return projects.value.filter(p => p.status === filterStatus.value)
+  let list = ensureArray(projects.value)
+
+  if (filterStatus.value) {
+    list = list.filter(p => p?.status === filterStatus.value)
+  }
+
+  if (filterLang.value) {
+    list = list.filter(p => ensureArray(p?.contentLanguages).includes(filterLang.value))
+  }
+
+  return list
 })
 
 const toggleAcc = (key) => {
@@ -451,99 +869,283 @@ const pageRange = computed(() => {
 
 const allMediaItems = computed(() => {
   if (!detail.value) return []
-  const items = []
-  const hasImageMedia = (detail.value.media || []).some(m => m.mediaType === 'IMAGE' && m.url)
-  if (detail.value.coverUrl && !hasImageMedia) {
-    items.push({ type: 'IMAGE', url: detail.value.coverUrl, caption: 'کڤەر', isCover: true })
+
+  const list = []
+  const seen = new Set()
+
+  const pushUniq = (m) => {
+    const key = `${m.type || ''}|${m.url || ''}|${m.embedUrl || ''}|${m.externalUrl || ''}|${m.caption || ''}`
+    if (seen.has(key)) return
+    seen.add(key)
+    list.push(m)
   }
-  ;(detail.value.media || [])
+
+  const media = ensureArray(detail.value.media)
     .slice()
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-    .forEach(m => {
-      items.push({
-        type:        m.mediaType    || 'IMAGE',
-        url:         m.url         || '',
-        externalUrl: m.externalUrl || '',
-        embedUrl:    m.embedUrl    || '',
-        caption:     m.caption     || '',
-        sortOrder:   m.sortOrder   ?? 0,
-      })
+    .sort((a, b) => (a?.sortOrder ?? 0) - (b?.sortOrder ?? 0))
+
+  const hasImageMedia = media.some(m => (m?.mediaType || m?.type) === 'IMAGE' && (m?.url || m?.externalUrl || m?.embedUrl))
+
+  if (detail.value.coverUrl && !hasImageMedia) {
+    const coverPresentation = buildMediaPresentation({
+      type: 'IMAGE',
+      url: detail.value.coverUrl,
+      embedUrl: '',
+      externalUrl: ''
     })
-  return items
+
+    pushUniq({
+      type: 'IMAGE',
+      url: detail.value.coverUrl,
+      caption: 'کڤەر',
+      isCover: true,
+      ...coverPresentation
+    })
+  }
+
+  media.forEach(m => {
+    const type = (m.mediaType || m.type || 'IMAGE').toString().toUpperCase()
+
+    const presentation = buildMediaPresentation({
+      type,
+      url: m.url || '',
+      embedUrl: m.embedUrl || '',
+      externalUrl: m.externalUrl || ''
+    })
+
+    pushUniq({
+      type,
+      url: m.url || '',
+      externalUrl: m.externalUrl || '',
+      embedUrl: m.embedUrl || '',
+      caption: m.caption || '',
+      sortOrder: m.sortOrder ?? 0,
+      ...presentation
+    })
+  })
+
+  return list
 })
 
 const currentMedia = computed(() => allMediaItems.value[mediaIdx.value] || {})
-watch(detail, () => { mediaIdx.value = 0 })
+
+watch(detail, async (v) => {
+  mediaIdx.value = 0
+
+  if (v) {
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onGlobalKeydown)
+    await nextTick()
+    detailOverlayEl.value?.focus?.()
+  } else {
+    document.body.style.overflow = ''
+    window.removeEventListener('keydown', onGlobalKeydown)
+  }
+})
 
 /* ── data loading ── */
 const load = async () => {
-  loading.value = true; error.value = ''
+  loading.value = true
+  error.value = ''
+
   try {
-    let url = `/api/v1/projects/getAll?page=${page.value}&size=15`
-    if (searchQ.value.trim()) url = `/api/v1/projects/search/keyword?keyword=${encodeURIComponent(searchQ.value)}&page=${page.value}&size=15`
-    const { data } = await api.get(url)
+    const q = searchQ.value.trim()
+    let data
+
+    // ── No search: normal list ─────────────────────────────
+    if (!q) {
+      const res = await api.get('/api/v1/projects/getAll', {
+        params: { page: page.value, size: pageSize.value }
+      })
+      data = res.data
+    } else {
+      // ── Search flow: keyword first, then tag fallback ─────
+      // (because user may type normal title text OR tag text)
+      let keywordRes = null
+      let keywordItemsCount = 0
+
+      try {
+        keywordRes = await api.get('/api/v1/projects/search/keyword', {
+          params: { keyword: q, page: page.value, size: pageSize.value }
+        })
+
+        const kp = keywordRes?.data?.data ?? keywordRes?.data ?? {}
+        const kr = kp?.content !== undefined ? kp : (kp?.data ?? kp?.result ?? {})
+        keywordItemsCount = Array.isArray(kr.content) ? kr.content.length : 0
+      } catch (_) {
+        // ignore here, we'll try tag search next
+      }
+
+      if (keywordRes && keywordItemsCount > 0) {
+        data = keywordRes.data
+      } else {
+        // fallback to tag endpoint
+        const tagRes = await api.get('/api/v1/projects/search/tag', {
+          params: { tag: q, page: page.value, size: pageSize.value }
+        })
+        data = tagRes.data
+      }
+    }
+
+    // ── Normalize response (same as your current style) ─────
     const payload = data?.data ?? data ?? {}
-    const result  = payload?.content !== undefined ? payload : (payload?.data ?? {})
-    projects.value   = Array.isArray(result.content) ? result.content : []
-    totalPages.value = result.totalPages    ?? 0
-    totalItems.value = result.totalElements ?? projects.value.length
+    const result  = payload?.content !== undefined ? payload : (payload?.data ?? payload?.result ?? {})
+
+    projects.value   = ensureArray(result.content).map(normalizeProject)
+    totalPages.value = Number(result.totalPages ?? 0)
+    totalItems.value = Number(result.totalElements ?? projects.value.length)
+
   } catch (e) {
     error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
+    projects.value = []
+    totalPages.value = 0
+    totalItems.value = 0
   } finally {
     loading.value = false
   }
 }
 
-const onSearch    = () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { page.value = 0; load() }, 400) }
-const clearSearch = () => { searchQ.value = ''; page.value = 0; load() }
-const changePage  = (p) => { page.value = p; load() }
+const onSearch = () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    page.value = 0
+    load()
+  }, 400)
+}
+
+const clearSearch = () => {
+  searchQ.value = ''
+  page.value = 0
+  load()
+}
+
+const changePage = (p) => {
+  page.value = p
+  load()
+}
 
 /* ── delete ── */
 const confirmDelete = (p) => { delTarget.value = p }
+
 const doDelete = async () => {
   if (!delTarget.value) return
   deleting.value = true
+
+  const deletingId = delTarget.value.id
+
   try {
-    await api.delete(`/api/v1/projects/delete/${delTarget.value.id}`)
+    await api.delete(`/api/v1/projects/delete/${deletingId}`)
     showToast('success', 'پڕۆژەکە بە سەرکەوتنی سڕایەوە')
-    delTarget.value = null; load()
+
+    // close detail if same project is open
+    if (detail.value?.id === deletingId) closeDetail()
+
+    delTarget.value = null
+    await load()
+
+    // if page becomes empty after delete, go back one page
+    if (!projects.value.length && page.value > 0) {
+      page.value -= 1
+      await load()
+    }
   } catch (e) {
     showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
-  } finally { deleting.value = false }
+  } finally {
+    deleting.value = false
+  }
 }
 
 /* ── detail modal ── */
 const openDetail = (p) => {
-  detail.value     = p
-  detailLang.value = p.contentLanguages?.includes('CKB') ? 'CKB' : (p.contentLanguages?.[0] || 'CKB')
+  const proj = normalizeProject(p)
+  detail.value = proj
+  detailLang.value = ensureArray(proj.contentLanguages).includes('CKB')
+    ? 'CKB'
+    : (ensureArray(proj.contentLanguages)[0] || 'CKB')
+
   openAccordions.value = new Set(['desc', 'loc', 'contents', 'tags', 'kw', 'media'])
-  document.body.style.overflow = 'hidden'
 }
-const closeDetail = () => { detail.value = null; document.body.style.overflow = '' }
+
+const closeDetail = () => {
+  detail.value = null
+}
+
+const onGlobalKeydown = (e) => {
+  if (e.key === 'Escape' && detail.value) closeDetail()
+}
 
 const prevMedia = () => { if (mediaIdx.value > 0) mediaIdx.value-- }
 const nextMedia = () => { if (mediaIdx.value < allMediaItems.value.length - 1) mediaIdx.value++ }
 
-const activeContent  = (p) => detailLang.value === 'CKB' ? p.ckbContent  : p.kmrContent
-const activeTags     = (p) => detailLang.value === 'CKB' ? (p.tagsCkb    || []) : (p.tagsKmr    || [])
-const activeKeywords = (p) => detailLang.value === 'CKB' ? (p.keywordsCkb || []) : (p.keywordsKmr || [])
-const activeContents = (p) => detailLang.value === 'CKB' ? (p.contentsCkb || []) : (p.contentsKmr || [])
+/* ── content helpers ── */
+const activeContent = (p) => {
+  if (!p) return {}
+  return detailLang.value === 'CKB'
+    ? (p.ckbContent || p.content?.ckb || {})
+    : (p.kmrContent || p.content?.kmr || {})
+}
 
+const activeTags = (p) => {
+  if (!p) return []
+  return detailLang.value === 'CKB'
+    ? ensureArray(p.tagsCkb || p.tags?.ckb)
+    : ensureArray(p.tagsKmr || p.tags?.kmr)
+}
+
+const activeKeywords = (p) => {
+  if (!p) return []
+  return detailLang.value === 'CKB'
+    ? ensureArray(p.keywordsCkb || p.keywords?.ckb)
+    : ensureArray(p.keywordsKmr || p.keywords?.kmr)
+}
+
+const activeContents = (p) => {
+  if (!p) return []
+  return detailLang.value === 'CKB'
+    ? ensureArray(p.contentsCkb || p.contents?.ckb)
+    : ensureArray(p.contentsKmr || p.contents?.kmr)
+}
+
+/* ── UI helpers ── */
 const mediaIcon = (type) => ({
   IMAGE:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
   VIDEO:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`,
   AUDIO:    `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
   PDF:      `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>`,
-  DOCUMENT: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>`,
+  DOCUMENT: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>`
 }[type] || `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>`)
 
-const showToast   = (type, msg) => { toast.value = { show: true, type, msg }; setTimeout(() => { toast.value.show = false }, 3500) }
-const ckbTitle    = (p) => p?.ckbContent?.title || ''
-const fmtDate     = (d) => d ? new Date(d).toLocaleDateString('ar-IQ') : '—'
-const fmtDatetime = (d) => d ? new Date(d).toLocaleString('ar-IQ', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'
+const showToast = (type, msg) => {
+  clearTimeout(toastTimer)
+  toast.value = { show: true, type, msg }
+  toastTimer = setTimeout(() => {
+    toast.value.show = false
+  }, 3500)
+}
+
+const ckbTitle = (p) => p?.ckbContent?.title || p?.content?.ckb?.title || ''
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ar-IQ') : '—'
+const fmtDatetime = (d) =>
+  d
+    ? new Date(d).toLocaleString('ar-IQ', {
+        year:'numeric',
+        month:'short',
+        day:'numeric',
+        hour:'2-digit',
+        minute:'2-digit'
+      })
+    : '—'
 
 onMounted(load)
+
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  clearTimeout(toastTimer)
+  document.body.style.overflow = ''
+  window.removeEventListener('keydown', onGlobalKeydown)
+})
 </script>
+
 
 <style scoped>
 

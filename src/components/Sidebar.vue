@@ -3,7 +3,7 @@
 
     <!-- Brand -->
     <div class="brand">
-      <div class="brand__gem">
+      <div class="brand__gem" @click="slim && (slim = false)" :class="{ 'brand__gem--clickable': slim }">
         <span class="brand__gem-text">KHI</span>
       </div>
       <Transition name="fade">
@@ -12,12 +12,19 @@
           <div class="brand__sub">ناوەندی کەلەپووری کوردی</div>
         </div>
       </Transition>
-      <button class="brand__toggle" @click="slim = !slim" :title="slim ? 'فراوانکردن' : 'تەنگکردن'">
+      <button v-if="!slim" class="brand__toggle" @click="slim = !slim" title="تەنگکردن">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path :d="slim ? 'M6 3l5 5-5 5' : 'M10 3L5 8l5 5'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
     </div>
+
+    <!-- ✅ Expand button — always visible in slim mode -->
+    <button v-if="slim" class="expand-btn" @click="slim = false" title="فراوانکردن">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
 
     <!-- Main nav -->
     <nav class="nav">
@@ -57,11 +64,11 @@
         class="nav__item"
         :to="{ name: 'AdminNewsList' }"
         :class="{ 'nav__item--on': isActive('news') }"
-        title="هەواڵ"
+        title="هەواڵەکان"
       >
         <span class="nav__ico" v-html="SVGs.news"></span>
         <Transition name="fade">
-          <span v-if="!slim" class="nav__label">هەواڵ</span>
+          <span v-if="!slim" class="nav__label">هەواڵەکان</span>
         </Transition>
         <span v-if="!slim" class="nav__arrow">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -163,36 +170,36 @@ const SVGs = {
   writings: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
 }
 
-// Publications sub-items — now pointing to real dedicated routes
+// ✅ All publication sub-items point to their dedicated routes
 const publicationItems = [
   {
     key:   'albums',
-    label: 'ئەلبومی یادگاریەکان',
-    to:    { name: 'AdminResourceList', params: { resource: 'albums' } }, // no dedicated route yet
+    label: 'ئەلبوومی بیرەوەریەکان',
+    to:    { name: 'AdminAlbumList' },
     icon:  SVGs.albums,
   },
   {
     key:   'image-collections',
-    label: 'وێنە',
-    to:    { name: 'AdminImageCollectionList' }, // ✅ fixed
+    label: 'کۆمەڵە وێنەکان',
+    to:    { name: 'AdminImageCollectionList' },
     icon:  SVGs.images,
   },
   {
     key:   'films',
-    label: 'فیلم',
-    to:    { name: 'AdminResourceList', params: { resource: 'films' } }, // no dedicated route yet
+    label: 'فیلمەکان',
+    to:    { name: 'AdminFilmList' },
     icon:  SVGs.films,
   },
   {
     key:   'soundtracks',
-    label: 'دەنگ',
-    to:    { name: 'AdminSoundTrackList' }, // ✅ fixed
+    label: 'دەنگەکان',
+    to:    { name: 'AdminSoundTrackList' },
     icon:  SVGs.sounds,
   },
   {
     key:   'writings',
-    label: 'نوسین',
-    to:    { name: 'AdminResourceList', params: { resource: 'writings' } }, // no dedicated route yet
+    label: 'نووسراوەکان',
+    to:    { name: 'AdminWritingList' },
     icon:  SVGs.writings,
   },
 ]
@@ -202,39 +209,42 @@ const isPublicationsActive = computed(() => {
   return publicationItems.some(item => isActive(item.key))
 })
 
-// Check if a navigation item is active (including nested routes)
+// ✅ Comprehensive active-state detection for ALL dedicated routes
 const isActive = (key) => {
-  const currentName     = route.name
-  const currentResource = route.params.resource
+  const currentName = route.name || ''
+  const currentPath = route.path || ''
 
-  if (key === 'projects') {
-    return ['AdminProjectList', 'AdminProjectCreate', 'AdminProjectEdit'].includes(currentName)
+  const routeMap = {
+    projects:            { names: ['AdminProjectList', 'AdminProjectCreate', 'AdminProjectEdit'],                         prefix: '/admin/projects' },
+    news:                { names: ['AdminNewsList', 'AdminNewsCreate', 'AdminNewsEdit'],                                   prefix: '/admin/news' },
+    'image-collections': { names: ['AdminImageCollectionList', 'AdminImageCollectionCreate', 'AdminImageCollectionEdit'],   prefix: '/admin/image-collections' },
+    soundtracks:         { names: ['AdminSoundTrackList', 'AdminSoundTrackCreate', 'AdminSoundTrackEdit'],                 prefix: '/admin/soundtracks' },
+    films:               { names: ['AdminFilmList', 'AdminFilmCreate', 'AdminFilmEdit'],                                   prefix: '/admin/films' },
+    writings:            { names: ['AdminWritingList', 'AdminWritingCreate', 'AdminWritingEdit'],                           prefix: '/admin/writings' },
+    albums:              { names: ['AdminAlbumList', 'AdminAlbumCreate', 'AdminAlbumEdit'],                                 prefix: '/admin/albums' },
   }
 
-  if (key === 'news') {
-    return ['AdminNewsList', 'AdminNewsCreate', 'AdminNewsEdit'].includes(currentName)
+  const mapping = routeMap[key]
+  if (mapping) {
+    return mapping.names.includes(currentName) || currentPath.startsWith(mapping.prefix)
   }
 
-  if (key === 'image-collections') {
-    return ['AdminImageCollectionList', 'AdminImageCollectionCreate', 'AdminImageCollectionEdit'].includes(currentName)
-  }
-
-  if (key === 'soundtracks') {
-    return ['AdminSoundTrackList', 'AdminSoundTrackCreate', 'AdminSoundTrackEdit'].includes(currentName)
-  }
-
-  // Generic resource routes (albums, films, writings)
+  // Fallback for generic resource routes
   if (['AdminResourceList', 'AdminResourceCreate', 'AdminResourceEdit'].includes(currentName)) {
-    return currentResource === key
+    return route.params.resource === key
   }
 
   return false
 }
 
-const doLogout = () => { auth.logout(); router.push('/login') }
+const doLogout = () => {
+  auth.logout()
+  router.push('/login')
+}
 </script>
 
 <style scoped>
+/* ✅ ORIGINAL crimson gradient background */
 .side {
   width: 270px;
   flex: 0 0 270px;
@@ -269,10 +279,31 @@ const doLogout = () => { auth.logout(); router.push('/login') }
   box-shadow: 0 0 20px rgba(254,221,0,.15);
   display: flex; align-items: center; justify-content: center;
 }
-.brand__gem-text { font-family: 'Playfair Display', serif; font-size: .85rem; font-weight: 900; color: var(--gold); letter-spacing: .04em; }
+.brand__gem--clickable {
+  cursor: pointer;
+  transition: var(--transition);
+}
+.brand__gem--clickable:hover {
+  box-shadow: 0 0 28px rgba(254,221,0,.3);
+  border-color: rgba(254,221,0,.55);
+}
+.brand__gem-text {
+  font-family: 'Playfair Display', serif;
+  font-size: .85rem;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: .04em;
+}
 .brand__copy { flex: 1; min-width: 0; }
 .brand__title { font-weight: 700; font-size: .95rem; white-space: nowrap; }
-.brand__sub { font-size: .72rem; opacity: .65; margin-top: .1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand__sub {
+  font-size: .72rem;
+  opacity: .65;
+  margin-top: .1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .brand__toggle {
   width: 32px; height: 32px; flex: 0 0 32px;
   border-radius: 10px;
@@ -286,10 +317,39 @@ const doLogout = () => { auth.logout(); router.push('/login') }
 }
 .brand__toggle:hover { background: rgba(255,255,255,.12); color: #fff; }
 
+/* ✅ Expand button — sits below brand in slim mode, always visible */
+.expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px; height: 38px;
+  margin: .5rem auto .25rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.7);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.expand-btn:hover {
+  background: rgba(254,221,0,.15);
+  border-color: rgba(254,221,0,.35);
+  color: #fff;
+}
+
 /* Nav */
-.nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: .75rem .65rem; display: flex; flex-direction: column; gap: .25rem; }
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: .75rem .65rem;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
 .nav::-webkit-scrollbar { width: 3px; }
 .nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); }
+
 .nav__sep {
   padding: .55rem .5rem .25rem;
   font-size: .7rem;
@@ -299,9 +359,15 @@ const doLogout = () => { auth.logout(); router.push('/login') }
   text-transform: uppercase;
   white-space: nowrap;
 }
-.nav__sep-dot { height: 1px; background: rgba(255,255,255,.1); margin: .6rem .4rem; }
+.nav__sep-dot {
+  height: 1px;
+  background: rgba(255,255,255,.1);
+  margin: .6rem .4rem;
+}
 .nav__item {
-  display: flex; align-items: center; gap: .7rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
   padding: .65rem .75rem;
   border-radius: var(--radius-sm);
   color: rgba(255,255,255,.78);
@@ -348,6 +414,7 @@ const doLogout = () => { auth.logout(); router.push('/login') }
 .nav__label { flex: 1; font-weight: 600; font-size: .9rem; }
 .nav__arrow { opacity: .35; display: flex; align-items: center; }
 .nav__item--on .nav__arrow { opacity: .7; }
+
 .nav__chevron {
   opacity: .5;
   display: flex;
@@ -440,10 +507,14 @@ const doLogout = () => { auth.logout(); router.push('/login') }
 .foot {
   padding: .85rem .65rem .85rem;
   border-top: 1px solid rgba(255,255,255,.08);
-  display: flex; flex-direction: column; gap: .5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
 }
 .foot__role {
-  display: flex; align-items: center; gap: .5rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
   padding: .4rem .5rem;
   font-size: .8rem;
   opacity: .7;
@@ -457,7 +528,9 @@ const doLogout = () => { auth.logout(); router.push('/login') }
   flex: 0 0 7px;
 }
 .foot__logout {
-  display: flex; align-items: center; gap: .7rem;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
   padding: .65rem .75rem;
   border-radius: var(--radius-sm);
   background: rgba(255,255,255,.05);
@@ -468,7 +541,11 @@ const doLogout = () => { auth.logout(); router.push('/login') }
   min-height: 44px;
   white-space: nowrap;
 }
-.foot__logout:hover { background: rgba(200,30,30,.25); border-color: rgba(200,30,30,.4); color: #fff; }
+.foot__logout:hover {
+  background: rgba(200,30,30,.25);
+  border-color: rgba(200,30,30,.4);
+  color: #fff;
+}
 
 /* Transitions */
 .fade-enter-active, .fade-leave-active { transition: opacity .15s ease; }
