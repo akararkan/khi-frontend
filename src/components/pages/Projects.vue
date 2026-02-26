@@ -1,511 +1,555 @@
 <template>
-  <main id="main-content" class="projects">
-    
-    <!-- ============================================
-         VIEW: PROJECTS LISTING
-         ============================================ -->
-    <transition name="view-fade" mode="out-in">
-      <div v-if="!activeProject" key="listing">
-        
-        <!-- HERO SECTION -->
+  <main class="projects" :dir="lang.dir" :class="{ 'projects--ltr': lang.isKMR }">
+
+    <!-- ══════════════════════════════════════
+         LISTING VIEW
+    ══════════════════════════════════════ -->
+    <transition name="page" mode="out-in">
+      <div v-if="!activeProject" key="listing" class="listing">
+
+        <!-- ── CINEMATIC HERO ── -->
         <header class="hero">
-          <div class="hero__bg" :style="{ backgroundImage: `url(${heroImage})` }"></div>
-          <div class="hero__overlay"></div>
-          <div class="hero__grain"></div>
-
-          <div class="container hero__content">
-            <div class="heroCard">
-              <div class="heroCard__eyebrow">
-                <span class="eyebrow-line"></span>
-                <span class="eyebrow-text">پڕۆژەکانی ناوەندی میراتی کوردی</span>
-                <span class="eyebrow-line"></span>
-              </div>
-
-              <h1 class="heroCard__title">
-                ئەرشیڤی دیجیتاڵی
-                <span class="title-accent">میراتی کوردی</span>
-              </h1>
-
-              <p class="heroCard__sub">
-                پاراستن و بڵاوکردنەوەی میراتی کلتووری کوردی بۆ نەوەکانی داهاتوو
-              </p>
-
-              <div class="heroCard__stats">
-                <div class="stat" v-for="(s, i) in heroStats" :key="i" :style="{ animationDelay: `${i * 0.15 + 0.6}s` }">
-                  <div class="stat__value">{{ s.value }}</div>
-                  <div class="stat__label">{{ s.label }}</div>
-                </div>
-              </div>
-
-              <!-- Active Filter Pill -->
-              <div class="heroCard__filter" v-if="tagFilter !== 'all'">
-                <div class="filterPill">
-                  <span class="filterPill__hash">#</span>
-                  <span class="filterPill__text">{{ tagFilter }}</span>
-                  <button class="filterPill__close" @click="clearTagFilter" aria-label="لابردنی فلتەر">✕</button>
-                </div>
-              </div>
-            </div>
+          <div class="hero__canvas">
+            <div class="hero__bg" :style="{ backgroundImage: `url(${heroImage})` }"></div>
+            <div class="hero__film"></div>
+            <div class="hero__vignette"></div>
+            <div class="hero__grain"></div>
+            <div class="hero__scanlines"></div>
+            <!-- Decorative corner frames -->
+            <div class="hero__corner hero__corner--tl"></div>
+            <div class="hero__corner hero__corner--tr"></div>
+            <div class="hero__corner hero__corner--bl"></div>
+            <div class="hero__corner hero__corner--br"></div>
+            <!-- Floating orbs -->
+            <div class="hero__orb orb--a"></div>
+            <div class="hero__orb orb--b"></div>
+            <div class="hero__orb orb--c"></div>
           </div>
 
-          <!-- Scroll Indicator -->
-          <div class="hero__scroll" @click="scrollToProjects">
-            <div class="scrollIndicator">
-              <span class="scrollIndicator__line"></span>
+          <div class="hero__inner container">
+            <!-- Archive stamp -->
+            <div class="hero__stamp">
+              <div class="stamp__ring">
+                <span class="stamp__text">{{ lang.t('projects.heroStampText') }}</span>
+                <span class="stamp__year">{{ lang.t('projects.heroStampYear') }}</span>
+              </div>
             </div>
+
+            <div class="hero__kicker">
+              <span class="kicker__rule"></span>
+              <span class="kicker__text">{{ lang.t('projects.heroKicker') }}</span>
+              <span class="kicker__rule"></span>
+            </div>
+
+            <h1 class="hero__headline">
+              <span class="headline__line headline__line--deco">{{ lang.t('projects.heroHeadlineDeco') }}</span>
+              <span class="headline__line headline__line--main">{{ lang.t('projects.heroHeadlineMain') }}</span>
+              <span class="headline__line headline__line--sub">{{ lang.t('projects.heroHeadlineSub') }}</span>
+            </h1>
+
+            <!-- Stats Row -->
+            <div class="hero__stats">
+              <div class="hstat" v-for="(s, i) in heroStats" :key="i" :style="{ '--i': i }">
+                <div class="hstat__inner">
+                  <div class="hstat__num">{{ s.value }}</div>
+                  <div class="hstat__lbl">{{ s.label }}</div>
+                </div>
+                <div class="hstat__sep" v-if="i < heroStats.length - 1"></div>
+              </div>
+            </div>
+
+            <!-- Active Filter -->
+            <transition name="pill">
+              <div class="hero__activetag" v-if="tagFilter">
+                <div class="atag">
+                  <span class="atag__hash">#</span>
+                  <span class="atag__name">{{ tagFilter }}</span>
+                  <button class="atag__x" @click="clearTagFilter">✕</button>
+                </div>
+              </div>
+            </transition>
           </div>
+
+          <button
+            class="hero__scroll"
+            @click="scrollToGrid"
+            :aria-label="lang.t('projects.heroScrollAria')"
+          >
+            <span class="scroll__label">{{ lang.t('projects.heroScrollLabel') }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
+          </button>
         </header>
 
-        <!-- PROJECTS SECTION -->
-        <section class="section" ref="projectsSection">
+        <!-- ── PROJECTS BODY ── -->
+        <section class="body" ref="gridSection">
           <div class="container">
-            
+
             <!-- Toolbar -->
             <div class="toolbar">
-              <div class="toolbar__status">
-                <span v-if="loading" class="statusDot statusDot--loading"></span>
-                <span v-else-if="error" class="statusDot statusDot--error"></span>
-                <span v-else class="statusDot statusDot--ok"></span>
-                <span class="toolbar__statusText" v-if="loading">بارکردن...</span>
-                <span class="toolbar__statusText" v-else-if="error">{{ error }}</span>
-                <span class="toolbar__statusText" v-else>{{ filteredProjects.length }} پڕۆژە</span>
+              <div class="toolbar__left">
+                <span class="toolbar__indicator" :class="loading ? 'ind--loading' : error ? 'ind--err' : 'ind--ok'"></span>
+                <span class="toolbar__label">
+                  <template v-if="loading">{{ lang.t('projects.loading') }}</template>
+                  <template v-else-if="error">{{ error }}</template>
+                  <template v-else>
+                    <strong>{{ filteredProjects.length }}</strong> {{ lang.t('projects.foundResultsLabel') }}
+                  </template>
+                </span>
               </div>
-
-              <div class="toolbar__actions">
-                <div class="selectWrap">
-                  <select v-model="sortBy" class="selectWrap__input">
-                    <option value="newest">نوێترین</option>
-                    <option value="oldest">کۆنترین</option>
-                    <option value="title_az">ناونیشان</option>
-                    <option value="media_desc">زۆرترین میدیا</option>
+              <div class="toolbar__right">
+                <div class="tsort">
+                  <select v-model="sortBy" class="tsort__sel">
+                    <option value="newest">{{ lang.t('projects.sortNewest') }}</option>
+                    <option value="oldest">{{ lang.t('projects.sortOldest') }}</option>
+                    <option value="title_az">{{ lang.t('projects.sortTitle') }}</option>
+                    <option value="media_desc">{{ lang.t('projects.sortMedia') }}</option>
                   </select>
-                  <span class="selectWrap__icon">▾</span>
+                  <svg class="tsort__ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </div>
-
-                <button class="toolBtn" @click="resetAllFilters" title="دووبارەکردنەوە">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                <button class="treset" @click="resetAllFilters" :title="lang.t('projects.toolbarResetTitle')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                  </svg>
                 </button>
               </div>
             </div>
 
             <!-- Loading Skeletons -->
             <div v-if="loading" class="grid">
-              <div v-for="i in 6" :key="`skeleton-${i}`" class="cardSkeleton">
-                <div class="cardSkeleton__img shimmer"></div>
-                <div class="cardSkeleton__body">
-                  <div class="cardSkeleton__line shimmer" style="width: 70%"></div>
-                  <div class="cardSkeleton__line shimmer" style="width: 100%"></div>
-                  <div class="cardSkeleton__line shimmer" style="width: 85%"></div>
-                  <div class="cardSkeleton__tags">
-                    <div class="cardSkeleton__tag shimmer"></div>
-                    <div class="cardSkeleton__tag shimmer"></div>
+              <div v-for="i in 6" :key="`sk-${i}`" class="skel" :style="{ '--d': `${(i-1)*0.07}s` }">
+                <div class="skel__thumb shimmer"></div>
+                <div class="skel__body">
+                  <div class="skel__line shimmer" style="width:55%"></div>
+                  <div class="skel__line shimmer" style="width:100%;margin-top:.5rem"></div>
+                  <div class="skel__line shimmer" style="width:75%"></div>
+                  <div class="skel__pills">
+                    <div class="skel__pill shimmer"></div>
+                    <div class="skel__pill shimmer"></div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Empty State -->
-            <div v-else-if="!loading && filteredProjects.length === 0" class="emptyState">
-              <div class="emptyState__visual">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                  <rect x="10" y="16" width="60" height="48" rx="6" stroke="#d4d4d1" stroke-width="2" fill="none"/>
-                  <line x1="25" y1="32" x2="55" y2="32" stroke="#d4d4d1" stroke-width="2" stroke-linecap="round"/>
-                  <line x1="25" y1="40" x2="45" y2="40" stroke="#d4d4d1" stroke-width="2" stroke-linecap="round"/>
-                  <line x1="25" y1="48" x2="50" y2="48" stroke="#d4d4d1" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <h3 class="emptyState__title">هیچ پڕۆژەیەک نەدۆزرایەوە</h3>
-              <p class="emptyState__text">تکایە فلتەرێکی تر هەڵبژێرە یان هەموو فلتەرەکان دووبارە بکەرەوە</p>
-              <button class="btn btn--primary" @click="resetAllFilters">
-                دووبارەکردنەوەی فلتەرەکان
-              </button>
+            <!-- Empty -->
+            <div v-else-if="!loading && filteredProjects.length === 0" class="empty">
+              <div class="empty__icon">📂</div>
+              <h3 class="empty__title">{{ lang.t('projects.noResults') }}</h3>
+              <p class="empty__hint">
+                <template v-if="projects.length > 0 && projects.filter(p => hasActiveLangContent(p)).length === 0">
+                  <span v-if="lang.activeLang === 'KMR'">
+                    {{ lang.t('projects.emptyActiveLangMissingKMR') }}
+                  </span>
+                  <span v-else>
+                    {{ lang.t('projects.emptyActiveLangMissingCKB') }}
+                  </span>
+                </template>
+                <template v-else>{{ lang.t('projects.noResultsHint') }}</template>
+              </p>
+              <button class="btn-primary" @click="resetAllFilters">{{ lang.t('projects.resetFilters') }}</button>
             </div>
 
-            <!-- Projects Grid -->
+            <!-- Grid -->
             <div v-else class="grid">
               <article
-                v-for="(project, index) in filteredProjects"
+                v-for="(project, i) in filteredProjects"
                 :key="project.id"
                 class="card"
-                :style="{ animationDelay: `${index * 0.04}s` }"
+                :class="{ 'card--featured': i === 0 }"
+                :style="{ '--d': `${i * 0.05}s` }"
                 tabindex="0"
                 @click="openProject(project)"
                 @keyup.enter="openProject(project)"
-                role="button"
-                :aria-label="`بینینی پڕۆژە: ${project.title}`"
+                :aria-label="`${lang.t('projects.cardOpenAriaPrefix')}: ${pTitle(project)}`"
               >
-                <div class="card__visual">
-                  <img
-                    :src="project.cover.url"
-                    :alt="project.title"
-                    loading="lazy"
-                    class="card__img"
-                    @error="onCoverError($event)"
-                  />
-                  <div class="card__imgOverlay"></div>
-                  <div class="card__badge">{{ getTypeIcon(project.category) }} {{ project.category }}</div>
-                  <div class="card__mediaCount">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+                <!-- Thumb -->
+                <div class="card__thumb">
+                  <img :src="pCover(project)" :alt="pTitle(project)" loading="lazy" class="card__img" @error="onCoverError($event)" />
+                  <div class="card__film"></div>
+                  <div class="card__scrim"></div>
+
+                  <!-- Top badges -->
+                  <div class="card__badges">
+                    <div class="card__typebadge" v-if="pType(project)">{{ getTypeIcon(pType(project)) }} {{ pType(project) }}</div>
+                    <div class="card__statusbadge" :class="project.status === 'COMPLETED' ? 'card__statusbadge--done' : ''">
+                      {{ project.status === 'COMPLETED' ? lang.t('projects.completed') : lang.t('projects.ongoing') }}
+                    </div>
+                  </div>
+
+                  <div class="card__count" v-if="project.media?.length">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
                     {{ project.media.length }}
+                  </div>
+
+                  <!-- View button overlay -->
+                  <div class="card__view">
+                    <span class="card__viewbtn">{{ lang.t('projects.viewProject') }}</span>
                   </div>
                 </div>
 
+                <!-- Body -->
                 <div class="card__body">
-                  <h3 class="card__title">{{ project.title }}</h3>
-                  <p class="card__desc">{{ truncateText(project.summary, 110) }}</p>
-
                   <div class="card__meta">
-                    <span class="card__date">{{ project.publishedAt }}</span>
-                    <span class="card__lang">{{ getLanguageName(project.language) }}</span>
+                    <span class="card__date" v-if="project.projectDate">{{ formatDate(project.projectDate) }}</span>
+                    <span class="card__lang" v-for="l in (project.contentLanguages || [])" :key="l">{{ getLanguageName(l) }}</span>
                   </div>
+                  <h3 class="card__title">{{ pTitle(project) }}</h3>
+                  <p class="card__desc">{{ truncateText(pDesc(project), 110) }}</p>
 
-                  <div v-if="project.tags.length > 0" class="card__tags">
+                  <div class="card__tags" v-if="pTags(project).length">
                     <button
-                      v-for="tag in project.tags.slice(0, 3)"
+                      v-for="tag in pTags(project).slice(0, 3)"
                       :key="tag"
-                      class="tag"
-                      type="button"
+                      class="ctag"
                       @click.stop="filterByTag(tag)"
-                    >
-                      #{{ tag }}
-                    </button>
-                    <span v-if="project.tags.length > 3" class="tag tag--more">+{{ project.tags.length - 3 }}</span>
+                    >#{{ tag }}</button>
+                    <span v-if="pTags(project).length > 3" class="ctag ctag--more">+{{ pTags(project).length - 3 }}</span>
                   </div>
                 </div>
 
                 <div class="card__foot">
-                  <span class="card__cta">بینینی پڕۆژە</span>
-                  <span class="card__arrow">←</span>
+                  <span class="card__cta">{{ lang.t('projects.viewProject') }}</span>
+                  <span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span>
                 </div>
               </article>
             </div>
 
             <!-- Pagination -->
             <nav class="pager" v-if="totalPages > 1 && !loading">
-              <button class="pager__btn" :disabled="currentPage === 0" @click="goToPreviousPage">
-                → پێشوو
-              </button>
-              <div class="pager__info">
-                <span class="pager__current">{{ currentPage + 1 }}</span>
-                <span class="pager__sep">/</span>
-                <span class="pager__total">{{ totalPages }}</span>
+              <button class="pager__btn" :disabled="currentPage === 0" @click="goToPrev">{{ lang.t('projects.prevPage') }}</button>
+              <div class="pager__dots">
+                <span
+                  v-for="p in Math.min(totalPages, 7)"
+                  :key="p"
+                  class="pager__dot"
+                  :class="{ 'pager__dot--on': (p - 1) === currentPage }"
+                  @click="goToPage(p - 1)"
+                ></span>
               </div>
-              <button class="pager__btn" :disabled="currentPage + 1 >= totalPages" @click="goToNextPage">
-                دواتر ←
-              </button>
+              <button class="pager__btn" :disabled="currentPage + 1 >= totalPages" @click="goToNext">{{ lang.t('projects.nextPage') }}</button>
             </nav>
           </div>
         </section>
       </div>
 
-      <!-- ============================================
-           VIEW: PROJECT DETAIL
-           ============================================ -->
-      <div v-else key="detail" class="projectDetail">
-        
-        <!-- Back Navigation -->
-        <div class="detailNav">
-          <div class="container detailNav__inner">
-            <button class="backBtn" @click="closeProject">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              <span>گەڕانەوە بۆ پڕۆژەکان</span>
+      <!-- ══════════════════════════════════════
+           DETAIL VIEW
+      ══════════════════════════════════════ -->
+      <div v-else key="detail" class="detail">
+
+        <!-- Sticky Nav -->
+        <nav class="dnav">
+          <div class="container dnav__inner">
+            <button class="back-btn" @click="closeProject">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+              <span>{{ lang.t('projects.backToProjects') }}</span>
             </button>
-          </div>
-        </div>
 
-        <!-- Project Hero -->
-        <header class="detailHero">
-          <div class="detailHero__bg" :style="{ backgroundImage: `url(${activeProject.cover.url})` }"></div>
-          <div class="detailHero__overlay"></div>
-          <div class="detailHero__grain"></div>
-
-          <div class="container detailHero__content">
-            <div class="detailHero__badges">
-              <span class="dbadge dbadge--type">{{ getTypeIcon(activeProject.category) }} {{ activeProject.category }}</span>
-              <span class="dbadge">📅 {{ activeProject.publishedAt }}</span>
-              <span class="dbadge" v-if="activeProject.location">📍 {{ activeProject.location }}</span>
-              <span class="dbadge">🗣️ {{ getLanguageName(activeProject.language) }}</span>
-            </div>
-            <h1 class="detailHero__title">{{ activeProject.title }}</h1>
-            <p class="detailHero__desc">{{ activeProject.summary }}</p>
-            
-            <div v-if="activeProject.tags.length > 0" class="detailHero__tags">
-              <button
-                v-for="tag in activeProject.tags"
-                :key="tag"
-                class="dtag"
-                type="button"
-                @click="filterFromDetail(tag)"
+            <!-- Language indicator -->
+            <div class="dnav__langinfo" v-if="activeProject.contentLanguages?.length">
+              <div
+                v-for="l in activeProject.contentLanguages"
+                :key="l"
+                class="langpill"
+                :class="{
+                  'langpill--active': lang.activeLang === l,
+                  'langpill--inactive': lang.activeLang !== l
+                }"
+                :title="lang.activeLang !== l
+                  ? (l === 'CKB' ? lang.t('projects.projectHasSorani') : lang.t('projects.projectHasKurmanji'))
+                  : ''"
               >
-                #{{ tag }}
-              </button>
+                <span class="langpill__dot" :class="`langpill__dot--${l.toLowerCase()}`"></span>
+                <span class="langpill__name">{{ l === 'CKB' ? lang.t('projects.sorani') : lang.t('projects.kurmanji') }}</span>
+                <svg
+                  v-if="lang.activeLang === l"
+                  class="langpill__check"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                >
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+
+              <span class="dnav__langhelp">{{ lang.t('projects.languageSwitchHint') }}</span>
             </div>
+          </div>
+        </nav>
+
+        <!-- Detail Hero -->
+        <header class="dhero">
+          <div class="dhero__bg" :style="{ backgroundImage: `url(${pCover(activeProject)})` }"></div>
+          <div class="dhero__gradient"></div>
+          <div class="dhero__grain"></div>
+          <div class="dhero__frame dhero__frame--tl"></div>
+          <div class="dhero__frame dhero__frame--br"></div>
+
+          <div class="container dhero__content">
+            <transition name="lang-swap" mode="out-in">
+              <div :key="detailLang" class="dhero__inner">
+                <div class="dhero__badges">
+                  <span class="dbadge dbadge--type" v-if="pType(activeProject)">{{ getTypeIcon(pType(activeProject)) }} {{ pType(activeProject) }}</span>
+                  <span class="dbadge" v-if="activeProject.projectDate">📅 {{ formatDate(activeProject.projectDate) }}</span>
+                  <span class="dbadge" v-if="pLocation(activeProject)">📍 {{ pLocation(activeProject) }}</span>
+                  <span class="dbadge" v-for="l in (activeProject.contentLanguages || [])" :key="l">🗣️ {{ getLanguageName(l) }}</span>
+                  <span class="dbadge" :class="activeProject.status === 'COMPLETED' ? 'dbadge--done' : 'dbadge--ongoing'">
+                    {{ activeProject.status === 'COMPLETED' ? lang.t('projects.completedBadge') : lang.t('projects.ongoingBadge') }}
+                  </span>
+                </div>
+                <h1 class="dhero__title">{{ pTitle(activeProject) }}</h1>
+                <p class="dhero__desc" v-if="pDesc(activeProject)">{{ pDesc(activeProject) }}</p>
+                <div class="dhero__tags" v-if="pTags(activeProject).length">
+                  <button v-for="tag in pTags(activeProject)" :key="tag" class="dtag" @click="filterFromDetail(tag)">#{{ tag }}</button>
+                </div>
+              </div>
+            </transition>
           </div>
         </header>
 
-        <!-- Media Gallery Section -->
-        <section class="mediaSection">
+        <!-- ── MEDIA GALLERY ── -->
+        <section class="gallery" v-if="projectMedia.length">
           <div class="container">
-            
-            <!-- Media Type Tabs -->
-            <div class="mediaTabs" v-if="activeProject.media.length > 1">
-              <button
-                class="mediaTab"
-                :class="{ 'mediaTab--active': activeMediaFilter === 'all' }"
-                @click="activeMediaFilter = 'all'"
-              >
-                هەموو
-                <span class="mediaTab__count">{{ activeProject.media.length }}</span>
+
+            <!-- Tab Row -->
+            <div class="gtabs" v-if="availableMediaTypes.length > 1">
+              <button class="gtab" :class="{ 'gtab--on': activeMediaFilter === 'all' }" @click="activeMediaFilter = 'all'">
+                {{ lang.t('projects.allMedia') }} <span class="gtab__n">{{ projectMedia.length }}</span>
               </button>
               <button
                 v-for="type in availableMediaTypes"
                 :key="type"
-                class="mediaTab"
-                :class="{ 'mediaTab--active': activeMediaFilter === type }"
+                class="gtab"
+                :class="{ 'gtab--on': activeMediaFilter === type }"
                 @click="activeMediaFilter = type"
               >
                 {{ getMediaIcon(type) }} {{ getMediaLabel(type) }}
-                <span class="mediaTab__count">{{ getMediasByType(type).length }}</span>
+                <span class="gtab__n">{{ projectMedia.filter(m => m.mediaType === type).length }}</span>
               </button>
             </div>
 
-            <!-- Main Media Display -->
-            <div class="mediaStage">
-              <!-- Active Media Preview -->
-              <div class="mediaStage__main">
-                <div class="preview" :class="`preview--${selectedMedia?.mediaType}`">
-                  
-                  <!-- IMAGE -->
-                  <template v-if="selectedMedia?.mediaType === 'image'">
-                    <div class="imgFrame" @click="openFullscreen(selectedMedia)">
-                      <img
-                        class="imgFrame__img"
-                        :src="selectedMedia.url"
-                        :alt="selectedMedia.caption || activeProject.title"
-                        :style="{ transform: `scale(${zoomLevel})` }"
-                        @error="onPreviewError($event)"
-                      />
-                      <div class="imgFrame__expand">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-                      </div>
-                    </div>
-                    <!-- Zoom Controls -->
-                    <div class="zoomBar">
-                      <button class="zoomBtn" @click="zoomOut" :disabled="zoomLevel <= 1">−</button>
-                      <span class="zoomBar__level">{{ Math.round(zoomLevel * 100) }}%</span>
-                      <button class="zoomBtn" @click="zoomIn" :disabled="zoomLevel >= 3">+</button>
-                      <button class="zoomBtn" @click="resetZoom" :disabled="zoomLevel === 1">⟲</button>
-                    </div>
-                  </template>
+            <!-- Stage -->
+            <div class="stage">
 
-                  <!-- VIDEO -->
-                  <template v-else-if="selectedMedia?.mediaType === 'video'">
-                    <div class="vidFrame" ref="videoPlayerContainer">
-                      <video
-                        ref="videoPlayer"
-                        class="vidFrame__el"
-                        :poster="activeProject.cover.url"
-                        @loadedmetadata="onVideoLoaded"
-                        @timeupdate="onVideoTimeUpdate"
-                        @play="isVideoPlaying = true"
-                        @pause="isVideoPlaying = false"
-                        @ended="isVideoPlaying = false"
-                        @click="toggleVideoPlay"
-                      >
-                        <source :src="selectedMedia.url" type="video/mp4" />
-                      </video>
-                      
-                      <!-- Video Controls -->
-                      <div class="vidControls">
-                        <div class="vidProgress" @click="seekVideo">
-                          <div class="vidProgress__track">
-                            <div class="vidProgress__fill" :style="{ width: videoProgress + '%' }"></div>
-                            <div class="vidProgress__thumb" :style="{ left: videoProgress + '%' }"></div>
-                          </div>
-                        </div>
-                        <div class="vidControls__row">
-                          <div class="vidControls__left">
-                            <button class="vidBtn vidBtn--play" @click="toggleVideoPlay">
-                              <span v-if="isVideoPlaying">⏸</span>
-                              <span v-else>▶</span>
-                            </button>
-                            <div class="vidTime">
-                              {{ formatTime(videoCurrentTime) }} / {{ formatTime(videoDuration) }}
-                            </div>
-                            <div class="volWrap">
-                              <button class="vidBtn vidBtn--sm" @click="toggleMute">
-                                <span v-if="isVideoMuted || videoVolume === 0">🔇</span>
-                                <span v-else>🔊</span>
-                              </button>
-                              <input
-                                type="range" class="volSlider" min="0" max="100"
-                                :value="videoVolume * 100" @input="changeVideoVolume"
-                              />
-                            </div>
-                          </div>
-                          <button class="vidBtn vidBtn--sm" @click="toggleVideoFullscreen">⛶</button>
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-
-                  <!-- AUDIO -->
-                  <template v-else-if="selectedMedia?.mediaType === 'audio'">
-                    <div class="audioFrame">
-                      <div class="audioFrame__art">
-                        <img :src="activeProject.cover.url" :alt="activeProject.title" @error="onCoverError($event)" />
-                        <div class="audioFrame__pulse" :class="{ 'audioFrame__pulse--playing': isAudioPlaying }"></div>
-                      </div>
-                      <div class="audioFrame__info">
-                        <h4>{{ selectedMedia.caption || 'دەنگی ناونیشان نەدراو' }}</h4>
-                        <p>{{ selectedMedia.note || selectedMedia.textBody || '' }}</p>
-                      </div>
-                      <audio
-                        ref="audioPlayer"
-                        @loadedmetadata="onAudioLoaded"
-                        @timeupdate="onAudioTimeUpdate"
-                        @play="isAudioPlaying = true"
-                        @pause="isAudioPlaying = false"
-                        @ended="isAudioPlaying = false"
-                      >
-                        <source :src="selectedMedia.url" type="audio/mpeg" />
-                      </audio>
-                      <div class="audioControls">
-                        <div class="audioProgress" @click="seekAudio">
-                          <div class="audioProgress__track">
-                            <div class="audioProgress__fill" :style="{ width: audioProgress + '%' }"></div>
-                          </div>
-                        </div>
-                        <div class="audioControls__row">
-                          <button class="audioBtn audioBtn--play" @click="toggleAudioPlay">
-                            <span v-if="isAudioPlaying">⏸</span>
-                            <span v-else>▶</span>
-                          </button>
-                          <div class="audioTime">{{ formatTime(audioCurrentTime) }} / {{ formatTime(audioDuration) }}</div>
-                          <div class="volWrap">
-                            <button class="audioBtn audioBtn--sm" @click="toggleAudioMute">
-                              <span v-if="isAudioMuted || audioVolume === 0">🔇</span>
-                              <span v-else>🔊</span>
-                            </button>
-                            <input
-                              type="range" class="volSlider volSlider--warm" min="0" max="100"
-                              :value="audioVolume * 100" @input="changeAudioVolume"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-
-                  <!-- DOCUMENT / PDF / OTHER -->
-                  <template v-else>
-                    <div class="docFrame">
-                      <div class="docFrame__icon">{{ getMediaIcon(selectedMedia?.mediaType) }}</div>
-                      <h4 class="docFrame__title">{{ selectedMedia?.caption || 'بەڵگەنامە' }}</h4>
-                      <p class="docFrame__url">{{ selectedMedia?.url }}</p>
-                      <button class="btn btn--primary" @click="openInFullscreen(selectedMedia?.url)">
-                        کردنەوە بە پڕ شاشە
-                      </button>
-                    </div>
-                  </template>
+              <!-- IMAGE -->
+              <div v-if="selectedMedia?.mediaType === 'IMAGE'" class="preview preview--image">
+                <div class="imgstage" @click="openFullscreen(selectedMedia)">
+                  <img
+                    class="imgstage__img"
+                    :src="selectedMedia.url"
+                    :alt="selectedMedia.caption || pTitle(activeProject)"
+                    :style="{ transform: `scale(${zoomLevel})` }"
+                    @error="onPreviewError($event)"
+                  />
+                  <div class="imgstage__hint">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="15 3 21 3 21 9"/>
+                      <polyline points="9 21 3 21 3 15"/>
+                      <line x1="21" y1="3" x2="14" y2="10"/>
+                      <line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                    <span>{{ lang.t('projects.zoomImage') }}</span>
+                  </div>
                 </div>
-
-                <!-- Caption Area -->
-                <div class="captionBox" v-if="selectedMedia">
-                  <h4 class="captionBox__title">{{ selectedMedia.caption || activeProject.title }}</h4>
-                  <p class="captionBox__text" v-if="selectedMedia.note || selectedMedia.textBody || activeProject.body">
-                    {{ selectedMedia.note || selectedMedia.textBody || activeProject.body }}
-                  </p>
+                <div class="zoombar">
+                  <button class="zbtn" @click="zoomOut" :disabled="zoomLevel <= 1">−</button>
+                  <span class="zbtn__val">{{ Math.round(zoomLevel * 100) }}%</span>
+                  <button class="zbtn" @click="zoomIn" :disabled="zoomLevel >= 3">+</button>
+                  <button class="zbtn zbtn--reset" @click="resetZoom" :disabled="zoomLevel === 1">↺</button>
                 </div>
               </div>
 
-              <!-- Media Thumbnails Strip -->
-              <div class="mediaStrip" v-if="displayedMedia.length > 1">
-                <button
-                  v-for="media in displayedMedia"
-                  :key="media.id"
-                  class="mediaThumb"
-                  :class="{ 'mediaThumb--active': selectedMedia?.id === media.id }"
-                  @click="selectMedia(media)"
-                  type="button"
-                >
-                  <span class="mediaThumb__icon">{{ getMediaIcon(media.mediaType) }}</span>
-                  <span class="mediaThumb__label">{{ media.caption || getMediaLabel(media.mediaType) }}</span>
-                </button>
+              <!-- VIDEO -->
+              <div v-else-if="selectedMedia?.mediaType === 'VIDEO'" class="preview preview--video">
+                <div class="vidwrap" ref="videoPlayerContainer">
+                  <video
+                    ref="videoPlayer"
+                    class="vid"
+                    :poster="pCover(activeProject)"
+                    @loadedmetadata="onVideoLoaded"
+                    @timeupdate="onVideoTimeUpdate"
+                    @play="isVideoPlaying=true"
+                    @pause="isVideoPlaying=false"
+                    @ended="isVideoPlaying=false"
+                    @click="toggleVideoPlay"
+                  >
+                    <source :src="selectedMedia.url" type="video/mp4" />
+                  </video>
+
+                  <div class="vcontrols">
+                    <div class="vprog" @click="seekVideo">
+                      <div class="vprog__bg">
+                        <div class="vprog__fill" :style="{ width: videoProgress+'%' }"></div>
+                        <div class="vprog__thumb" :style="{ left: videoProgress+'%' }"></div>
+                      </div>
+                    </div>
+                    <div class="vcontrols__row">
+                      <div class="vcontrols__left">
+                        <button class="vbtn vbtn--play" @click="toggleVideoPlay">{{ isVideoPlaying ? '⏸' : '▶' }}</button>
+                        <span class="vtime">{{ formatTime(videoCurrentTime) }} / {{ formatTime(videoDuration) }}</span>
+                        <div class="volrow">
+                          <button class="vbtn vbtn--sm" @click="toggleMute">{{ isVideoMuted || videoVolume===0 ? '🔇' : '🔊' }}</button>
+                          <input type="range" class="volvol" min="0" max="100" :value="videoVolume*100" @input="changeVideoVolume"/>
+                        </div>
+                      </div>
+                      <button class="vbtn vbtn--sm" @click="toggleVideoFullscreen">⛶</button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <!-- Navigation -->
-              <div class="mediaNav" v-if="activeProject.media.length > 1">
-                <button class="mediaNav__btn" @click="previousMedia" :disabled="!canGoPreviousMedia">
-                  → پێشوو
-                </button>
-                <span class="mediaNav__pos">
-                  {{ currentMediaIndex + 1 }} / {{ activeProject.media.length }}
-                </span>
-                <button class="mediaNav__btn" @click="nextMedia" :disabled="!canGoNextMedia">
-                  دواتر ←
-                </button>
+              <!-- AUDIO -->
+              <div v-else-if="selectedMedia?.mediaType === 'AUDIO'" class="preview preview--audio">
+                <div class="audstage">
+                  <div class="audart" :class="{ 'audart--playing': isAudioPlaying }">
+                    <img :src="pCover(activeProject)" :alt="pTitle(activeProject)" @error="onCoverError($event)" />
+                    <div class="audart__rings">
+                      <span v-for="n in 4" :key="n" class="audart__ring" :style="{ '--n': n }"></span>
+                    </div>
+                    <div class="audart__vinyl"></div>
+                  </div>
+
+                  <div class="audinfo">
+                    <h4 class="audinfo__title">{{ selectedMedia.caption || lang.t('projects.unnamed') }}</h4>
+                    <p class="audinfo__body" v-if="selectedMedia.textBody">{{ selectedMedia.textBody }}</p>
+                  </div>
+
+                  <audio
+                    ref="audioPlayer"
+                    @loadedmetadata="onAudioLoaded"
+                    @timeupdate="onAudioTimeUpdate"
+                    @play="isAudioPlaying=true"
+                    @pause="isAudioPlaying=false"
+                    @ended="isAudioPlaying=false"
+                  >
+                    <source :src="selectedMedia.url" type="audio/mpeg" />
+                  </audio>
+
+                  <div class="audcontrols">
+                    <div class="audprog" @click="seekAudio">
+                      <div class="audprog__track">
+                        <div class="audprog__fill" :style="{ width: audioProgress+'%' }"></div>
+                      </div>
+                    </div>
+                    <div class="audcontrols__row">
+                      <button class="audbtn audbtn--play" @click="toggleAudioPlay">{{ isAudioPlaying ? '⏸' : '▶' }}</button>
+                      <span class="audtime">{{ formatTime(audioCurrentTime) }} / {{ formatTime(audioDuration) }}</span>
+                      <div class="volrow">
+                        <button class="audbtn audbtn--sm" @click="toggleAudioMute">{{ isAudioMuted || audioVolume===0 ? '🔇' : '🔊' }}</button>
+                        <input type="range" class="volvol volvol--warm" min="0" max="100" :value="audioVolume*100" @input="changeAudioVolume"/>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- DOCUMENT / OTHER -->
+              <div v-else class="preview preview--doc">
+                <div class="docstage">
+                  <div class="docstage__ico">{{ getMediaIcon(selectedMedia?.mediaType) }}</div>
+                  <h4 class="docstage__name">{{ selectedMedia?.caption || lang.t('projects.documentDefault') }}</h4>
+                  <p class="docstage__url" v-if="selectedMedia?.url">{{ selectedMedia?.url }}</p>
+                  <a v-if="selectedMedia?.url" :href="selectedMedia.url" target="_blank" class="btn-primary">
+                    {{ lang.t('projects.openDocument') }}
+                  </a>
+                </div>
+              </div>
+
+              <!-- Caption -->
+              <div class="caption" v-if="selectedMedia">
+                <h4 class="caption__title">{{ selectedMedia.caption || pTitle(activeProject) }}</h4>
+                <p class="caption__text" v-if="selectedMedia.textBody || pDesc(activeProject)">
+                  {{ selectedMedia.textBody || pDesc(activeProject) }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Thumbnail Strip -->
+            <div class="strip" v-if="displayedMedia.length > 1">
+              <button
+                v-for="m in displayedMedia"
+                :key="m.id || m.url"
+                class="sthumb"
+                :class="{ 'sthumb--on': selectedMedia?.url === m.url }"
+                @click="selectMedia(m)"
+              >
+                <span class="sthumb__ico">{{ getMediaIcon(m.mediaType) }}</span>
+                <span class="sthumb__lbl">{{ m.caption || getMediaLabel(m.mediaType) }}</span>
+              </button>
+            </div>
+
+            <!-- Strip Nav -->
+            <div class="mnav" v-if="displayedMedia.length > 1">
+              <button class="mnav__btn" @click="previousMedia" :disabled="!canGoPreviousMedia">{{ lang.t('projects.prevMedia') }}</button>
+              <span class="mnav__pos">{{ currentMediaIndex + 1 }} / {{ displayedMedia.length }}</span>
+              <button class="mnav__btn" @click="nextMedia" :disabled="!canGoNextMedia">{{ lang.t('projects.nextMedia') }}</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Contents -->
+        <section class="chips-section" v-if="pContents(activeProject).length">
+          <div class="container">
+            <div class="chips-block">
+              <h3 class="chips-block__heading">{{ lang.t('projects.contents') }}</h3>
+              <div class="chips-row">
+                <span v-for="c in pContents(activeProject)" :key="c" class="chip chip--content">{{ c }}</span>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Project Body Content -->
-        <section class="bodySection" v-if="activeProject.body">
+        <!-- Keywords -->
+        <section class="chips-section chips-section--alt" v-if="pKeywords(activeProject).length">
           <div class="container">
-            <div class="bodyContent">
-              <p>{{ activeProject.body }}</p>
+            <div class="chips-block">
+              <h3 class="chips-block__heading">{{ lang.t('projects.keywords') }}</h3>
+              <div class="chips-row">
+                <span v-for="k in pKeywords(activeProject)" :key="k" class="chip chip--kw">{{ k }}</span>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- Related Projects -->
-        <section class="relatedSection" v-if="relatedProjects.length > 0">
+        <!-- Related -->
+        <section class="related" v-if="relatedProjects.length">
           <div class="container">
-            <div class="relatedHeader">
-              <h2 class="relatedHeader__title">پڕۆژە پەیوەندیدارەکان</h2>
-              <p class="relatedHeader__sub">پڕۆژەکانی تر کە تاگی هاوبەشیان هەیە</p>
+            <div class="related__head">
+              <h2 class="related__title">{{ lang.t('projects.related') }}</h2>
+              <div class="related__rule"></div>
             </div>
-
-            <div class="relatedGrid">
+            <div class="related__grid">
               <article
                 v-for="rp in relatedProjects"
                 :key="rp.id"
-                class="relatedCard"
+                class="rcard"
+                tabindex="0"
                 @click="openProject(rp)"
                 @keyup.enter="openProject(rp)"
-                tabindex="0"
-                role="button"
               >
-                <div class="relatedCard__img">
-                  <img :src="rp.cover.url" :alt="rp.title" loading="lazy" @error="onCoverError($event)" />
-                  <div class="relatedCard__overlay">
-                    <span class="relatedCard__viewIcon">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                    </span>
-                  </div>
+                <div class="rcard__img">
+                  <img :src="pCover(rp)" :alt="pTitle(rp)" loading="lazy" @error="onCoverError($event)" />
+                  <div class="rcard__overlay"></div>
                 </div>
-
-                <div class="relatedCard__body">
-                  <div class="relatedCard__meta">
-                    <span class="relatedCard__cat">{{ getTypeIcon(rp.category) }} {{ rp.category }}</span>
-                    <span class="relatedCard__date">{{ rp.publishedAt }}</span>
+                <div class="rcard__body">
+                  <div class="rcard__meta">
+                    <span v-if="pType(rp)">{{ getTypeIcon(pType(rp)) }} {{ pType(rp) }}</span>
+                    <span v-if="rp.projectDate">{{ formatDate(rp.projectDate) }}</span>
                   </div>
-
-                  <h3 class="relatedCard__title">{{ rp.title }}</h3>
-                  <p class="relatedCard__desc">{{ truncateText(rp.summary, 120) }}</p>
-
-                  <div class="relatedCard__footer">
-                    <div class="relatedCard__tags" v-if="rp.tags.length > 0">
-                      <span v-for="tag in rp.tags.slice(0, 2)" :key="tag" class="relatedCard__tag">#{{ tag }}</span>
-                      <span v-if="rp.tags.length > 2" class="relatedCard__tagMore">+{{ rp.tags.length - 2 }}</span>
-                    </div>
-                    <div class="relatedCard__stats">
-                      <span class="relatedCard__stat">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
-                        {{ rp.media.length }}
-                      </span>
-                    </div>
+                  <h3 class="rcard__title">{{ pTitle(rp) }}</h3>
+                  <p class="rcard__desc">{{ truncateText(pDesc(rp), 100) }}</p>
+                  <div class="rcard__tags" v-if="pTags(rp).length">
+                    <span v-for="t in pTags(rp).slice(0,2)" :key="t" class="rtag">#{{ t }}</span>
                   </div>
                 </div>
               </article>
@@ -515,25 +559,19 @@
       </div>
     </transition>
 
-    <!-- ============================================
-         FULLSCREEN OVERLAY
-         ============================================ -->
+    <!-- ══════════════════════════════════════
+         FULLSCREEN
+    ══════════════════════════════════════ -->
     <transition name="fs">
-      <div v-if="isFullscreen" class="fsOverlay" @click="exitFullscreen">
-        <button class="fsOverlay__close" @click="exitFullscreen">✕</button>
-        <div class="fsOverlay__content" @click.stop>
+      <div v-if="isFullscreen" class="fsoverlay" @click="exitFullscreen">
+        <button class="fsoverlay__x" @click="exitFullscreen">✕</button>
+        <div class="fsoverlay__frame" @click.stop>
           <img
-            v-if="fullscreenContent?.type === 'image'"
+            v-if="fullscreenContent?.type==='image'"
             :src="fullscreenContent.url"
             :alt="fullscreenContent.caption"
-            class="fsOverlay__img"
+            class="fsoverlay__img"
           />
-          <iframe
-            v-else-if="fullscreenContent?.type === 'document'"
-            :src="fullscreenContent.url"
-            class="fsOverlay__iframe"
-            frameborder="0"
-          ></iframe>
         </div>
       </div>
     </transition>
@@ -544,54 +582,39 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
 import { API_BASE_URL } from '../consts.js'
+import { useLanguageStore } from '@/stores/useLanguageStore'
 
-/* ============================================
-   CONFIGURATION
-   ============================================ */
+/* ── CONFIG ── */
 const heroImage = 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=2000&q=80'
 const fallbackCover = 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=1400&q=80'
 
-// Optimized API instance with interceptors
+/* ── GLOBAL LANGUAGE STORE ── */
+const lang = useLanguageStore()
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
-  headers: { 
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  },
+  headers: { 'Content-Type': 'application/json', Accept: 'application/json' }
 })
 
-// Response interceptor for faster error handling
-api.interceptors.response.use(
-  response => response,
-  error => {
-    console.error('API Error:', error)
-    return Promise.reject(error)
-  }
-)
-
-/* ============================================
-   STATE
-   ============================================ */
+/* ── STATE ── */
 const projects = ref([])
 const loading = ref(false)
 const error = ref('')
-
 const currentPage = ref(0)
 const pageSize = ref(20)
 const totalPages = ref(0)
 const totalElements = ref(0)
-
-const tagFilter = ref('all')
+const tagFilter = ref('')
 const sortBy = ref('newest')
 
-// Detail View
 const activeProject = ref(null)
+// Always mirrors global navbar language — no local override needed
+const detailLang = computed(() => lang.activeLang)
 const selectedMedia = ref(null)
 const zoomLevel = ref(1)
 const activeMediaFilter = ref('all')
 
-// Video
 const videoPlayer = ref(null)
 const videoPlayerContainer = ref(null)
 const isVideoPlaying = ref(false)
@@ -601,7 +624,6 @@ const videoCurrentTime = ref(0)
 const videoDuration = ref(0)
 const videoProgress = ref(0)
 
-// Audio
 const audioPlayer = ref(null)
 const isAudioPlaying = ref(false)
 const isAudioMuted = ref(false)
@@ -610,188 +632,198 @@ const audioCurrentTime = ref(0)
 const audioDuration = ref(0)
 const audioProgress = ref(0)
 
-// Fullscreen
 const isFullscreen = ref(false)
 const fullscreenContent = ref(null)
-
-// Refs
-const projectsSection = ref(null)
-
-// Cache for faster subsequent loads
+const gridSection = ref(null)
 const projectsCache = ref(new Map())
 
-/* ============================================
-   COMPUTED
-   ============================================ */
+/* ── CONTENT HELPERS — delegated to global language store ── */
+function pTitle(p)    { return lang.title(p) }
+function pDesc(p)     { return lang.description(p) }
+function pLocation(p) { return lang.location(p) }
+function pType(p)     { return lang.projectType(p) }
+function pTags(p)     { return lang.tags(p) }
+function pContents(p) { return lang.contents(p) }
+function pKeywords(p) { return lang.keywords(p) }
+function allTags(p)   { return lang.allTags(p) }
+
+function pCover(p) {
+  if (!p) return fallbackCover
+  if (p.coverUrl) return p.coverUrl
+  const img = (p.media || []).find(m => m.mediaType === 'IMAGE' && m.url)
+  return img?.url || fallbackCover
+}
+
+/**
+ * Returns true if a project has content in the currently active language.
+ */
+function hasActiveLangContent(p) {
+  return lang.hasContentInLanguage(p, lang.activeLang)
+}
+
+/* ── COMPUTED ── */
 const filteredProjects = computed(() => {
-  let list = [...projects.value]
-  if (tagFilter.value !== 'all') {
-    list = list.filter(p => (p.tags || []).includes(tagFilter.value))
+  // ① Keep only projects that have content in the active navbar language
+  let list = projects.value.filter(p => hasActiveLangContent(p))
+
+  // ② Tag filter (uses combined tags from both langs to stay usable)
+  if (tagFilter.value) {
+    list = list.filter(p => allTags(p).includes(tagFilter.value))
   }
+
+  // ③ Sort
   switch (sortBy.value) {
-    case 'newest': list.sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || '')); break
-    case 'oldest': list.sort((a, b) => (a.publishedAt || '').localeCompare(b.publishedAt || '')); break
-    case 'title_az': list.sort((a, b) => a.title.localeCompare(b.title)); break
-    case 'media_desc': list.sort((a, b) => (b.media?.length || 0) - (a.media?.length || 0)); break
+    case 'newest':
+      list.sort((a, b) => (b.projectDate || b.createdAt || '').localeCompare(a.projectDate || a.createdAt || ''))
+      break
+    case 'oldest':
+      list.sort((a, b) => (a.projectDate || a.createdAt || '').localeCompare(b.projectDate || b.createdAt || ''))
+      break
+    case 'title_az':
+      list.sort((a, b) => pTitle(a).localeCompare(pTitle(b)))
+      break
+    case 'media_desc':
+      list.sort((a, b) => (b.media?.length || 0) - (a.media?.length || 0))
+      break
   }
+
   return list
 })
 
-const heroStats = computed(() => [
-  { value: totalElements.value || 0, label: 'پڕۆژەی کۆ' },
-  { value: projects.value.length, label: 'نیشاندراو' },
-  { value: calculateTotalMedia(), label: 'میدیا' },
-])
+const heroStats = computed(() => {
+  const visibleProjects = projects.value.filter(p => hasActiveLangContent(p))
+  return [
+    { value: totalElements.value || 0, label: lang.t('projects.totalProjects') },
+    { value: visibleProjects.length, label: lang.t('projects.shown') },
+    { value: visibleProjects.reduce((s, p) => s + (p.media?.length || 0), 0), label: lang.t('projects.media') },
+  ]
+})
 
 const relatedProjects = computed(() => {
   if (!activeProject.value) return []
-  const activeTags = new Set(activeProject.value.tags)
+  const myTags = new Set(allTags(activeProject.value))
+
   return projects.value
-    .filter(p => p.id !== activeProject.value.id && p.tags.some(t => activeTags.has(t)))
+    .filter(
+      p =>
+        p.id !== activeProject.value.id &&
+        hasActiveLangContent(p) &&
+        allTags(p).some(t => myTags.has(t))
+    )
     .slice(0, 4)
 })
 
-const availableMediaTypes = computed(() => {
+const projectMedia = computed(() => {
   if (!activeProject.value) return []
-  const types = new Set(activeProject.value.media.map(m => m.mediaType))
-  return [...types]
+
+  const media = [...(activeProject.value.media || [])]
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+
+  if (!media.some(m => m.mediaType === 'IMAGE') && activeProject.value.coverUrl) {
+    media.unshift({
+      id: '__cover__',
+      mediaType: 'IMAGE',
+      url: activeProject.value.coverUrl,
+      caption: lang.t('projects.coverLabel'),
+      sortOrder: -1
+    })
+  }
+
+  return media
 })
 
+const availableMediaTypes = computed(() => [...new Set(projectMedia.value.map(m => m.mediaType))])
+
 const displayedMedia = computed(() => {
-  if (!activeProject.value) return []
-  if (activeMediaFilter.value === 'all') return activeProject.value.media
-  return activeProject.value.media.filter(m => m.mediaType === activeMediaFilter.value)
+  return activeMediaFilter.value === 'all'
+    ? projectMedia.value
+    : projectMedia.value.filter(m => m.mediaType === activeMediaFilter.value)
 })
 
 const currentMediaIndex = computed(() => {
-  if (!activeProject.value || !selectedMedia.value) return 0
-  return activeProject.value.media.findIndex(m => m.id === selectedMedia.value.id)
+  if (!selectedMedia.value) return 0
+  return displayedMedia.value.findIndex(
+    m => (m.id || m.url) === (selectedMedia.value.id || selectedMedia.value.url)
+  )
 })
 
 const canGoPreviousMedia = computed(() => currentMediaIndex.value > 0)
-const canGoNextMedia = computed(() => {
-  if (!activeProject.value) return false
-  return currentMediaIndex.value < activeProject.value.media.length - 1
-})
+const canGoNextMedia = computed(() => currentMediaIndex.value < displayedMedia.value.length - 1)
 
-/* ============================================
-   HELPERS
-   ============================================ */
+/* ── HELPERS ── */
 function getLanguageName(code) {
-  const m = { 'CKB': 'کوردی', 'KMR': 'کورمانجی', 'AR': 'عربی', 'EN': 'English' }
-  return m[code] || code
-}
-
-function isLikelyImageUrl(url) {
-  if (!url || typeof url !== 'string') return false
-  const u = url.toLowerCase()
-  if (u.endsWith('.pdf') || u.endsWith('.mp4') || u.endsWith('.mp3')) return false
-  return u.includes('.jpg') || u.includes('.jpeg') || u.includes('.png') || u.includes('.webp') || u.includes('.gif') || u.includes('image')
-}
-
-function calculateTotalMedia() {
-  return projects.value.reduce((sum, p) => sum + (p.media?.length || 0), 0)
+  return lang.languageName(code)
 }
 
 function getTypeIcon(type) {
-  const icons = {
-    'CULTURAL_EVENT': '🎭', 'RESEARCH': '📚', 'WORKSHOP': '🎓',
-    'EXHIBITION': '🖼️', 'CONFERENCE': '🎤', 'PUBLICATION': '📖',
-    'DIGITIZATION': '💾', 'OTHER': '📋'
-  }
-  return icons[type] || '📋'
-}
-
-function formatTime(seconds) {
-  if (!seconds || isNaN(seconds)) return '0:00'
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
+  return {
+    CULTURAL_EVENT: '🎭',
+    RESEARCH: '📚',
+    WORKSHOP: '🎓',
+    EXHIBITION: '🖼️',
+    CONFERENCE: '🎤',
+    PUBLICATION: '📖',
+    DIGITIZATION: '💾',
+    OTHER: '📋'
+  }[type] || '📋'
 }
 
 function getMediaIcon(type) {
-  const i = { image: '🖼️', video: '🎬', audio: '🎵', document: '📄', pdf: '📕', text: '📝' }
-  return i[String(type).toLowerCase()] || '📎'
+  return {
+    IMAGE: '🖼️',
+    VIDEO: '🎬',
+    AUDIO: '🎵',
+    DOCUMENT: '📄',
+    PDF: '📕',
+    TEXT: '📝'
+  }[type] || '📎'
 }
 
 function getMediaLabel(type) {
-  const l = { image: 'وێنە', video: 'ڤیدیۆ', audio: 'دەنگ', document: 'بەڵگەنامە', pdf: 'PDF', text: 'دەق' }
-  return l[String(type).toLowerCase()] || 'فایل'
+  return lang.mediaLabel(type)
 }
 
 function truncateText(text, max) {
   if (!text) return ''
-  return text.length > max ? text.slice(0, max) + '...' : text
-}
-
-function getMediasByType(type) {
-  if (!activeProject.value) return []
-  return activeProject.value.media.filter(m => m.mediaType === type)
-}
-
-/* ============================================
-   NORMALIZER
-   ============================================ */
-function normalizeProject(p) {
-  const media = Array.isArray(p.media) ? [...p.media] : []
-  media.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-  const normalizedMedia = media.map(m => ({
-    id: m.id ?? `${m.url}-${m.sortOrder}`,
-    mediaType: String(m.mediaType || '').toLowerCase(),
-    url: m.url || '',
-    caption: m.caption || '',
-    sortOrder: m.sortOrder ?? 0,
-    textBody: m.textBody || '',
-    note: m.note || m.textBody || '',
-  }))
-  let coverUrl = p.cover || ''
-  if (!coverUrl || !isLikelyImageUrl(coverUrl)) {
-    const firstImage = normalizedMedia.find(m => m.mediaType === 'image')
-    coverUrl = firstImage?.url || fallbackCover
-  }
-  if (!isLikelyImageUrl(coverUrl)) coverUrl = fallbackCover
-  return {
-    id: p.id,
-    title: p.title || 'بێ ناونیشان',
-    summary: p.description || '',
-    body: p.content || '',
-    publishedAt: formatDate(p.date || p.createdAt),
-    category: p.projectType || 'OTHER',
-    tags: Array.isArray(p.tags) ? p.tags : [],
-    location: p.location || '',
-    language: p.language || 'CKB',
-    cover: { url: coverUrl },
-    media: normalizedMedia.length
-      ? normalizedMedia
-      : [{ id: 'cover', mediaType: 'image', url: coverUrl, caption: 'Cover' }],
-  }
+  return text.length > max ? text.slice(0, max) + '…' : text
 }
 
 function formatDate(v) {
   if (!v) return ''
-  const d = new Date(v)
-  return isNaN(d.getTime()) ? String(v) : d.toISOString().slice(0, 10)
+  try {
+    const d = new Date(v)
+    if (Number.isNaN(d.getTime())) return String(v)
+    return d.toLocaleDateString(lang.dateLocales, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch {
+    const d = new Date(v)
+    return isNaN(d.getTime()) ? String(v) : d.toISOString().slice(0, 10)
+  }
 }
 
-/* ============================================
-   OPTIMIZED API FETCHING
-   ============================================ */
+function formatTime(s) {
+  if (!s || isNaN(s)) return '0:00'
+  return `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, '0')}`
+}
+
+/* ── API ── */
 async function fetchProjects(reset = false) {
   try {
     loading.value = true
     error.value = ''
+
     if (reset) currentPage.value = 0
 
-    const params = { 
-      page: currentPage.value, 
-      size: pageSize.value, 
-      sort: 'createdAt', 
-      dir: 'desc' 
+    const params = {
+      page: currentPage.value,
+      size: pageSize.value,
+      sort: 'createdAt',
+      dir: 'desc'
     }
-    
-    if (tagFilter.value !== 'all') params.tags = [tagFilter.value]
 
-    // Check cache first for instant loading
     const cacheKey = JSON.stringify(params)
     if (projectsCache.value.has(cacheKey)) {
       const cached = projectsCache.value.get(cacheKey)
@@ -799,104 +831,62 @@ async function fetchProjects(reset = false) {
       totalPages.value = cached.totalPages
       totalElements.value = cached.totalElements
       loading.value = false
-      // Still fetch in background to update cache
-      fetchInBackground(params, cacheKey)
       return
     }
 
-    const response = await api.get('/projects/getAll', { params })
-    const apiResponse = response.data
-    
-    if (!apiResponse || !apiResponse.success) {
-      throw new Error(apiResponse?.message || 'فشەلبووی داواکاری')
+    const { data: apiResponse } = await api.get('/projects/getAll', { params })
+
+    if (!apiResponse?.success) {
+      throw new Error(apiResponse?.message || lang.t('projects.requestFailed'))
     }
 
     const page = apiResponse.data
     const list = Array.isArray(page?.content) ? page.content : []
-    const normalized = list.map(normalizeProject)
-    
-    projects.value = normalized
+
+    projects.value = list
     totalPages.value = page?.totalPages ?? 1
     totalElements.value = page?.totalElements ?? list.length
 
-    // Cache the results
     projectsCache.value.set(cacheKey, {
-      projects: normalized,
+      projects: list,
       totalPages: totalPages.value,
       totalElements: totalElements.value,
       timestamp: Date.now()
     })
 
-    // Clear old cache entries (older than 5 minutes)
-    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000
-    for (const [key, value] of projectsCache.value.entries()) {
-      if (value.timestamp < fiveMinutesAgo) {
-        projectsCache.value.delete(key)
-      }
+    // clear old cache entries (> 5 min)
+    for (const [k, v] of projectsCache.value.entries()) {
+      if (v.timestamp < Date.now() - 5 * 60 * 1000) projectsCache.value.delete(k)
     }
-
   } catch (e) {
-    console.error('API Error:', e)
-    error.value = e.response?.data?.message || e.message || 'فشەلبووی بارکردنی پڕۆژەکان'
+    error.value = e.response?.data?.message || e.message || lang.t('projects.fetchFailed')
   } finally {
     loading.value = false
   }
 }
 
-// Background fetch to update cache
-async function fetchInBackground(params, cacheKey) {
-  try {
-    const response = await api.get('/projects/getAll', { params })
-    const apiResponse = response.data
-    
-    if (apiResponse && apiResponse.success) {
-      const page = apiResponse.data
-      const list = Array.isArray(page?.content) ? page.content : []
-      const normalized = list.map(normalizeProject)
-      
-      // Update cache silently
-      projectsCache.value.set(cacheKey, {
-        projects: normalized,
-        totalPages: page?.totalPages ?? 1,
-        totalElements: page?.totalElements ?? list.length,
-        timestamp: Date.now()
-      })
-    }
-  } catch (e) {
-    // Silently fail background updates
-    console.warn('Background fetch failed:', e)
-  }
-}
-
-/* ============================================
-   FILTER HANDLERS
-   ============================================ */
+/* ── Filters / Pagination ── */
 function filterByTag(tag) {
   tagFilter.value = tag
-  fetchProjects(true)
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function filterFromDetail(tag) {
   closeProject()
-  setTimeout(() => filterByTag(tag), 350)
+  setTimeout(() => filterByTag(tag), 400)
 }
 
 function clearTagFilter() {
-  tagFilter.value = 'all'
-  fetchProjects(true)
+  tagFilter.value = ''
 }
 
 function resetAllFilters() {
-  tagFilter.value = 'all'
+  tagFilter.value = ''
   sortBy.value = 'newest'
   fetchProjects(true)
 }
 
-/* ============================================
-   PAGINATION
-   ============================================ */
-function goToPreviousPage() {
+function goToPrev() {
   if (currentPage.value > 0) {
     currentPage.value--
     fetchProjects()
@@ -904,7 +894,7 @@ function goToPreviousPage() {
   }
 }
 
-function goToNextPage() {
+function goToNext() {
   if (currentPage.value + 1 < totalPages.value) {
     currentPage.value++
     fetchProjects()
@@ -912,20 +902,26 @@ function goToNextPage() {
   }
 }
 
-function scrollToProjects() {
-  projectsSection.value?.scrollIntoView({ behavior: 'smooth' })
+function goToPage(p) {
+  currentPage.value = p
+  fetchProjects()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-/* ============================================
-   PROJECT DETAIL
-   ============================================ */
+function scrollToGrid() {
+  gridSection.value?.scrollIntoView({ behavior: 'smooth' })
+}
+
+/* ── Detail / Media ── */
 function openProject(p) {
   activeProject.value = p
-  selectedMedia.value = p.media?.[0] || null
   activeMediaFilter.value = 'all'
   zoomLevel.value = 1
+
   window.scrollTo({ top: 0, behavior: 'smooth' })
+
   nextTick(() => {
+    selectedMedia.value = projectMedia.value[0] || null
     resetVideoState()
     resetAudioState()
   })
@@ -944,103 +940,246 @@ function selectMedia(media) {
   resetAudioState()
   selectedMedia.value = media
   zoomLevel.value = 1
-  nextTick(() => {
-    resetVideoState()
-    resetAudioState()
-  })
 }
 
 function resetVideoState() {
-  if (videoPlayer.value) { videoPlayer.value.pause(); videoPlayer.value.currentTime = 0 }
-  isVideoPlaying.value = false; videoCurrentTime.value = 0; videoDuration.value = 0; videoProgress.value = 0
+  if (videoPlayer.value) {
+    videoPlayer.value.pause()
+    videoPlayer.value.currentTime = 0
+  }
+  isVideoPlaying.value = false
+  videoCurrentTime.value = 0
+  videoDuration.value = 0
+  videoProgress.value = 0
 }
 
 function resetAudioState() {
-  if (audioPlayer.value) { audioPlayer.value.pause(); audioPlayer.value.currentTime = 0 }
-  isAudioPlaying.value = false; audioCurrentTime.value = 0; audioDuration.value = 0; audioProgress.value = 0
+  if (audioPlayer.value) {
+    audioPlayer.value.pause()
+    audioPlayer.value.currentTime = 0
+  }
+  isAudioPlaying.value = false
+  audioCurrentTime.value = 0
+  audioDuration.value = 0
+  audioProgress.value = 0
 }
 
-/* ============================================
-   VIDEO CONTROLS
-   ============================================ */
-function onVideoLoaded() { if (videoPlayer.value) { videoDuration.value = videoPlayer.value.duration; videoPlayer.value.volume = videoVolume.value } }
-function onVideoTimeUpdate() { if (videoPlayer.value) { videoCurrentTime.value = videoPlayer.value.currentTime; videoProgress.value = (videoPlayer.value.currentTime / videoPlayer.value.duration) * 100 } }
-function toggleVideoPlay() { if (!videoPlayer.value) return; videoPlayer.value.paused ? videoPlayer.value.play() : videoPlayer.value.pause() }
-function toggleMute() { if (!videoPlayer.value) return; videoPlayer.value.muted = !videoPlayer.value.muted; isVideoMuted.value = videoPlayer.value.muted }
-function changeVideoVolume(e) { if (!videoPlayer.value) return; const v = e.target.value / 100; videoPlayer.value.volume = v; videoVolume.value = v; if (v > 0 && isVideoMuted.value) { videoPlayer.value.muted = false; isVideoMuted.value = false } }
+watch(activeMediaFilter, () => {
+  selectedMedia.value = displayedMedia.value[0] || null
+  zoomLevel.value = 1
+})
+
+// Keep selection valid when media list changes (language/filter/detail change)
+watch(displayedMedia, (list) => {
+  if (!list?.length) {
+    selectedMedia.value = null
+    return
+  }
+
+  if (!selectedMedia.value) {
+    selectedMedia.value = list[0]
+    return
+  }
+
+  const exists = list.some(m => (m.id || m.url) === (selectedMedia.value.id || selectedMedia.value.url))
+  if (!exists) {
+    selectedMedia.value = list[0]
+  }
+})
+
+/* ── Video ── */
+function onVideoLoaded() {
+  if (videoPlayer.value) {
+    videoDuration.value = videoPlayer.value.duration
+    videoPlayer.value.volume = videoVolume.value
+  }
+}
+
+function onVideoTimeUpdate() {
+  if (videoPlayer.value) {
+    videoCurrentTime.value = videoPlayer.value.currentTime
+    videoProgress.value = (videoPlayer.value.currentTime / videoPlayer.value.duration) * 100 || 0
+  }
+}
+
+function toggleVideoPlay() {
+  if (!videoPlayer.value) return
+  videoPlayer.value.paused ? videoPlayer.value.play() : videoPlayer.value.pause()
+}
+
+function toggleMute() {
+  if (!videoPlayer.value) return
+  videoPlayer.value.muted = !videoPlayer.value.muted
+  isVideoMuted.value = videoPlayer.value.muted
+}
+
+function changeVideoVolume(e) {
+  if (!videoPlayer.value) return
+  const v = Number(e.target.value) / 100
+  videoPlayer.value.volume = v
+  videoVolume.value = v
+  if (v > 0 && isVideoMuted.value) {
+    videoPlayer.value.muted = false
+    isVideoMuted.value = false
+  }
+}
+
+function seekVideo(e) {
+  if (!videoPlayer.value) return
+  const r = e.currentTarget.getBoundingClientRect()
+  videoPlayer.value.currentTime = ((e.clientX - r.left) / r.width) * videoPlayer.value.duration
+}
+
 function toggleVideoFullscreen() {
   if (!videoPlayerContainer.value) return
-  if (document.fullscreenElement) { document.exitFullscreen() }
-  else { videoPlayerContainer.value.requestFullscreen?.() || videoPlayerContainer.value.webkitRequestFullscreen?.() }
+  if (document.fullscreenElement) {
+    document.exitFullscreen()
+  } else {
+    videoPlayerContainer.value.requestFullscreen?.() || videoPlayerContainer.value.webkitRequestFullscreen?.()
+  }
 }
-function seekVideo(e) { if (!videoPlayer.value) return; const r = e.currentTarget.getBoundingClientRect(); videoPlayer.value.currentTime = ((e.clientX - r.left) / r.width) * videoPlayer.value.duration }
 
-/* ============================================
-   AUDIO CONTROLS
-   ============================================ */
-function onAudioLoaded() { if (audioPlayer.value) { audioDuration.value = audioPlayer.value.duration; audioPlayer.value.volume = audioVolume.value } }
-function onAudioTimeUpdate() { if (audioPlayer.value) { audioCurrentTime.value = audioPlayer.value.currentTime; audioProgress.value = (audioPlayer.value.currentTime / audioPlayer.value.duration) * 100 } }
-function toggleAudioPlay() { if (!audioPlayer.value) return; audioPlayer.value.paused ? audioPlayer.value.play() : audioPlayer.value.pause() }
-function toggleAudioMute() { if (!audioPlayer.value) return; audioPlayer.value.muted = !audioPlayer.value.muted; isAudioMuted.value = audioPlayer.value.muted }
-function changeAudioVolume(e) { if (!audioPlayer.value) return; const v = e.target.value / 100; audioPlayer.value.volume = v; audioVolume.value = v; if (v > 0 && isAudioMuted.value) { audioPlayer.value.muted = false; isAudioMuted.value = false } }
-function seekAudio(e) { if (!audioPlayer.value) return; const r = e.currentTarget.getBoundingClientRect(); audioPlayer.value.currentTime = ((e.clientX - r.left) / r.width) * audioPlayer.value.duration }
+/* ── Audio ── */
+function onAudioLoaded() {
+  if (audioPlayer.value) {
+    audioDuration.value = audioPlayer.value.duration
+    audioPlayer.value.volume = audioVolume.value
+  }
+}
 
-/* ============================================
-   MEDIA NAVIGATION
-   ============================================ */
+function onAudioTimeUpdate() {
+  if (audioPlayer.value) {
+    audioCurrentTime.value = audioPlayer.value.currentTime
+    audioProgress.value = (audioPlayer.value.currentTime / audioPlayer.value.duration) * 100 || 0
+  }
+}
+
+function toggleAudioPlay() {
+  if (!audioPlayer.value) return
+  audioPlayer.value.paused ? audioPlayer.value.play() : audioPlayer.value.pause()
+}
+
+function toggleAudioMute() {
+  if (!audioPlayer.value) return
+  audioPlayer.value.muted = !audioPlayer.value.muted
+  isAudioMuted.value = audioPlayer.value.muted
+}
+
+function changeAudioVolume(e) {
+  if (!audioPlayer.value) return
+  const v = Number(e.target.value) / 100
+  audioPlayer.value.volume = v
+  audioVolume.value = v
+  if (v > 0 && isAudioMuted.value) {
+    audioPlayer.value.muted = false
+    isAudioMuted.value = false
+  }
+}
+
+function seekAudio(e) {
+  if (!audioPlayer.value) return
+  const r = e.currentTarget.getBoundingClientRect()
+  audioPlayer.value.currentTime = ((e.clientX - r.left) / r.width) * audioPlayer.value.duration
+}
+
 function previousMedia() {
-  if (!canGoPreviousMedia.value) return
-  selectMedia(activeProject.value.media[currentMediaIndex.value - 1])
+  if (canGoPreviousMedia.value) {
+    selectMedia(displayedMedia.value[currentMediaIndex.value - 1])
+  }
 }
+
 function nextMedia() {
-  if (!canGoNextMedia.value) return
-  selectMedia(activeProject.value.media[currentMediaIndex.value + 1])
+  if (canGoNextMedia.value) {
+    selectMedia(displayedMedia.value[currentMediaIndex.value + 1])
+  }
 }
 
-/* ============================================
-   ZOOM
-   ============================================ */
-function zoomIn() { if (zoomLevel.value < 3) zoomLevel.value += 0.25 }
-function zoomOut() { if (zoomLevel.value > 1) zoomLevel.value -= 0.25 }
-function resetZoom() { zoomLevel.value = 1 }
+/* ── Zoom / Fullscreen ── */
+function zoomIn() {
+  if (zoomLevel.value < 3) zoomLevel.value += 0.25
+}
+function zoomOut() {
+  if (zoomLevel.value > 1) zoomLevel.value -= 0.25
+}
+function resetZoom() {
+  zoomLevel.value = 1
+}
 
-/* ============================================
-   FULLSCREEN
-   ============================================ */
 function openFullscreen(media) {
-  if (media?.mediaType === 'image') {
+  if (media?.mediaType === 'IMAGE') {
     fullscreenContent.value = { type: 'image', url: media.url, caption: media.caption }
     isFullscreen.value = true
   }
 }
-function openInFullscreen(url) {
-  fullscreenContent.value = { type: 'document', url }
-  isFullscreen.value = true
-}
+
 function exitFullscreen() {
   isFullscreen.value = false
   fullscreenContent.value = null
 }
 
-/* ============================================
-   ERROR HANDLERS
-   ============================================ */
-function onCoverError(e) { e.target.src = fallbackCover }
-function onPreviewError(e) { e.target.src = fallbackCover }
+/* ── Fallback Images ── */
+function onCoverError(e) {
+  e.target.src = fallbackCover
+}
+function onPreviewError(e) {
+  e.target.src = fallbackCover
+}
 
-/* ============================================
-   KEYBOARD NAVIGATION
-   ============================================ */
+/* ── Keyboard ── */
 function handleKeydown(e) {
+  if (isFullscreen.value && e.key === 'Escape') {
+    exitFullscreen()
+    return
+  }
+
   if (!activeProject.value) return
+
   if (e.key === 'Escape') closeProject()
+
+  // Keep physical arrow behavior stable for media navigation
   if (e.key === 'ArrowLeft') nextMedia()
   if (e.key === 'ArrowRight') previousMedia()
 }
 
-/* ============================================
-   LIFECYCLE
-   ============================================ */
+/* ── React to global language changes ────────────────────────────────
+   Improved behavior:
+   1) Keep open detail if project has the new language content
+   2) Close detail only if project lacks the new language
+   3) Keep tag filter only if it still exists in visible projects
+   4) Reset fullscreen/zoom for clean state
+*/
+watch(
+  () => lang.activeLang,
+  () => {
+    // fullscreen should close on language change (UI / captions re-render cleanly)
+    if (isFullscreen.value) exitFullscreen()
+    zoomLevel.value = 1
+
+    // If a detail is open, keep it only if that project supports the newly selected language
+    if (activeProject.value && !hasActiveLangContent(activeProject.value)) {
+      closeProject()
+    }
+
+    // If current media filter type no longer exists, reset to all
+    if (activeProject.value && activeMediaFilter.value !== 'all' && !availableMediaTypes.value.includes(activeMediaFilter.value)) {
+      activeMediaFilter.value = 'all'
+    }
+
+    // Keep tag filter only if at least one visible project still matches it
+    if (tagFilter.value) {
+      const visible = projects.value.filter(p => hasActiveLangContent(p))
+      const stillExists = visible.some(p => allTags(p).includes(tagFilter.value))
+      if (!stillExists) tagFilter.value = ''
+    }
+
+    // If we're in listing view, scroll top for cleaner re-render
+    if (!activeProject.value) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+)
+
+/* ── Lifecycle ── */
 onMounted(() => {
   fetchProjects(true)
   window.addEventListener('keydown', handleKeydown)
@@ -1053,1867 +1192,1321 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
 })
 </script>
-
 <style scoped>
-/* ============================================
-   DESIGN SYSTEM — Premium Stanford Heritage
-   ============================================ */
-@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+/* ════════════════════════════════════════════════
+   FONTS & ROOT TOKENS
+════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 .projects {
-  --cardinal: #8C1515;
-  --cardinal-dark: #6e0f0f;
-  --cardinal-light: #a52a2a;
-  --gold: #b26f16;
-  --gold-light: #d4a24c;
-  --ink: #1a1a18;
-  --text: #2e2d29;
-  --text-secondary: #5f5e5a;
-  --text-muted: #8a8985;
-  --border: #e2e0db;
-  --surface: #faf9f7;
-  --surface-alt: #f3f2ee;
-  --white: #ffffff;
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
-  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
-  --shadow-xl: 0 24px 64px rgba(0,0,0,0.16), 0 8px 24px rgba(0,0,0,0.08);
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* ── Palette ── */
+  --crimson:       #7C1C1C;
+  --crimson-deep:  #4A0F0F;
+  --crimson-mid:   #A82828;
+  --crimson-glow:  rgba(124,28,28,.55);
+  --amber:         #C49A3C;
+  --amber-light:   #DDB86A;
+  --amber-pale:    #F2E4C4;
+  --amber-wash:    rgba(196,154,60,.07);
+
+  --void:          #0C0B09;
+  --ink:           #141210;
+  --charcoal:      #1E1C19;
+  --pewter:        #3A3832;
+  --text:          #231F1A;
+  --muted:         #6B6560;
+  --faint:         #A09990;
+  --border:        rgba(60,55,48,.13);
+  --border-warm:   rgba(196,154,60,.18);
+  --surface:       #F7F4EF;
+  --parchment:     #FAF7F2;
+  --card-bg:       #FFFFFF;
+
+  /* ── Space & Shape ── */
+  --radius-xs:  4px;
+  --radius-s:   8px;
+  --radius-m:   14px;
+  --radius-l:   20px;
+  --radius-xl:  28px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-xs: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+  --shadow-s:  0 2px 8px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+  --shadow-m:  0 8px 24px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.05);
+  --shadow-l:  0 20px 50px rgba(0,0,0,.12), 0 6px 16px rgba(0,0,0,.06);
+  --shadow-xl: 0 40px 80px rgba(0,0,0,.18), 0 12px 30px rgba(0,0,0,.1);
+  --shadow-crimson: 0 8px 30px rgba(124,28,28,.28);
+  --shadow-amber:   0 8px 30px rgba(196,154,60,.28);
+
+  /* ── Motion ── */
+  --ease:        cubic-bezier(.25, 1, .35, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-expo:   cubic-bezier(.87, 0, .13, 1);
 
   min-height: 100vh;
-  background: var(--surface);
+  background: var(--parchment);
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
   direction: rtl;
   text-align: right;
   -webkit-font-smoothing: antialiased;
-  position: relative;
   overflow-x: hidden;
 }
 
 .container {
-  max-width: 1240px;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 2.5rem;
 }
 
-.section { padding: 5rem 0; }
+/* ── PAGE TRANSITIONS ── */
+.page-enter-active { transition: opacity .5s var(--ease), transform .5s var(--ease); }
+.page-leave-active { transition: opacity .3s ease, transform .3s ease; }
+.page-enter-from   { opacity: 0; transform: translateY(40px); }
+.page-leave-to     { opacity: 0; transform: translateY(-20px); }
 
-/* ============================================
-   VIEW TRANSITIONS
-   ============================================ */
-.view-fade-enter-active { transition: opacity 0.35s var(--ease), transform 0.35s var(--ease); }
-.view-fade-leave-active { transition: opacity 0.2s ease; }
-.view-fade-enter-from { opacity: 0; transform: translateY(20px); }
-.view-fade-leave-to { opacity: 0; }
-
-/* ============================================
-   HERO
-   ============================================ */
+/* ════════════════════════════════════════════════
+   HERO — Cinematic Archive
+════════════════════════════════════════════════ */
 .hero {
   position: relative;
-  min-height: 88vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--ink);
+  background: var(--void);
 }
+
+.hero__canvas { position: absolute; inset: 0; }
 
 .hero__bg {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: -5%;
   background-size: cover;
   background-position: center;
-  filter: brightness(0.3) saturate(1.2);
-  animation: hero-drift 50s ease-in-out infinite alternate;
+  filter: brightness(.18) saturate(1.4) sepia(.25);
+  animation: bgdrift 80s ease-in-out infinite alternate;
+}
+@keyframes bgdrift {
+  0%   { transform: scale(1.05) translateX(0) translateY(0); }
+  33%  { transform: scale(1.12) translateX(-25px) translateY(10px); }
+  66%  { transform: scale(1.08) translateX(15px) translateY(-8px); }
+  100% { transform: scale(1.15) translateX(-10px) translateY(5px); }
 }
 
-@keyframes hero-drift {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.1) translateX(-15px); }
+/* Film grain texture */
+.hero__film {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.08'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  animation: grainshift 0.18s steps(1) infinite;
+}
+@keyframes grainshift {
+  0%   { transform: translateX(0) translateY(0); }
+  25%  { transform: translateX(-2px) translateY(1px); }
+  50%  { transform: translateX(1px) translateY(-2px); }
+  75%  { transform: translateX(-1px) translateY(2px); }
+  100% { transform: translateX(2px) translateY(-1px); }
 }
 
-.hero__overlay {
-  position: absolute;
-  inset: 0;
+/* Cinematic vignette */
+.hero__vignette {
+  position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse at 100% 0%, rgba(140,21,21,0.25) 0%, transparent 55%),
-    radial-gradient(ellipse at 0% 100%, rgba(178,111,22,0.2) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.85) 100%);
+    radial-gradient(ellipse 120% 80% at 50% 0%, transparent 0%, rgba(0,0,0,.7) 100%),
+    radial-gradient(ellipse 90% 60% at 85% 15%, rgba(124,28,28,.2) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 15% 85%, rgba(196,154,60,.12) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(0,0,0,.25) 0%, rgba(0,0,0,.5) 50%, rgba(0,0,0,.92) 100%);
 }
 
-.hero__grain {
+/* Subtle scanlines */
+.hero__scanlines {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,.04) 2px,
+    rgba(0,0,0,.04) 4px
+  );
+}
+
+/* Decorative corner brackets */
+.hero__corner {
   position: absolute;
-  inset: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  width: 64px; height: 64px;
+  z-index: 5; pointer-events: none;
+  opacity: .35;
+  transition: opacity .5s;
+}
+.hero__corner--tl { top: 2.5rem; right: 2.5rem; border-top: 1px solid var(--amber); border-right: 1px solid var(--amber); }
+.hero__corner--tr { top: 2.5rem; left: 2.5rem; border-top: 1px solid var(--amber); border-left: 1px solid var(--amber); }
+.hero__corner--bl { bottom: 2.5rem; right: 2.5rem; border-bottom: 1px solid var(--amber); border-right: 1px solid var(--amber); }
+.hero__corner--br { bottom: 2.5rem; left: 2.5rem; border-bottom: 1px solid var(--amber); border-left: 1px solid var(--amber); }
+
+/* Atmospheric orbs */
+.hero__orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
   pointer-events: none;
 }
+.orb--a { width: 600px; height: 600px; background: radial-gradient(circle, rgba(124,28,28,.3) 0%, transparent 70%); top: -20%; right: -10%; animation: orbdrift 20s ease-in-out infinite alternate; }
+.orb--b { width: 500px; height: 500px; background: radial-gradient(circle, rgba(196,154,60,.15) 0%, transparent 70%); bottom: -10%; left: -5%; animation: orbdrift 25s ease-in-out infinite alternate-reverse; }
+.orb--c { width: 350px; height: 350px; background: radial-gradient(circle, rgba(124,28,28,.15) 0%, transparent 70%); top: 35%; left: 35%; animation: orbdrift 18s ease-in-out infinite; }
+@keyframes orbdrift {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(30px, -20px) scale(1.1); }
+  100% { transform: translate(-15px, 30px) scale(.95); }
+}
 
-.hero__content {
-  position: relative;
-  z-index: 10;
+.hero__inner {
+  position: relative; z-index: 10;
   width: 100%;
-  animation: hero-enter 1s var(--ease) 0.1s both;
+  animation: herorise 1.2s var(--ease) .1s both;
+}
+@keyframes herorise {
+  from { opacity: 0; transform: translateY(70px); filter: blur(8px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
-@keyframes hero-enter {
-  0% { opacity: 0; transform: translateY(50px); filter: blur(8px); }
-  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+/* Archive stamp */
+.hero__stamp {
+  display: flex; justify-content: center;
+  margin-bottom: 3rem;
+  animation: fadein 1s var(--ease) .2s both;
 }
-
-.heroCard {
-  max-width: 820px;
-  margin: 0 auto;
-  text-align: center;
+.stamp__ring {
+  width: 90px; height: 90px;
+  border: 1.5px solid rgba(196,154,60,.5);
+  border-radius: 50%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0;
+  position: relative;
+  box-shadow: 0 0 0 4px rgba(196,154,60,.08), 0 0 30px rgba(196,154,60,.1);
 }
-
-.heroCard__eyebrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  margin-bottom: 2.5rem;
-  animation: eyebrow-in 0.9s var(--ease) 0.3s both;
-}
-
-@keyframes eyebrow-in {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.eyebrow-line {
-  width: 48px;
-  height: 1.5px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5));
-}
-
-.eyebrow-text {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.8);
-  letter-spacing: 0.05em;
+.stamp__text {
+  font-size: .38rem;
+  letter-spacing: .12em;
+  color: rgba(196,154,60,.8);
   text-transform: uppercase;
-}
-
-.heroCard__title {
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: clamp(2.75rem, 5.5vw, 4.5rem);
-  font-weight: 800;
-  color: #fff;
-  line-height: 1.12;
-  margin-bottom: 1.5rem;
-  letter-spacing: -0.02em;
-}
-
-.title-accent {
-  display: block;
-  color: var(--gold-light);
-  margin-top: 0.25rem;
-}
-
-.heroCard__sub {
-  font-size: clamp(1.05rem, 2vw, 1.2rem);
-  color: rgba(255,255,255,0.75);
-  line-height: 1.8;
-  margin-bottom: 3.5rem;
-  max-width: 560px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.heroCard__stats {
-  display: flex;
-  justify-content: center;
-  gap: 4rem;
-  margin-bottom: 2rem;
-}
-
-.stat {
+  font-weight: 600;
+  line-height: 1.2;
   text-align: center;
-  animation: stat-in 0.7s var(--ease) both;
+  padding: 0 6px;
+}
+.stamp__year {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(196,154,60,.9);
+  line-height: 1;
+  margin-top: 2px;
 }
 
-.stat__value {
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: clamp(2.25rem, 4vw, 3rem);
-  font-weight: 800;
+/* Kicker */
+.hero__kicker {
+  display: flex; align-items: center; gap: 1.25rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  animation: fadein 1s var(--ease) .4s both;
+}
+@keyframes fadein { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+.kicker__rule {
+  display: block; flex: 0 0 50px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(196,154,60,.5));
+}
+.kicker__rule:last-child { background: linear-gradient(270deg, transparent, rgba(196,154,60,.5)); }
+.kicker__text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .72rem; font-weight: 600;
+  letter-spacing: .2em; color: var(--amber-light);
+  text-transform: uppercase; white-space: nowrap;
+}
+
+/* Headline */
+.hero__headline {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+}
+.headline__line {
+  display: block;
+  animation: fadein 1s var(--ease) both;
+}
+.headline__line--deco {
+  font-size: .85rem;
+  color: rgba(196,154,60,.6);
+  letter-spacing: .4em;
+  animation-delay: .45s;
+}
+.headline__line--main {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(4rem, 8vw, 7rem);
+  font-weight: 300;
+  font-style: italic;
   color: #fff;
   line-height: 1;
-  margin-bottom: 0.5rem;
+  letter-spacing: -.02em;
+  background: linear-gradient(165deg, #fff 40%, rgba(196,154,60,.85) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation-delay: .6s;
 }
-
-.stat__label {
-  font-size: 0.8rem;
-  color: rgba(255,255,255,0.6);
-  font-weight: 600;
+.headline__line--sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: clamp(.8rem, 1.5vw, 1rem);
+  font-weight: 400;
+  letter-spacing: .25em;
+  color: rgba(255,255,255,.42);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  animation-delay: .75s;
 }
 
-@keyframes stat-in {
-  from { opacity: 0; transform: translateY(25px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.heroCard__filter { margin-top: 2rem; }
-
-.filterPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: rgba(255,255,255,0.1);
+/* Stats */
+.hero__stats {
+  display: flex; justify-content: center; align-items: center;
+  border: 1px solid rgba(196,154,60,.15);
+  background: rgba(255,255,255,.03);
   backdrop-filter: blur(20px);
-  padding: 0.75rem 1.5rem;
-  border-radius: 100px;
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff;
-  font-size: 0.95rem;
+  border-radius: var(--radius-l);
+  padding: 2rem 4rem;
+  max-width: 580px;
+  margin: 0 auto 2rem;
+  gap: 0;
+  animation: fadein 1s var(--ease) .85s both;
+}
+.hstat { display: flex; align-items: stretch; gap: 0; flex: 1; }
+.hstat__inner { text-align: center; flex: 1; padding: 0 2.5rem; }
+.hstat__sep { width: 1px; background: rgba(196,154,60,.2); flex-shrink: 0; }
+.hstat__num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2.2rem, 4vw, 3rem);
   font-weight: 600;
-}
-
-.filterPill__hash { color: var(--gold-light); font-weight: 700; }
-
-.filterPill__close {
-  background: rgba(255,255,255,0.15);
-  border: none;
   color: #fff;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  transition: all 0.2s ease;
+  line-height: 1;
+  margin-bottom: .35rem;
+}
+.hstat__lbl {
+  font-size: .68rem;
+  font-weight: 600;
+  color: rgba(196,154,60,.75);
+  letter-spacing: .14em;
+  text-transform: uppercase;
 }
 
-.filterPill__close:hover {
-  background: var(--cardinal);
-  transform: rotate(90deg);
+/* Active tag pill */
+.pill-enter-active, .pill-leave-active { transition: all .4s var(--ease); }
+.pill-enter-from, .pill-leave-to { opacity: 0; transform: translateY(14px) scale(.95); }
+.hero__activetag { margin-top: 1.5rem; display: flex; justify-content: center; }
+.atag {
+  display: inline-flex; align-items: center; gap: .7rem;
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(196,154,60,.3);
+  padding: .65rem 1.4rem;
+  border-radius: var(--radius-full);
+  color: #fff;
+  font-size: .9rem; font-weight: 500;
 }
+.atag__hash { color: var(--amber-light); font-weight: 700; }
+.atag__x {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.08);
+  border: none; border-radius: 50%; color: rgba(255,255,255,.7);
+  cursor: pointer; font-size: .72rem;
+  transition: all .25s var(--ease-spring);
+}
+.atag__x:hover { background: var(--crimson); color: #fff; transform: rotate(90deg) scale(1.15); }
 
-/* Scroll Indicator */
+/* Scroll indicator */
 .hero__scroll {
-  position: absolute;
-  bottom: 3rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  cursor: pointer;
+  position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%);
+  z-index: 10; border: none; background: none;
+  display: flex; flex-direction: column; align-items: center; gap: .4rem;
+  color: rgba(255,255,255,.4); cursor: pointer;
+  transition: all .3s; animation: scrollbounce 3s ease-in-out infinite;
+  padding: 0;
+}
+.hero__scroll:hover { color: rgba(196,154,60,.9); }
+.scroll__label {
+  font-size: .65rem; font-weight: 600; letter-spacing: .16em;
+  text-transform: uppercase; color: inherit;
+}
+@keyframes scrollbounce {
+  0%,100% { transform: translateX(-50%) translateY(0); opacity: .5; }
+  50% { transform: translateX(-50%) translateY(10px); opacity: 1; }
 }
 
-.scrollIndicator {
-  width: 24px;
-  height: 40px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-radius: 12px;
+/* ════════════════════════════════════════════════
+   BODY & GRID
+════════════════════════════════════════════════ */
+.body {
+  padding: 5rem 0 8rem;
+  background: var(--parchment);
   position: relative;
-  display: flex;
-  justify-content: center;
 }
 
-.scrollIndicator__line {
+/* Subtle section divider top */
+.body::before {
+  content: '';
   display: block;
-  width: 2px;
-  height: 10px;
-  background: rgba(255,255,255,0.6);
-  border-radius: 2px;
-  margin-top: 6px;
-  animation: scroll-pulse 2s ease-in-out infinite;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  opacity: .4;
+  margin-bottom: 0;
 }
 
-@keyframes scroll-pulse {
-  0%, 100% { opacity: 0; transform: translateY(0); }
-  50% { opacity: 1; transform: translateY(8px); }
-}
-
-/* ============================================
-   TOOLBAR
-   ============================================ */
+/* Toolbar */
 .toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1.5rem;
-  background: var(--white);
-  padding: 1.25rem 1.75rem;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--card-bg);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-m);
   border: 1px solid var(--border);
-  margin-bottom: 2.5rem;
+  box-shadow: var(--shadow-xs);
+  margin-bottom: 3rem;
+  gap: 1rem;
 }
-
-.toolbar__status {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.toolbar__left { display: flex; align-items: center; gap: .6rem; }
+.toolbar__indicator {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  transition: background .3s;
 }
+.ind--ok { background: #3D9970; box-shadow: 0 0 0 3px rgba(61,153,112,.12); }
+.ind--loading { background: var(--amber); animation: pulse 1.3s ease infinite; }
+.ind--err { background: #C0392B; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+.toolbar__label { font-size: .875rem; font-weight: 500; color: var(--muted); }
+.toolbar__label strong { color: var(--text); font-weight: 700; }
 
-.statusDot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.statusDot--ok { background: #22c55e; }
-.statusDot--loading { background: var(--gold); animation: pulse-dot 1s ease infinite; }
-.statusDot--error { background: #ef4444; }
-
-@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-
-.toolbar__statusText {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.toolbar__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.selectWrap {
-  position: relative;
-}
-
-.selectWrap__input {
-  padding: 0.6rem 2.5rem 0.6rem 1rem;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--white);
-  color: var(--text);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  appearance: none;
-  transition: border-color 0.2s;
+.toolbar__right { display: flex; align-items: center; gap: .6rem; }
+.tsort { position: relative; }
+.tsort__sel {
+  padding: .5rem 2rem .5rem .9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--text); font-size: .86rem; font-weight: 500;
+  cursor: pointer; font-family: inherit; appearance: none;
+  transition: border-color .2s, box-shadow .2s;
   min-width: 140px;
 }
-
-.selectWrap__input:hover {
-  border-color: var(--cardinal);
+.tsort__sel:hover, .tsort__sel:focus { border-color: var(--crimson); outline: none; box-shadow: 0 0 0 3px rgba(124,28,28,.06); }
+.tsort__ico { position: absolute; left: .65rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--faint); }
+.treset {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-s); cursor: pointer; color: var(--muted);
+  transition: all .3s var(--ease-spring);
 }
+.treset:hover { border-color: var(--crimson); color: var(--crimson); transform: rotate(220deg); }
 
-.selectWrap__input:focus {
-  outline: none;
-  border-color: var(--cardinal);
-  box-shadow: 0 0 0 3px rgba(140,21,21,0.08);
-}
-
-.selectWrap__icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-}
-
-.toolBtn {
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--white);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--text-secondary);
-  transition: all 0.25s var(--ease);
-}
-
-.toolBtn:hover {
-  border-color: var(--cardinal);
-  color: var(--cardinal);
-  transform: rotate(180deg);
-}
-
-/* ============================================
-   SKELETON LOADERS
-   ============================================ */
-.cardSkeleton {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  animation: skeleton-fade-in 0.4s ease both;
-}
-
-@keyframes skeleton-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.cardSkeleton__img {
-  width: 100%;
-  height: 240px;
-  background: var(--surface-alt);
-}
-
-.cardSkeleton__body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.cardSkeleton__line {
-  height: 14px;
-  background: var(--surface-alt);
-  border-radius: 4px;
-}
-
-.cardSkeleton__tags {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.cardSkeleton__tag {
-  width: 60px;
-  height: 24px;
-  background: var(--surface-alt);
-  border-radius: 100px;
-}
-
-.shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
+/* Skeleton */
+.skel { background: var(--card-bg); border-radius: var(--radius-l); border: 1px solid var(--border); overflow: hidden; animation: skelrise .5s var(--ease) var(--d) both; }
+@keyframes skelrise { from { opacity: 0; } to { opacity: 1; } }
+.skel__thumb { width: 100%; height: 240px; }
+.skel__body { padding: 1.5rem; display: flex; flex-direction: column; gap: .7rem; }
+.skel__line { height: 12px; border-radius: 6px; }
+.skel__pills { display: flex; gap: .5rem; margin-top: .35rem; }
+.skel__pill { width: 60px; height: 22px; border-radius: var(--radius-full); }
+.shimmer { background: var(--surface); position: relative; overflow: hidden; }
 .shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
-  animation: shimmer 1.5s infinite;
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.7) 50%, transparent 100%);
+  animation: shim 1.7s ease-in-out infinite;
 }
+@keyframes shim { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+/* Empty */
+.empty {
+  text-align: center; padding: 6rem 2rem;
+  background: var(--card-bg); border-radius: var(--radius-xl);
+  border: 1px solid var(--border); color: var(--muted);
 }
+.empty__icon { font-size: 4rem; margin-bottom: 1.5rem; opacity: .5; }
+.empty__title { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-weight: 500; color: var(--text); margin-bottom: .5rem; }
+.empty__hint { font-size: .93rem; color: var(--muted); margin-bottom: 2rem; }
 
-/* ============================================
-   EMPTY STATE
-   ============================================ */
-.emptyState {
-  text-align: center;
-  padding: 5rem 2rem;
-  background: var(--white);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-}
-
-.emptyState__visual { margin-bottom: 1.5rem; opacity: 0.5; }
-
-.emptyState__title {
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 0.5rem;
-}
-
-.emptyState__text {
-  font-size: 1rem;
-  color: var(--text-secondary);
-  margin-bottom: 2rem;
-}
-
-/* ============================================
-   PROJECTS GRID
-   ============================================ */
+/* ── GRID ── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 2rem;
-}
-
-/* ============================================
-   PROJECT CARD - OPTIMIZED
-   ============================================ */
-.card {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: all 0.35s var(--ease);
-  animation: card-in 0.45s var(--ease) both;
-  display: flex;
-  flex-direction: column;
-  will-change: transform;
-}
-
-@keyframes card-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-lg);
-  border-color: rgba(140,21,21,0.2);
-}
-
-.card:hover .card__title {
-  color: var(--cardinal);
-}
-
-.card:hover .card__cta {
-  color: var(--cardinal-dark);
-}
-
-.card:hover .card__foot {
-  background: var(--surface);
-  border-color: rgba(140,21,21,0.15);
-}
-
-.card:focus-visible {
-  outline: 3px solid var(--cardinal);
-  outline-offset: 2px;
-}
-
-.card__visual {
-  position: relative;
-  height: 240px;
-  overflow: hidden;
-  background: var(--surface-alt);
-}
-
-.card__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.55s var(--ease);
-}
-
-.card:hover .card__img { transform: scale(1.06); }
-
-.card__imgOverlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.5) 100%);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.card:hover .card__imgOverlay { opacity: 1; }
-
-.card__badge {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(8px);
-  padding: 0.3rem 0.8rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--cardinal);
-  box-shadow: var(--shadow-sm);
-}
-
-.card__mediaCount {
-  position: absolute;
-  bottom: 1rem;
-  left: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(8px);
-  color: #fff;
-  padding: 0.3rem 0.7rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.card__body {
-  padding: 1.5rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.card__title {
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.35;
-  margin-bottom: 0.6rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  transition: color 0.25s ease;
-}
-
-.card__desc {
-  font-size: 0.92rem;
-  color: var(--text-secondary);
-  line-height: 1.65;
-  margin-bottom: 1rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  flex: 1;
-}
-
-.card__meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.card__date { color: var(--cardinal); font-weight: 600; }
-
-.card__lang {
-  background: var(--surface-alt);
-  padding: 0.2rem 0.6rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-}
-
-.card__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.tag {
-  padding: 0.25rem 0.7rem;
-  background: var(--surface-alt);
-  color: var(--cardinal);
-  border: 1px solid var(--border);
-  border-radius: 100px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
-
-.tag:hover {
-  background: var(--cardinal);
-  color: #fff;
-  border-color: var(--cardinal);
-}
-
-.tag--more {
-  background: var(--border);
-  color: var(--text-muted);
-  cursor: default;
-  border-color: transparent;
-}
-
-.tag--more:hover { background: var(--border); color: var(--text-muted); }
-
-.card__foot {
-  padding: 1rem 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--border);
-  transition: background 0.25s ease, border-color 0.25s ease;
-}
-
-.card__cta {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--cardinal);
-}
-
-.card__arrow {
-  font-size: 1.1rem;
-  color: var(--cardinal);
-  transition: transform 0.2s ease;
-}
-
-.card:hover .card__arrow { transform: translateX(-4px); }
-
-/* ============================================
-   PAGINATION
-   ============================================ */
-.pager {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 2rem;
-  margin-top: 3.5rem;
-  padding: 1.5rem 2rem;
-  background: var(--white);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-}
-
-.pager__btn {
-  padding: 0.75rem 1.25rem;
-  background: var(--cardinal);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s ease;
-}
-
-.pager__btn:hover:not(:disabled) { background: var(--cardinal-dark); transform: translateY(-1px); }
-.pager__btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.pager__info { font-family: 'Crimson Pro', serif; font-weight: 700; }
-.pager__current { font-size: 1.5rem; color: var(--cardinal); }
-.pager__sep { color: var(--text-muted); margin: 0 0.3rem; }
-.pager__total { font-size: 1.2rem; color: var(--text-secondary); }
-
-/* ============================================
-   DETAIL VIEW — BACK NAV
-   ============================================ */
-.detailNav {
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--shadow-sm);
-}
-
-.detailNav__inner { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-
-.backBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: none;
-  border: none;
-  color: var(--cardinal);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  padding: 0.5rem 0;
-  transition: gap 0.2s ease;
-}
-
-.backBtn:hover {
-  gap: 1rem;
-  color: var(--cardinal-dark);
-  background: rgba(140,21,21,0.05);
-  border-radius: var(--radius-sm);
-  padding: 0.5rem 0.75rem;
-}
-
-.backBtn svg { flex-shrink: 0; }
-
-/* ============================================
-   DETAIL HERO
-   ============================================ */
-.detailHero {
-  position: relative;
-  min-height: 50vh;
-  display: flex;
-  align-items: flex-end;
-  overflow: hidden;
-  background: var(--ink);
-}
-
-.detailHero__bg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  filter: brightness(0.35) saturate(1.1);
-}
-
-.detailHero__overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.75) 100%);
-}
-
-.detailHero__grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  pointer-events: none;
-}
-
-.detailHero__content {
-  position: relative;
-  z-index: 10;
-  padding: 4rem 0;
-  animation: detail-enter 0.7s var(--ease) 0.05s both;
-}
-
-@keyframes detail-enter {
-  from { opacity: 0; transform: translateY(25px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.detailHero__badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.dbadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 100px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
-  color: rgba(255,255,255,0.85);
-  border: 1px solid rgba(255,255,255,0.12);
-}
-
-.dbadge--type {
-  background: var(--cardinal);
-  color: #fff;
-  border-color: transparent;
-}
-
-.detailHero__title {
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 800;
-  color: #fff;
-  line-height: 1.2;
-  margin-bottom: 1rem;
-  letter-spacing: -0.015em;
-  max-width: 800px;
-}
-
-.detailHero__desc {
-  font-size: 1.1rem;
-  color: rgba(255,255,255,0.75);
-  line-height: 1.75;
-  max-width: 700px;
-  margin-bottom: 1.5rem;
-}
-
-.detailHero__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.dtag {
-  padding: 0.45rem 1rem;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(10px);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: var(--radius-sm);
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s ease;
-}
-
-.dtag:hover {
-  background: var(--cardinal);
-  border-color: var(--cardinal);
-}
-
-/* ============================================
-   MEDIA SECTION
-   ============================================ */
-.mediaSection {
-  padding: 3.5rem 0;
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-}
-
-/* Media Tabs */
-.mediaTabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.mediaTab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: 100px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s ease;
-}
-
-.mediaTab:hover {
-  border-color: var(--cardinal);
-  color: var(--cardinal);
-  background: rgba(140,21,21,0.04);
-}
-
-.mediaTab--active {
-  background: var(--cardinal);
-  border-color: var(--cardinal);
-  color: #fff;
-}
-
-.mediaTab__count {
-  background: rgba(0,0,0,0.08);
-  padding: 0.15rem 0.5rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-}
-
-.mediaTab--active .mediaTab__count {
-  background: rgba(255,255,255,0.2);
-}
-
-/* Media Stage */
-.mediaStage {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.mediaStage__main {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-/* Preview Frame */
-.preview {
-  background: var(--surface-alt);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  height: 550px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-/* Image Frame */
-.imgFrame {
-  position: relative;
-  width: 100%;
-  height: 550px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  cursor: zoom-in;
-}
-
-.imgFrame__img {
-  max-width: 100%;
-  max-height: 540px;
-  object-fit: contain;
-  transition: transform 0.3s ease;
-}
-
-.imgFrame__expand {
-  position: absolute;
-  top: 1.25rem;
-  left: 1.25rem;
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(10px);
-  border-radius: 50%;
-  color: #fff;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-}
-
-.imgFrame:hover .imgFrame__expand { opacity: 1; }
-
-.zoomBar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-}
-
-.zoomBtn {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-alt);
-  border: 1.5px solid var(--border);
-  border-radius: 50%;
-  color: var(--text);
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.zoomBtn:hover:not(:disabled) { border-color: var(--cardinal); color: var(--cardinal); }
-.zoomBtn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.zoomBar__level {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  min-width: 45px;
-  text-align: center;
-}
-
-/* Video Frame */
-.vidFrame {
-  position: relative;
-  width: 100%;
-  height: 550px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-}
-
-.vidFrame__el {
-  width: 100%;
-  height: 550px;
-  object-fit: contain;
-  cursor: pointer;
-  display: block;
-}
-
-.vidControls {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
-  padding: 2rem 1.25rem 1rem;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.vidFrame:hover .vidControls { opacity: 1; }
-
-.vidProgress {
-  width: 100%;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  margin-bottom: 0.75rem;
-}
-
-.vidProgress__track {
-  position: relative;
-  width: 100%;
-  height: 4px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 10px;
-  transition: height 0.15s;
-}
-
-.vidProgress:hover .vidProgress__track { height: 6px; }
-
-.vidProgress__fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: var(--cardinal-light);
-  border-radius: 10px;
-  box-shadow: 0 0 8px rgba(140,21,21,0.5);
-}
-
-.vidProgress__thumb {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 14px;
-  height: 14px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.vidProgress:hover .vidProgress__thumb { opacity: 1; }
-
-.vidControls__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.vidControls__left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.vidBtn {
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(8px);
-  border: none;
-  color: #fff;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s;
-}
-
-.vidBtn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
-
-.vidBtn--play {
-  width: 44px;
-  height: 44px;
-  background: var(--cardinal);
-}
-
-.vidBtn--play:hover { background: var(--cardinal-dark); box-shadow: 0 4px 12px rgba(140,21,21,0.4); }
-
-.vidBtn--sm { width: 34px; height: 34px; font-size: 0.9rem; }
-
-.vidTime {
-  font-size: 0.85rem;
-  color: rgba(255,255,255,0.8);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.volWrap {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.volSlider {
-  width: 70px;
-  height: 4px;
-  border-radius: 10px;
-  background: rgba(0,0,0,0.12);
-  outline: none;
-  cursor: pointer;
-  -webkit-appearance: none;
-}
-
-.volSlider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--cardinal);
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-/* Video player slider (dark background) */
-.vidControls .volSlider {
-  background: rgba(255,255,255,0.2);
-}
-
-.vidControls .volSlider::-webkit-slider-thumb {
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-
-.volSlider--warm::-webkit-slider-thumb { background: var(--cardinal-light); }
-
-/* Audio Frame */
-.audioFrame {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  padding: 3rem 2rem;
-  height: 550px;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.audioFrame__art {
-  position: relative;
-  width: 200px;
-  height: 200px;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-.audioFrame__art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.audioFrame__pulse {
-  position: absolute;
-  inset: -4px;
-  border: 3px solid var(--cardinal);
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.audioFrame__pulse--playing {
-  opacity: 1;
-  animation: pulse-ring 1.5s ease-out infinite;
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(1.08); opacity: 0; }
-}
-
-.audioFrame__info h4 {
-  font-family: 'Crimson Pro', serif;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 0.4rem;
-}
-
-.audioFrame__info p {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  max-width: 400px;
-}
-
-.audioControls {
-  width: 100%;
-  max-width: 460px;
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 1.25rem 1.5rem;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-}
-
-.audioProgress {
-  width: 100%;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  margin-bottom: 0.75rem;
-}
-
-.audioProgress__track {
-  position: relative;
-  width: 100%;
-  height: 4px;
-  background: var(--border);
-  border-radius: 10px;
-  transition: height 0.15s;
-}
-
-.audioProgress:hover .audioProgress__track { height: 6px; }
-
-.audioProgress__fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: linear-gradient(90deg, var(--cardinal) 0%, var(--gold) 100%);
-  border-radius: 10px;
-}
-
-.audioControls__row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.audioBtn {
-  background: var(--surface-alt);
-  border: 1.5px solid var(--border);
-  color: var(--text);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1rem;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-
-.audioBtn:hover { border-color: var(--cardinal); color: var(--cardinal); }
-
-.audioBtn--play {
-  width: 48px;
-  height: 48px;
-  background: var(--cardinal);
-  border-color: var(--cardinal);
-  color: #fff;
-  font-size: 1.2rem;
-}
-
-.audioBtn--play:hover { background: var(--cardinal-dark); }
-
-.audioBtn--sm { width: 34px; height: 34px; }
-
-.audioTime {
-  flex: 1;
-  text-align: center;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Document Frame */
-.docFrame {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  padding: 3rem;
-  text-align: center;
-  height: 550px;
-  box-sizing: border-box;
-}
-
-.docFrame__icon { font-size: 5rem; opacity: 0.8; }
-
-.docFrame__title {
-  font-family: 'Crimson Pro', serif;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.docFrame__url {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  word-break: break-all;
-  max-width: 350px;
-}
-
-/* Caption */
-.captionBox {
-  background: var(--surface-alt);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  border: 1px solid var(--border);
-}
-
-.captionBox__title {
-  font-family: 'Crimson Pro', serif;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 0.5rem;
-}
-
-.captionBox__text {
-  font-size: 0.92rem;
-  color: var(--text-secondary);
-  line-height: 1.7;
-}
-
-/* Media Strip */
-.mediaStrip {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding: 0.5rem 0;
-  scrollbar-width: thin;
-}
-
-.mediaThumb {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background: var(--surface-alt);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.mediaThumb:hover {
-  border-color: var(--cardinal);
-  color: var(--cardinal);
-  background: rgba(140,21,21,0.04);
-}
-
-.mediaThumb--active {
-  background: var(--cardinal);
-  border-color: var(--cardinal);
-  color: #fff;
-}
-
-.mediaThumb__icon { font-size: 1.1rem; }
-
-.mediaThumb__label {
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Media Nav */
-.mediaNav {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1rem 0;
-}
-
-.mediaNav__btn {
-  padding: 0.6rem 1.25rem;
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-
-.mediaNav__btn:hover:not(:disabled) { border-color: var(--cardinal); color: var(--cardinal); }
-.mediaNav__btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.mediaNav__pos {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-/* ============================================
-   BODY SECTION
-   ============================================ */
-.bodySection {
-  padding: 3rem 0;
-}
-
-.bodyContent {
-  max-width: 800px;
-  margin: 0 auto;
-  font-size: 1.05rem;
-  color: var(--text);
-  line-height: 1.85;
-  background: var(--white);
-  padding: 2.5rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-}
-
-/* ============================================
-   RELATED PROJECTS - IMPROVED DESIGN
-   ============================================ */
-.relatedSection {
-  padding: 4rem 0 5rem;
-  background: var(--surface-alt);
-  border-top: 1px solid var(--border);
-}
-
-.relatedHeader {
-  margin-bottom: 2.5rem;
-}
-
-.relatedHeader__title {
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--text);
-  margin-bottom: 0.4rem;
-}
-
-.relatedHeader__sub {
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-.relatedGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 1.75rem;
 }
 
-.relatedCard {
-  background: var(--white);
+/* ── CARD ── */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius-xl);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.35s var(--ease);
-  display: flex;
-  flex-direction: column;
-}
-
-.relatedCard:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-md);
-  border-color: rgba(140,21,21,0.25);
-}
-
-.relatedCard:hover .relatedCard__title {
-  color: var(--cardinal);
-}
-
-.relatedCard:hover .relatedCard__overlay {
-  opacity: 1;
-}
-
-.relatedCard__img {
+  display: flex; flex-direction: column;
+  animation: cardrise .55s var(--ease) var(--d) both;
+  transition: transform .45s var(--ease), box-shadow .45s var(--ease), border-color .3s;
+  will-change: transform;
   position: relative;
-  width: 100%;
-  height: 200px;
-  overflow: hidden;
-  background: var(--surface-alt);
 }
-
-.relatedCard__img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s var(--ease);
+@keyframes cardrise {
+  from { opacity: 0; transform: translateY(32px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-
-.relatedCard:hover .relatedCard__img img {
-  transform: scale(1.08);
-}
-
-.relatedCard__overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent, rgba(140,21,21,0.85));
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 1rem;
+.card::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(196,154,60,.04) 0%, transparent 60%);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity .4s;
+  pointer-events: none;
+  z-index: 1;
+}
+.card:hover {
+  transform: translateY(-10px) scale(1.008);
+  box-shadow: var(--shadow-l), 0 0 0 1px rgba(196,154,60,.15);
+  border-color: rgba(124,28,28,.15);
+}
+.card:hover::before { opacity: 1; }
+.card:focus-visible { outline: 2px solid var(--crimson); outline-offset: 3px; }
+
+/* Card Thumb */
+.card__thumb {
+  position: relative; overflow: hidden;
+  height: 255px; background: var(--charcoal);
+  flex-shrink: 0;
+}
+.card__img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform .7s var(--ease), filter .5s;
+  filter: saturate(.95);
+}
+.card:hover .card__img { transform: scale(1.1); filter: saturate(1.05); }
+
+/* Photo film grain overlay */
+.card__film {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; mix-blend-mode: overlay;
+}
+.card__scrim {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(12,11,9,.75) 100%);
+  opacity: .6;
+  transition: opacity .4s;
+}
+.card:hover .card__scrim { opacity: .85; }
+
+/* View overlay */
+.card__view {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .35s;
+}
+.card:hover .card__view { opacity: 1; }
+.card__viewbtn {
+  padding: .65rem 1.6rem;
+  background: rgba(255,255,255,.12);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: var(--radius-full);
+  color: #fff; font-size: .84rem; font-weight: 600;
+  letter-spacing: .04em;
+  transform: translateY(10px) scale(.95);
+  transition: transform .35s var(--ease-spring);
+}
+.card:hover .card__viewbtn { transform: translateY(0) scale(1); }
+
+/* Badges */
+.card__badges {
+  position: absolute; top: 1rem; right: 1rem; left: 1rem;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: .5rem;
+}
+.card__typebadge {
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(12px);
+  padding: .28rem .75rem;
+  border-radius: var(--radius-full);
+  font-size: .72rem; font-weight: 700;
+  color: var(--crimson);
+  box-shadow: var(--shadow-xs);
+}
+.card__statusbadge {
+  padding: .26rem .65rem;
+  border-radius: var(--radius-full);
+  font-size: .69rem; font-weight: 700;
+  background: rgba(196,152,60,.85); color: var(--void);
+  backdrop-filter: blur(8px);
+}
+.card__statusbadge--done { background: rgba(45,160,100,.85); color: #fff; }
+.card__count {
+  position: absolute; bottom: .9rem; left: .9rem;
+  display: flex; align-items: center; gap: .3rem;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(10px);
+  color: rgba(255,255,255,.9); padding: .26rem .65rem; border-radius: var(--radius-full);
+  font-size: .7rem; font-weight: 700;
 }
 
-.relatedCard__viewIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--cardinal);
-  box-shadow: var(--shadow-sm);
+/* Card Body */
+.card__body { padding: 1.6rem 1.6rem 1.3rem; flex: 1; display: flex; flex-direction: column; gap: .65rem; position: relative; z-index: 2; }
+.card__meta { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
+.card__date {
+  font-size: .78rem; font-weight: 600;
+  color: var(--crimson);
+  font-variant-numeric: tabular-nums;
 }
-
-.relatedCard__body {
-  padding: 1.25rem;
+.card__lang {
+  font-size: .68rem; font-weight: 600; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: .12rem .5rem; border-radius: var(--radius-full);
+}
+.card__title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.35rem; font-weight: 600;
+  color: var(--text); line-height: 1.38;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  transition: color .25s;
+}
+.card:hover .card__title { color: var(--crimson); }
+.card__desc {
+  font-size: .875rem; color: var(--muted); line-height: 1.72;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   flex: 1;
-  display: flex;
-  flex-direction: column;
 }
-
-.relatedCard__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.75rem;
+.card__tags { display: flex; flex-wrap: wrap; gap: .3rem; }
+.ctag {
+  padding: .22rem .65rem;
+  background: rgba(124,28,28,.05);
+  border: 1px solid rgba(124,28,28,.12);
+  border-radius: var(--radius-full);
+  font-size: .74rem; font-weight: 600; color: var(--crimson);
+  cursor: pointer; font-family: inherit;
+  transition: all .2s var(--ease-spring);
 }
+.ctag:hover { background: var(--crimson); color: #fff; border-color: var(--crimson); transform: scale(1.06) translateY(-1px); }
+.ctag--more { background: var(--surface); color: var(--faint); border-color: var(--border); cursor: default; }
+.ctag--more:hover { background: var(--surface); color: var(--faint); transform: none; }
 
-.relatedCard__cat {
-  font-weight: 700;
-  color: var(--cardinal);
-  flex: 1;
-}
-
-.relatedCard__date {
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.relatedCard__title {
-  font-family: 'Crimson Pro', serif;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text);
-  line-height: 1.35;
-  margin-bottom: 0.5rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  transition: color 0.25s ease;
-}
-
-.relatedCard__desc {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 1rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  flex: 1;
-}
-
-.relatedCard__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding-top: 0.75rem;
+/* Card Foot */
+.card__foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .95rem 1.6rem;
   border-top: 1px solid var(--border);
+  transition: background .25s;
+  position: relative; z-index: 2;
+}
+.card:hover .card__foot { background: var(--surface); }
+.card__cta { font-size: .84rem; font-weight: 600; color: var(--crimson); letter-spacing: .01em; }
+.card__arrow { font-size: 1rem; color: var(--amber); transition: transform .28s var(--ease); }
+.card:hover .card__arrow { transform: translateX(-6px); }
+
+/* ── PAGINATION ── */
+.pager {
+  display: flex; justify-content: center; align-items: center; gap: 2rem;
+  margin-top: 5rem; padding: 1.4rem 2rem;
+  background: var(--card-bg); border-radius: var(--radius-l);
+  border: 1px solid var(--border); box-shadow: var(--shadow-xs);
+}
+.pager__btn {
+  padding: .6rem 1.25rem;
+  background: var(--crimson); color: #fff;
+  border: none; border-radius: var(--radius-s);
+  font-size: .86rem; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all .25s var(--ease-spring);
+}
+.pager__btn:hover:not(:disabled) { background: var(--crimson-deep); transform: translateY(-2px); box-shadow: var(--shadow-crimson); }
+.pager__btn:disabled { opacity: .3; cursor: not-allowed; }
+.pager__dots { display: flex; gap: .45rem; align-items: center; }
+.pager__dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border); cursor: pointer;
+  transition: all .25s var(--ease-spring);
+}
+.pager__dot--on { background: var(--crimson); transform: scale(1.5); }
+.pager__dot:hover:not(.pager__dot--on) { background: var(--crimson-mid); transform: scale(1.25); }
+
+/* ════════════════════════════════════════════════
+   DETAIL VIEW
+════════════════════════════════════════════════ */
+.dnav {
+  position: sticky; top: 0; z-index: 50; /* lower than global site nav */
+  background: rgba(247,244,239,.95);
+  backdrop-filter: blur(24px) saturate(1.5);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 14px rgba(0,0,0,.06);
+}
+.dnav__inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: .85rem; padding-bottom: .85rem; gap: 1rem; flex-wrap: wrap;
+}
+.back-btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: none; border: none; color: var(--crimson);
+  font-size: .9rem; font-weight: 600; cursor: pointer; font-family: inherit;
+  padding: .4rem .7rem; border-radius: var(--radius-s);
+  transition: gap .25s var(--ease), background .2s;
+}
+.back-btn:hover { background: rgba(124,28,28,.06); gap: .8rem; }
+
+/* ── Language Toggle ── */
+.lang-toggle {
+  display: flex; gap: 3px; padding: 3px;
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.04);
+  position: relative; /* contain stacking */
+  isolation: isolate;
+}
+.ltbtn {
+  display: inline-flex; align-items: center; gap: .38rem;
+  padding: .38rem .95rem;
+  border: none; border-radius: var(--radius-full);
+  background: transparent; color: var(--muted);
+  font-size: .8rem; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: color .2s var(--ease), background .2s var(--ease), box-shadow .2s;
+  position: relative; z-index: 1;
+  white-space: nowrap;
+}
+.ltbtn--on {
+  background: var(--card-bg);
+  color: var(--crimson);
+  box-shadow: 0 1px 4px rgba(0,0,0,.1), 0 0 0 1px rgba(124,28,28,.08);
+}
+.ltbtn:not(.ltbtn--on):hover { color: var(--text); }
+.ltbtn__dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.ltbtn__dot--ckb { background: #B8960A; }
+.ltbtn__dot--kmr { background: #2855B8; }
+
+/* ── Lang swap content transition ── */
+/* ── Language availability indicator in dnav ── */
+.dnav__langinfo {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+.dnav__langhelp {
+  font-size: .68rem; color: var(--faint); font-style: italic;
+  display: none;
+}
+@media (min-width: 900px) { .dnav__langhelp { display: block; } }
+
+.langpill {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .3rem .75rem;
+  border-radius: var(--radius-full);
+  font-size: .76rem; font-weight: 600;
+  border: 1.5px solid transparent;
+  transition: all .25s var(--ease);
+  cursor: default;
+}
+/* Active = this language is currently shown */
+.langpill--active {
+  background: rgba(124,28,28,.07);
+  border-color: rgba(124,28,28,.18);
+  color: var(--crimson);
+}
+/* Inactive = project has this language but it is NOT the active one */
+.langpill--inactive {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--faint);
+  opacity: .65;
+}
+.langpill__dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.langpill__dot--ckb { background: #B8960A; }
+.langpill__dot--kmr { background: #2855B8; }
+.langpill__name { white-space: nowrap; }
+.langpill__check { flex-shrink: 0; }
+
+.lang-swap-enter-active { transition: opacity .28s var(--ease), transform .28s var(--ease); }
+.lang-swap-leave-active { transition: opacity .18s ease, transform .18s ease; }
+.lang-swap-enter-from  { opacity: 0; transform: translateY(10px); }
+.lang-swap-leave-to    { opacity: 0; transform: translateY(-6px); }
+
+/* Detail Hero */
+.dhero {
+  position: relative; min-height: 58vh;
+  display: flex; align-items: flex-end; overflow: hidden;
+  background: var(--ink);
+}
+.dhero__bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  filter: brightness(.26) saturate(1.25) sepia(.2);
+  transition: filter 1s;
+}
+.dhero__gradient {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.1) 0%, rgba(12,11,9,.85) 100%);
+}
+.dhero__grain {
+  position: absolute; inset: 0; opacity: .06;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  pointer-events: none; mix-blend-mode: overlay;
+}
+.dhero__frame {
+  position: absolute; width: 44px; height: 44px;
+  z-index: 5; pointer-events: none; opacity: .3;
+}
+.dhero__frame--tl { top: 2rem; right: 2rem; border-top: 1px solid var(--amber); border-right: 1px solid var(--amber); }
+.dhero__frame--br { bottom: 2rem; left: 2rem; border-bottom: 1px solid var(--amber); border-left: 1px solid var(--amber); }
+
+.dhero__content {
+  position: relative; z-index: 10;
+  padding: 5.5rem 0 3.5rem;
+}
+.dhero__inner {
+  animation: fadein .7s var(--ease) .05s both;
+}
+.dhero__badges { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.4rem; }
+.dbadge {
+  display: inline-flex; align-items: center; gap: .32rem;
+  padding: .28rem .75rem;
+  border-radius: var(--radius-full);
+  font-size: .77rem; font-weight: 600;
+  background: rgba(255,255,255,.07);
+  backdrop-filter: blur(12px);
+  color: rgba(255,255,255,.78);
+  border: 1px solid rgba(255,255,255,.1);
+}
+.dbadge--type { background: var(--crimson); color: #fff; border-color: transparent; }
+.dbadge--done { background: rgba(45,160,100,.15); border-color: rgba(45,160,100,.22); color: #88d9b5; }
+.dbadge--ongoing { background: rgba(196,154,60,.15); border-color: rgba(196,154,60,.22); color: #e8c97a; }
+.dhero__title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 500; font-style: italic;
+  color: #fff; line-height: 1.2;
+  margin-bottom: 1.1rem; max-width: 800px;
+  letter-spacing: -.01em;
+}
+.dhero__desc {
+  font-size: 1.05rem; color: rgba(255,255,255,.65);
+  line-height: 1.85; max-width: 680px; margin-bottom: 1.75rem;
+}
+.dhero__tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+.dtag {
+  padding: .4rem .95rem;
+  background: rgba(255,255,255,.06); backdrop-filter: blur(10px);
+  color: rgba(255,255,255,.78); border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--radius-s); font-size: .84rem; font-weight: 500;
+  cursor: pointer; font-family: inherit; transition: all .2s var(--ease);
+}
+.dtag:hover { background: var(--crimson); border-color: var(--crimson); color: #fff; transform: translateY(-1px); }
+
+/* ════════════════════════════════════════════════
+   GALLERY
+════════════════════════════════════════════════ */
+.gallery {
+  padding: 3.5rem 0;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
 }
 
-.relatedCard__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  flex: 1;
+/* Tabs */
+.gtabs {
+  display: flex; flex-wrap: wrap; gap: .4rem;
+  margin-bottom: 2rem; padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
 }
-
-.relatedCard__tag {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--gold);
-  background: rgba(178,111,22,0.08);
-  padding: 0.15rem 0.5rem;
-  border-radius: 100px;
+.gtab {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem 1.1rem;
+  border: 1px solid var(--border); border-radius: var(--radius-full);
+  font-size: .84rem; font-weight: 500; color: var(--muted);
+  background: none; cursor: pointer; font-family: inherit;
+  transition: all .22s var(--ease);
 }
-
-.relatedCard__tagMore {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: var(--surface-alt);
-  padding: 0.15rem 0.5rem;
-  border-radius: 100px;
+.gtab:hover { border-color: var(--crimson); color: var(--crimson); background: rgba(124,28,28,.04); }
+.gtab--on { background: var(--crimson); border-color: var(--crimson); color: #fff; }
+.gtab__n {
+  padding: .1rem .44rem; border-radius: var(--radius-full);
+  font-size: .7rem; background: rgba(0,0,0,.1);
 }
+.gtab--on .gtab__n { background: rgba(255,255,255,.2); }
 
-.relatedCard__stats {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+/* Stage */
+.stage { display: flex; flex-direction: column; gap: 1.4rem; }
+
+/* Previews */
+.preview {
+  background: var(--surface); border-radius: var(--radius-xl);
+  border: 1px solid var(--border); overflow: hidden;
+  position: relative; min-height: 540px;
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
 }
-
-.relatedCard__stat {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-muted);
+.preview--image { cursor: default; }
+.imgstage {
+  position: relative; width: 100%; height: 540px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; cursor: zoom-in;
+  background: #1a1916;
 }
-
-.relatedCard__stat svg {
-  opacity: 0.6;
+.imgstage__img {
+  max-width: 100%; max-height: 530px; object-fit: contain;
+  transition: transform .4s ease;
 }
-
-/* ============================================
-   BUTTONS
-   ============================================ */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.8rem 1.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
-  transition: all 0.2s ease;
+.imgstage__hint {
+  position: absolute; top: 1.2rem; left: 1.2rem;
+  display: flex; align-items: center; gap: .4rem;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(12px);
+  color: #fff; padding: .38rem .8rem;
+  border-radius: var(--radius-full); font-size: .75rem; font-weight: 600;
+  opacity: 0; transition: opacity .3s; pointer-events: none;
 }
+.imgstage:hover .imgstage__hint { opacity: 1; }
 
-.btn--primary {
-  background: var(--cardinal);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(140,21,21,0.2);
+/* Zoom bar */
+.zoombar {
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .85rem 1.2rem;
+  background: var(--card-bg); border-top: 1px solid var(--border); width: 100%; box-sizing: border-box;
 }
-
-.btn--primary:hover { background: var(--cardinal-dark); transform: translateY(-1px); }
-
-/* ============================================
-   FULLSCREEN OVERLAY
-   ============================================ */
-.fsOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.95);
-  backdrop-filter: blur(10px);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.zbtn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 50%; font-size: .95rem; font-weight: 700;
+  cursor: pointer; color: var(--text);
+  transition: all .2s var(--ease-spring);
 }
+.zbtn:hover:not(:disabled) { border-color: var(--crimson); color: var(--crimson); transform: scale(1.12); }
+.zbtn:disabled { opacity: .3; cursor: not-allowed; }
+.zbtn__val { font-size: .8rem; font-weight: 600; color: var(--muted); min-width: 42px; text-align: center; }
 
-.fs-enter-active, .fs-leave-active { transition: opacity 0.3s; }
+/* Video */
+.preview--video { padding: 0; }
+.vidwrap { position: relative; width: 100%; height: 540px; background: #000; display: flex; align-items: center; }
+.vid { width: 100%; height: 540px; object-fit: contain; cursor: pointer; display: block; }
+.vcontrols {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.9) 0%, transparent 100%);
+  padding: 2.5rem 1.5rem 1.25rem;
+  opacity: 0; transition: opacity .3s;
+}
+.vidwrap:hover .vcontrols { opacity: 1; }
+.vprog { width: 100%; height: 22px; display: flex; align-items: center; cursor: pointer; margin-bottom: .85rem; }
+.vprog__bg { position: relative; width: 100%; height: 3px; background: rgba(255,255,255,.2); border-radius: 10px; transition: height .15s; }
+.vprog:hover .vprog__bg { height: 5px; }
+.vprog__fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--crimson-mid); border-radius: 10px; }
+.vprog__thumb { position: absolute; top: 50%; transform: translate(-50%,-50%); width: 12px; height: 12px; background: #fff; border-radius: 50%; opacity: 0; transition: opacity .2s; }
+.vprog:hover .vprog__thumb { opacity: 1; }
+.vcontrols__row { display: flex; justify-content: space-between; align-items: center; }
+.vcontrols__left { display: flex; align-items: center; gap: .7rem; }
+.vbtn {
+  background: rgba(255,255,255,.1); backdrop-filter: blur(8px);
+  border: none; color: #fff;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: .9rem;
+  transition: all .2s var(--ease-spring);
+}
+.vbtn:hover { background: rgba(255,255,255,.2); transform: scale(1.1); }
+.vbtn--play { width: 44px; height: 44px; font-size: 1.05rem; background: var(--crimson); }
+.vbtn--play:hover { background: var(--crimson-deep); box-shadow: var(--shadow-crimson); }
+.vbtn--sm { width: 32px; height: 32px; font-size: .85rem; }
+.vtime { font-size: .82rem; color: rgba(255,255,255,.8); font-weight: 500; font-variant-numeric: tabular-nums; }
+.volrow { display: flex; align-items: center; gap: .4rem; }
+.volvol {
+  width: 68px; height: 3px; border-radius: 10px;
+  background: rgba(255,255,255,.22); outline: none;
+  cursor: pointer; -webkit-appearance: none;
+}
+.volvol::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; cursor: pointer; }
+.volvol--warm::-webkit-slider-thumb { background: var(--amber-light); }
+
+/* Audio */
+.preview--audio { background: var(--surface); }
+.audstage {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 1.75rem; padding: 3rem 2rem;
+  height: 540px; text-align: center; box-sizing: border-box;
+}
+.audart {
+  position: relative; width: 180px; height: 180px;
+  border-radius: var(--radius-xl); overflow: visible;
+  box-shadow: var(--shadow-xl);
+}
+.audart img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+/* Vinyl spin effect on playing */
+.audart__vinyl {
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, rgba(0,0,0,.55) 20%, transparent 60%);
+  pointer-events: none;
+}
+.audart--playing { animation: vinylspin 4s linear infinite; }
+@keyframes vinylspin { to { transform: rotate(360deg); } }
+
+.audart__rings { position: absolute; inset: -10px; pointer-events: none; }
+.audart__ring {
+  position: absolute; inset: 0; border-radius: inherit;
+  border: 1.5px solid var(--crimson);
+  opacity: 0;
+}
+.audart--playing .audart__ring { animation: audring 2.4s ease-out calc(var(--n) * .55s) infinite; }
+@keyframes audring { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(1.55); opacity: 0; } }
+
+.audinfo__title { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 600; color: var(--text); margin-bottom: .35rem; }
+.audinfo__body { font-size: .87rem; color: var(--muted); max-width: 380px; }
+.audcontrols {
+  width: 100%; max-width: 460px;
+  background: var(--card-bg); border-radius: var(--radius-l);
+  padding: 1.2rem 1.5rem; border: 1px solid var(--border); box-shadow: var(--shadow-s);
+}
+.audprog { width: 100%; height: 22px; display: flex; align-items: center; cursor: pointer; margin-bottom: .85rem; }
+.audprog__track { position: relative; width: 100%; height: 3px; background: var(--border); border-radius: 10px; transition: height .15s; }
+.audprog:hover .audprog__track { height: 5px; }
+.audprog__fill { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, var(--crimson), var(--amber)); border-radius: 10px; }
+.audcontrols__row { display: flex; align-items: center; gap: .7rem; }
+.audbtn {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: .9rem; flex-shrink: 0;
+  transition: all .2s var(--ease-spring);
+}
+.audbtn:hover { border-color: var(--crimson); color: var(--crimson); transform: scale(1.1); }
+.audbtn--play { width: 46px; height: 46px; background: var(--crimson); border-color: var(--crimson); color: #fff; font-size: 1.1rem; }
+.audbtn--play:hover { background: var(--crimson-deep); box-shadow: var(--shadow-crimson); }
+.audbtn--sm { width: 30px; height: 30px; font-size: .82rem; }
+.audtime { flex: 1; text-align: center; font-size: .85rem; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Document */
+.preview--doc { background: var(--surface); }
+.docstage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 3rem; text-align: center; height: 540px; box-sizing: border-box; }
+.docstage__ico { font-size: 5rem; opacity: .65; }
+.docstage__name { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 600; color: var(--text); }
+.docstage__url { font-size: .78rem; color: var(--faint); word-break: break-all; max-width: 340px; }
+
+/* Caption */
+.caption {
+  background: var(--card-bg); border-radius: var(--radius-l);
+  padding: 1.5rem 1.85rem; border: 1px solid var(--border);
+  border-right: 3px solid var(--amber);
+}
+.caption__title { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: .45rem; }
+.caption__text { font-size: .88rem; color: var(--muted); line-height: 1.78; }
+
+/* Thumbnail Strip */
+.strip {
+  display: flex; gap: .4rem; overflow-x: auto; padding: .35rem 0;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.sthumb {
+  display: flex; align-items: center; gap: .4rem;
+  padding: .5rem .95rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-s); cursor: pointer; font-family: inherit;
+  font-size: .82rem; font-weight: 500; color: var(--muted);
+  white-space: nowrap; flex-shrink: 0;
+  transition: all .2s var(--ease);
+}
+.sthumb:hover { border-color: var(--crimson); color: var(--crimson); background: rgba(124,28,28,.04); }
+.sthumb--on { background: var(--crimson); border-color: var(--crimson); color: #fff; }
+.sthumb__ico { font-size: .95rem; }
+.sthumb__lbl { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+
+.mnav { display: flex; justify-content: center; align-items: center; gap: 1.5rem; padding: 1rem 0; }
+.mnav__btn {
+  padding: .5rem 1.15rem; background: none;
+  border: 1px solid var(--border); border-radius: var(--radius-s);
+  font-size: .84rem; font-weight: 500; color: var(--muted);
+  cursor: pointer; font-family: inherit; transition: all .22s;
+}
+.mnav__btn:hover:not(:disabled) { border-color: var(--crimson); color: var(--crimson); }
+.mnav__btn:disabled { opacity: .28; cursor: not-allowed; }
+.mnav__pos { font-size: .84rem; font-weight: 600; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* ── CHIPS ── */
+.chips-section { padding: 2.5rem 0; background: var(--parchment); }
+.chips-section--alt { background: var(--card-bg); }
+.chips-block {
+  max-width: 820px; margin: 0 auto;
+  background: var(--card-bg); border-radius: var(--radius-l);
+  padding: 2rem 2.5rem; border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+}
+.chips-section--alt .chips-block { background: var(--surface); }
+.chips-block__heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 1rem;
+}
+.chips-row { display: flex; flex-wrap: wrap; gap: .45rem; }
+.chip {
+  padding: .38rem .9rem; border-radius: var(--radius-full);
+  font-size: .82rem; font-weight: 500;
+  transition: all .2s var(--ease-spring);
+  cursor: default;
+}
+.chip:hover { transform: translateY(-2px); }
+.chip--content { background: rgba(124,28,28,.06); color: var(--crimson); border: 1px solid rgba(124,28,28,.12); }
+.chip--kw { background: rgba(40,80,180,.06); color: #2850B0; border: 1px solid rgba(40,80,180,.12); }
+
+/* ── RELATED ── */
+.related {
+  padding: 5rem 0 7rem;
+  background: var(--parchment);
+  border-top: 1px solid var(--border);
+  position: relative;
+}
+.related::before {
+  content: '';
+  display: block; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 80px; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  opacity: .6;
+}
+.related__head { margin-bottom: 3rem; }
+.related__title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.1rem; font-weight: 500; font-style: italic;
+  color: var(--text); margin-bottom: .85rem;
+}
+.related__rule { width: 44px; height: 2px; background: linear-gradient(90deg, var(--crimson), var(--amber)); border-radius: 2px; }
+.related__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(265px, 1fr)); gap: 1.5rem; }
+
+.rcard {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius-l); overflow: hidden; cursor: pointer;
+  transition: all .38s var(--ease); display: flex; flex-direction: column;
+}
+.rcard:hover { transform: translateY(-6px); box-shadow: var(--shadow-m); border-color: rgba(124,28,28,.15); }
+.rcard:hover .rcard__title { color: var(--crimson); }
+.rcard:hover .rcard__img img { transform: scale(1.09); }
+.rcard:hover .rcard__overlay { opacity: 1; }
+.rcard__img { position: relative; width: 100%; height: 185px; overflow: hidden; background: var(--charcoal); }
+.rcard__img img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s var(--ease); }
+.rcard__overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 25%, rgba(12,11,9,.65) 100%);
+  opacity: 0; transition: opacity .35s;
+}
+.rcard__body { padding: 1.2rem; flex: 1; display: flex; flex-direction: column; }
+.rcard__meta { display: flex; align-items: center; justify-content: space-between; font-size: .73rem; color: var(--faint); font-weight: 500; margin-bottom: .6rem; gap: .5rem; }
+.rcard__title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.12rem; font-weight: 600;
+  color: var(--text); line-height: 1.38;
+  margin-bottom: .5rem; transition: color .25s;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.rcard__desc { font-size: .84rem; color: var(--muted); line-height: 1.65; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rcard__tags { display: flex; flex-wrap: wrap; gap: .3rem; padding-top: .7rem; border-top: 1px solid var(--border); margin-top: .7rem; }
+.rtag { font-size: .7rem; font-weight: 600; color: var(--amber); background: rgba(196,154,60,.08); padding: .14rem .5rem; border-radius: var(--radius-full); }
+
+/* ── BUTTONS ── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .75rem 1.65rem; border-radius: var(--radius-s);
+  background: var(--crimson); color: #fff;
+  font-size: .9rem; font-weight: 600; border: none;
+  cursor: pointer; font-family: inherit;
+  transition: all .25s var(--ease-spring);
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(124,28,28,.3);
+  letter-spacing: .01em;
+}
+.btn-primary:hover { background: var(--crimson-deep); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,28,28,.4); }
+
+/* ── FULLSCREEN ── */
+.fs-enter-active { transition: opacity .4s; }
+.fs-leave-active { transition: opacity .3s; }
 .fs-enter-from, .fs-leave-to { opacity: 0; }
-
-.fsOverlay__close {
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
-  width: 48px;
-  height: 48px;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 50%;
-  color: #fff;
-  font-size: 1.3rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10001;
-  transition: all 0.2s;
+.fsoverlay {
+  position: fixed; inset: 0;
+  background: rgba(8,7,6,.97); backdrop-filter: blur(16px);
+  z-index: 9999; display: flex; align-items: center; justify-content: center;
+}
+.fsoverlay__x {
+  position: fixed; top: 2rem; right: 2rem;
+  width: 46px; height: 46px;
+  background: rgba(255,255,255,.07); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.12); border-radius: 50%;
+  color: rgba(255,255,255,.8); font-size: 1.2rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10001; transition: all .28s var(--ease-spring);
+}
+.fsoverlay__x:hover { background: var(--crimson); border-color: var(--crimson); color: #fff; transform: rotate(90deg) scale(1.1); }
+.fsoverlay__frame { max-width: 96vw; max-height: 96vh; display: flex; align-items: center; justify-content: center; }
+.fsoverlay__img {
+  max-width: 100%; max-height: 96vh; object-fit: contain;
+  border-radius: var(--radius-s);
+  box-shadow: 0 40px 100px rgba(0,0,0,.7);
 }
 
-.fsOverlay__close:hover { background: var(--cardinal); transform: rotate(90deg); }
-
-.fsOverlay__content {
-  max-width: 95vw;
-  max-height: 95vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.fsOverlay__img {
-  max-width: 100%;
-  max-height: 95vh;
-  object-fit: contain;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-}
-
-.fsOverlay__iframe {
-  width: 95vw;
-  height: 95vh;
-  border-radius: var(--radius-sm);
-}
-
-/* ============================================
+/* ════════════════════════════════════════════════
    RESPONSIVE
-   ============================================ */
+════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .container { padding: 0 1.5rem; }
+  .hero { min-height: 85vh; }
+  .hero__stats { max-width: 100%; padding: 1.5rem 2rem; }
+  .hstat__inner { padding: 0 1.5rem; }
+  .hstat__num { font-size: 2rem; }
+}
+
 @media (max-width: 768px) {
   .container { padding: 0 1.25rem; }
-
-  .hero { min-height: 75vh; }
-
-  .heroCard__stats { gap: 2rem; flex-wrap: wrap; justify-content: center; }
-
+  .hero { min-height: 80vh; }
+  .hero__stats { flex-direction: column; gap: 0; border: none; background: none; padding: 0; }
+  .hstat { flex-direction: column; }
+  .hstat__sep { display: none; }
+  .hstat__inner { padding: .75rem 1rem; background: rgba(255,255,255,.04); border-radius: var(--radius-m); margin-bottom: .5rem; }
   .toolbar { flex-direction: column; align-items: stretch; }
-  .toolbar__actions { justify-content: space-between; }
-
+  .toolbar__right { justify-content: space-between; }
   .grid { grid-template-columns: 1fr; }
-
-  .preview { height: 400px; }
-  .imgFrame, .vidFrame { height: 400px; }
-  .imgFrame__img { max-height: 390px; }
-  .vidFrame__el { height: 400px; }
-  .audioFrame { height: 400px; }
-  .docFrame { height: 400px; }
-
-  .detailHero { min-height: 40vh; }
-  .detailHero__title { font-size: 1.75rem; }
-  .detailHero__content { padding: 3rem 0; }
-
-  .mediaSection { padding: 2.5rem 0; }
-
-  .relatedGrid { grid-template-columns: 1fr; }
-
-  .bodyContent { padding: 1.75rem; }
-
-  .vidControls__left { flex-wrap: wrap; }
-  .volWrap { width: 100%; }
-  .volSlider { flex: 1; }
+  .preview, .imgstage, .vidwrap, .vid, .audstage, .docstage { height: 380px; min-height: 380px; }
+  .imgstage__img { max-height: 370px; }
+  .dhero { min-height: 48vh; }
+  .dhero__content { padding: 4rem 0 2.5rem; }
+  .related__grid { grid-template-columns: 1fr; }
+  .chips-block { padding: 1.5rem; }
+  .dnav__inner { flex-direction: column; align-items: flex-start; }
+  .hero__corner { width: 44px; height: 44px; }
 }
 
 @media (max-width: 480px) {
-  .heroCard__title { font-size: 2rem; }
-  .stat__value { font-size: 2rem; }
-  .heroCard__stats { gap: 1.5rem; }
-  .card__visual { height: 200px; }
-
-  .mediaTabs { gap: 0.35rem; }
-  .mediaTab { padding: 0.5rem 0.9rem; font-size: 0.8rem; }
+  .headline__line--main { font-size: 3.2rem; }
+  .hero__stats { display: none; }
+  .stamp__ring { width: 72px; height: 72px; }
+  .card__thumb { height: 210px; }
+  .gtabs { gap: .25rem; }
+  .gtab { padding: .42rem .8rem; font-size: .79rem; }
 }
 
-/* ============================================
-   ACCESSIBILITY
-   ============================================ */
+/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: .01ms !important;
   }
 }
 
+/* ── Focus ── */
 *:focus-visible {
-  outline: 3px solid var(--cardinal);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 2px solid var(--crimson);
+  outline-offset: 3px;
+  border-radius: var(--radius-xs);
 }
+
+/* ════════════════════════════════════════════════
+   LANGUAGE-SENSITIVE LTR FIXES (KMR)
+════════════════════════════════════════════════ */
+.projects--ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Inputs / icons that were positioned for RTL */
+.projects--ltr .tsort__sel {
+  padding: .5rem .9rem .5rem 2rem;
+}
+.projects--ltr .tsort__ico {
+  right: .65rem;
+  left: auto;
+}
+
+/* Badge counters / floating hints */
+.projects--ltr .card__count {
+  right: .9rem;
+  left: auto;
+}
+.projects--ltr .imgstage__hint {
+  right: 1.2rem;
+  left: auto;
+}
+
+/* Card arrow motion direction */
+.projects--ltr .card:hover .card__arrow {
+  transform: translateX(6px);
+}
+
+/* Caption accent border flips side */
+.projects--ltr .caption {
+  border-right: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+}
+
+/* Fullscreen close button side */
+.projects--ltr .fsoverlay__x {
+  left: 2rem;
+  right: auto;
+}
+
+/* Hero decorative corners mirrored */
+.projects--ltr .hero__corner--tl {
+  left: 2.5rem;
+  right: auto;
+  border-right: 0;
+  border-left: 1px solid var(--amber);
+}
+.projects--ltr .hero__corner--tr {
+  right: 2.5rem;
+  left: auto;
+  border-left: 0;
+  border-right: 1px solid var(--amber);
+}
+.projects--ltr .hero__corner--bl {
+  left: 2.5rem;
+  right: auto;
+  border-right: 0;
+  border-left: 1px solid var(--amber);
+}
+.projects--ltr .hero__corner--br {
+  right: 2.5rem;
+  left: auto;
+  border-left: 0;
+  border-right: 1px solid var(--amber);
+}
+
+/* Detail hero decorative frames mirrored */
+.projects--ltr .dhero__frame--tl {
+  left: 2rem;
+  right: auto;
+  border-right: 0;
+  border-left: 1px solid var(--amber);
+}
+.projects--ltr .dhero__frame--br {
+  right: 2rem;
+  left: auto;
+  border-left: 0;
+  border-right: 1px solid var(--amber);
+}
+
+/* Better reading alignment for some sections in LTR */
+.projects--ltr .toolbar__label,
+.projects--ltr .card__meta,
+.projects--ltr .card__title,
+.projects--ltr .card__desc,
+.projects--ltr .caption__title,
+.projects--ltr .caption__text,
+.projects--ltr .dhero__title,
+.projects--ltr .dhero__desc,
+.projects--ltr .rcard__title,
+.projects--ltr .rcard__desc,
+.projects--ltr .empty,
+.projects--ltr .chips-block {
+  text-align: left;
+}
+
+/* Mobile alignment when LTR */
+@media (max-width: 768px) {
+  .projects--ltr .dnav__inner {
+    align-items: flex-start;
+  }
+}
+
 </style>

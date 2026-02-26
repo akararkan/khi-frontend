@@ -1,152 +1,175 @@
 <template>
-  <div class="stl" dir="rtl">
+  <div class="slist" dir="rtl">
 
-    <!-- ── HEADER ── -->
-    <div class="stl__head">
+    <!-- Header -->
+    <div class="slist__head">
       <div>
-        <h1 class="stl__title">دەنگەکان (Sound Tracks)</h1>
-        <p class="stl__sub">بینین، گەڕان و بەڕێوەبردنی هەموو دەنگەکان</p>
+        <h1 class="slist__title">دەنگەکان</h1>
+        <p class="slist__sub">لیستی هەموو تۆمارە دەنگییەکان.</p>
       </div>
-      <RouterLink class="btn btn--primary" to="/admin/soundtracks/new">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        دەنگی نوێ
+      <RouterLink class="btn btn--primary" :to="{ name: 'AdminSoundTrackCreate' }">
+        + دەنگی نوێ
       </RouterLink>
     </div>
 
-    <!-- ── SEARCH + FILTERS ── -->
-    <div class="stl__bar">
-      <div class="search">
-        <svg class="search__ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar__search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
         </svg>
-        <input v-model="searchQ" class="search__input" placeholder="گەڕان بە ناونیشان / تاگ / کیووەرد…" @input="onSearch" />
-        <Transition name="fade">
-          <button v-if="searchQ" class="search__clear" @click="clearSearch">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </Transition>
+        <input v-model="search" type="text" placeholder="گەڕان بە ناو، تاگ، بابەت..." />
       </div>
-      <select v-model="filterLang" class="sel">
+
+      <select v-model="filterLang" class="toolbar__select">
         <option value="">هەموو زمانەکان</option>
         <option value="CKB">سۆرانی</option>
-        <option value="KMR">کورمانجی</option>
+        <option value="KMR">کرمانجی</option>
+      </select>
+
+      <select v-model="filterState" class="toolbar__select">
+        <option value="">هەموو دۆخەکان</option>
+        <option value="SINGLE">SINGLE</option>
+        <option value="MULTI">MULTI</option>
+      </select>
+
+      <select v-model="filterTopic" class="toolbar__select">
+        <option value="">هەموو بابەتەکان</option>
+        <option v-for="t in availableTopics" :key="t.id" :value="t.id">
+          {{ t.nameCkb || t.nameKmr }}
+        </option>
+      </select>
+
+      <select v-model="filterAlbum" class="toolbar__select">
+        <option value="">هەموو جۆرەکان</option>
+        <option value="true">ئەلبووم بیرەوەری</option>
+        <option value="false">ئادی</option>
       </select>
     </div>
 
-    <!-- ── TOAST ── -->
-    <Transition name="slide-down">
-      <div v-if="toast.show" class="toast" :class="`toast--${toast.type}`">
-        <span class="toast__ico">{{ toast.type === 'success' ? '✓' : '✕' }}</span>
-        {{ toast.msg }}
-      </div>
-    </Transition>
-
-    <!-- ── SKELETON ── -->
-    <div v-if="loading" class="skeletons">
-      <div class="skel" v-for="i in 7" :key="i" :style="{ animationDelay: `${i * 0.07}s` }"></div>
+    <!-- Loading -->
+    <div v-if="loading" class="loading-card">
+      <div class="spinner"></div>
+      <span>دەنگەکان باردەکرێن...</span>
     </div>
 
-    <!-- ── ERROR ── -->
-    <div v-else-if="error" class="state-box state-box--error">
-      <div class="state-box__ico">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-      </div>
-      <p>{{ error }}</p>
-      <button class="btn btn--ghost btn--sm" @click="load">دووبارەتەکەیەوە</button>
+    <!-- Empty -->
+    <div v-else-if="!filtered.length" class="empty-card">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+      </svg>
+      <div class="empty-card__title">هیچ دەنگێک نەدۆزرایەوە</div>
+      <div class="empty-card__sub">فلتەرەکان بگۆڕە یان دەنگی نوێ زیاد بکە.</div>
+      <RouterLink class="btn btn--primary" :to="{ name: 'AdminSoundTrackCreate' }">دەنگی نوێ</RouterLink>
     </div>
 
-    <!-- ── EMPTY ── -->
-    <div v-else-if="!filteredItems.length" class="state-box">
-      <div class="state-box__ico">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-        </svg>
-      </div>
-      <p>هیچ دەنگێک نەدۆزرایەوە</p>
-      <RouterLink class="btn btn--primary btn--sm" to="/admin/soundtracks/new">یەکەمین دەنگت زیاد بکە</RouterLink>
-    </div>
-
-    <!-- ── TABLE ── -->
-    <div v-else class="table-wrap">
-      <div class="table-meta">
-        کۆی {{ filteredItems.length }} دەنگ
-        <span v-if="searchQ"> — ئەنجامی گەڕان بۆ «{{ searchQ }}»</span>
-      </div>
-      <table class="tbl">
+    <!-- Table -->
+    <div v-else class="panel">
+      <table class="table">
         <thead>
           <tr>
-            <th style="width:52px">#</th>
-            <th style="width:66px">کڤەر</th>
-            <th>ناونیشانی سۆرانی</th>
-            <th>ناونیشانی کورمانجی</th>
-            <th style="width:132px">جۆر</th>
-            <th style="width:132px">دۆخ</th>
-            <th style="width:98px">زمان</th>
-            <th style="width:92px">فایل</th>
-            <th style="width:120px">کاتی گشتی</th>
-            <th style="width:116px">کردار</th>
+            <th>#</th>
+            <th>کڤەر</th>
+            <th>ناو</th>
+            <th>جۆر / دۆخ</th>
+            <th>بابەت</th>
+            <th>بیرەوەری</th>
+            <th>فایل</th>
+            <th>کاتی دروستکردن</th>
+            <th>کردار</th>
           </tr>
         </thead>
+
         <tbody>
-          <tr v-for="t in filteredItems" :key="t.id" class="tbl__row" @click="openDetail(t)">
-            <td><span class="tbl__id">#{{ t.id }}</span></td>
+          <tr v-for="(item, idx) in filtered" :key="item.id" @click="openDetail(item)" class="table__row">
+            <td class="table__num">{{ idx + 1 }}</td>
+
+            <!-- Cover (swap to hover image on mouse hover) -->
             <td>
-              <div class="cover-wrap" v-if="t.coverUrl">
-                <img class="cover-img" :src="t.coverUrl" loading="lazy" />
-              </div>
-              <div class="cover-empty" v-else>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-                </svg>
-              </div>
-            </td>
-            <td><div class="tbl__name">{{ t.ckbContent?.title || '—' }}</div></td>
-            <td><div class="tbl__name tbl__name--kmr">{{ t.kmrContent?.title || '—' }}</div></td>
-            <td>
-              <span class="type-pill" :style="soundTypeStyle(t.soundType)">{{ t.soundType || '—' }}</span>
-            </td>
-            <td>
-              <span class="state-pill" :class="`state-pill--${(t.trackState||'').toLowerCase()}`">
-                {{ trackStateLabel(t.trackState) }}
-              </span>
-            </td>
-            <td>
-              <div class="lang-row">
-                <span v-for="l in (t.contentLanguages||[])" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span>
-              </div>
-            </td>
-            <td>
-              <span class="file-pill" v-if="(t.files||[]).length">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-                </svg>
-                {{ (t.files||[]).length }}
-              </span>
-              <span v-else class="tbl__dash">—</span>
-            </td>
-            <td class="tbl__date">{{ fmtDuration(t.totalDurationSeconds || 0) }}</td>
-            <td @click.stop>
-              <div class="tbl__acts">
-                <button class="act act--view" title="تەواوی زانیاری" @click="openDetail(t)">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              <div class="cover-cell">
+                <template v-if="item.ckbCoverUrl || item.kmrCoverUrl || item.hoverUrl">
+                  <!-- Base -->
+                  <img
+                    v-if="item.ckbCoverUrl || item.kmrCoverUrl || item.hoverUrl"
+                    class="cover-cell__img cover-cell__img--base"
+                    :src="item.ckbCoverUrl || item.kmrCoverUrl || item.hoverUrl"
+                    alt=""
+                  />
+                  <!-- Hover overlay -->
+                  <img
+                    v-if="item.hoverUrl"
+                    class="cover-cell__img cover-cell__img--hover"
+                    :src="item.hoverUrl"
+                    alt=""
+                  />
+                </template>
+
+                <div v-else class="cover-cell__empty">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
                   </svg>
-                </button>
-                <RouterLink class="act act--edit" :to="`/admin/soundtracks/${t.id}/edit`">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                </div>
+
+                <div v-if="item.hoverUrl" class="cover-cell__hover-badge" title="دارای Hover Image">H</div>
+              </div>
+            </td>
+
+            <td>
+              <div class="title-cell">
+                <span class="title-cell__main">{{ item.titleCkb || item.titleKmr || '—' }}</span>
+                <span v-if="item.titleCkb && item.titleKmr" class="title-cell__sub">{{ item.titleKmr }}</span>
+              </div>
+            </td>
+
+            <td>
+              <div class="badges">
+                <span class="badge badge--type">{{ item.soundType }}</span>
+                <span class="badge" :class="item.trackState === 'MULTI' ? 'badge--multi' : 'badge--single'">
+                  {{ item.trackState }}
+                </span>
+              </div>
+            </td>
+
+            <td>
+              <span v-if="item.topic" class="topic-pill">{{ item.topic.nameCkb || item.topic.nameKmr }}</span>
+              <span v-else class="muted">—</span>
+            </td>
+
+            <td>
+              <span v-if="item.trackState === 'MULTI'" class="badge" :class="item.albumOfMemories ? 'badge--album' : 'badge--normal'">
+                {{ item.albumOfMemories ? 'بەڵێ' : 'نەخێر' }}
+              </span>
+              <span v-else class="muted">—</span>
+            </td>
+
+            <td>
+              <span class="file-count">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/>
+                </svg>
+                {{ item.files?.length ?? 0 }}
+              </span>
+            </td>
+
+            <td class="date-cell">{{ fmtDate(item.createdAt) }}</td>
+
+            <td @click.stop>
+              <div class="act-btns">
+                <RouterLink
+                  :to="{ name: 'AdminSoundTrackEdit', params: { id: item.id } }"
+                  class="icon-btn icon-btn--edit"
+                  title="دەستکاری"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
                   </svg>
                 </RouterLink>
-                <button class="act act--del" @click="confirmDelete(t)">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+
+                <button class="icon-btn icon-btn--del" title="سڕینەوە" @click="confirmDelete(item)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
                     <path d="M10 11v6M14 11v6"/>
                   </svg>
                 </button>
@@ -154,427 +177,365 @@
             </td>
           </tr>
         </tbody>
+
       </table>
     </div>
 
-    <!-- ══ DELETE MODAL ══ -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!--  DETAIL MODAL                                                        -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="modal">
-        <div v-if="delTarget" class="overlay" @click.self="delTarget=null">
-          <div class="del-modal">
-            <div class="del-modal__ico">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8C1515" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-                <path d="M10 11v6M14 11v6"/>
+        <div v-if="detailItem" class="dk-bg" @click.self="detailItem = null">
+          <div class="dk" :class="{ 'dk--memories': detailItem.albumOfMemories && detailItem.trackState === 'MULTI' }">
+            <button class="dk__close" @click="detailItem = null">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
+            </button>
+
+            <!-- Hero base cover -->
+            <div
+              class="dk__hero"
+              :style="(detailItem.ckbCoverUrl || detailItem.kmrCoverUrl)
+                ? `background-image:url(${detailItem.ckbCoverUrl || detailItem.kmrCoverUrl})`
+                : ''"
+            >
+              <!-- Hover hero overlay (shown softly always if exists) -->
+              <div
+                v-if="detailItem.hoverUrl"
+                class="dk__hero-hover"
+                :style="`background-image:url(${detailItem.hoverUrl})`"
+              />
+
+              <div class="dk__hero-grain"></div>
+              <div class="dk__hero-gradient"></div>
+
+              <div class="dk__hero-content">
+                <div v-if="detailItem.albumOfMemories && detailItem.trackState === 'MULTI'" class="dk__ribbon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                  </svg>
+                  ئەلبوومی بیرەوەرییەکان
+                </div>
+
+                <div class="dk__hero-badges">
+                  <span class="dk__badge dk__badge--type">{{ detailItem.soundType }}</span>
+
+                  <span class="dk__badge" :class="detailItem.trackState === 'MULTI' ? 'dk__badge--multi' : 'dk__badge--single'">
+                    {{ detailItem.trackState === 'MULTI' ? 'چەند تراک' : 'تاک تراک' }}
+                  </span>
+
+                  <span v-if="detailItem.topic" class="dk__badge dk__badge--topic">
+                    {{ detailItem.topic.nameCkb || detailItem.topic.nameKmr }}
+                  </span>
+
+                  <span v-if="detailItem.hoverUrl" class="dk__badge dk__badge--hover">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                    </svg>
+                    Hover
+                  </span>
+                </div>
+
+                <h2 class="dk__hero-title">{{ detailItem.titleCkb || detailItem.titleKmr }}</h2>
+                <p v-if="detailItem.titleCkb && detailItem.titleKmr" class="dk__hero-subtitle">{{ detailItem.titleKmr }}</p>
+
+                <div class="dk__hero-stats">
+                  <div class="dk__stat">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/>
+                    </svg>
+                    {{ detailItem.files?.length || 0 }} فایل
+                  </div>
+
+                  <div class="dk__stat" v-if="detailItem.totalDurationSeconds">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    {{ fmtDuration(detailItem.totalDurationSeconds) }}
+                  </div>
+
+                  <div class="dk__stat" v-if="detailItem.totalSizeBytes">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    {{ fmtSize(detailItem.totalSizeBytes) }}
+                  </div>
+                </div>
+
+              </div>
             </div>
-            <h3 class="del-modal__title">دڵنیای لە سڕینەوە؟</h3>
-            <p class="del-modal__body">
-              دەنگی <strong>«{{ bestTitle(delTarget) || '#'+delTarget.id }}»</strong><br/>
-              بە تەواوی سڕاوەتەوە و ناگەڕێتەوە.
-            </p>
-            <div class="del-modal__acts">
-              <button class="btn btn--ghost" @click="delTarget=null">نەخێر</button>
-              <button class="btn btn--danger" :disabled="deleting" @click="doDelete">
-                <span v-if="deleting" class="spinner"></span>{{ deleting ? '…' : 'بەڵێ، بیسڕەوە' }}
-              </button>
+
+            <div class="dk__body">
+
+              <!-- Cover Images Row -->
+              <div class="dk__section" v-if="detailItem.ckbCoverUrl || detailItem.kmrCoverUrl || detailItem.hoverUrl">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  وێنەی کڤەر
+                </div>
+
+                <div class="dk__covers-grid">
+                  <div class="dk__cover-item" v-if="detailItem.ckbCoverUrl">
+                    <span class="dk__cover-label dk__cover-label--ckb">سۆرانی (CKB)</span>
+                    <div class="dk__cover-img-wrap">
+                      <img :src="detailItem.ckbCoverUrl" alt="CKB Cover" />
+                    </div>
+                  </div>
+
+                  <div class="dk__cover-item" v-if="detailItem.kmrCoverUrl">
+                    <span class="dk__cover-label dk__cover-label--kmr">کورمانجی (KMR)</span>
+                    <div class="dk__cover-img-wrap">
+                      <img :src="detailItem.kmrCoverUrl" alt="KMR Cover" />
+                    </div>
+                  </div>
+
+                  <div class="dk__cover-item" v-if="detailItem.hoverUrl">
+                    <span class="dk__cover-label dk__cover-label--hover">هۆڤەر</span>
+                    <div class="dk__cover-img-wrap dk__cover-img-wrap--hover">
+                      <img :src="detailItem.hoverUrl" alt="Hover Image" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bilingual Content -->
+              <div class="dk__section" v-if="detailItem.descriptionCkb || detailItem.descriptionKmr || detailItem.readingCkb || detailItem.readingKmr">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  ناوەڕۆک و وەسف
+                </div>
+
+                <div class="dk__content-grid">
+                  <div class="dk__content-col" v-if="detailItem.descriptionCkb || detailItem.readingCkb">
+                    <div class="dk__lang-tag dk__lang-tag--ckb">سۆرانی</div>
+                    <p v-if="detailItem.descriptionCkb" class="dk__desc">{{ detailItem.descriptionCkb }}</p>
+                    <div v-if="detailItem.readingCkb" class="dk__reading">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                        <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+                      </svg>
+                      <span>خوێنەر: <strong>{{ detailItem.readingCkb }}</strong></span>
+                    </div>
+                  </div>
+
+                  <div class="dk__content-col" v-if="detailItem.descriptionKmr || detailItem.readingKmr">
+                    <div class="dk__lang-tag dk__lang-tag--kmr">کورمانجی</div>
+                    <p v-if="detailItem.descriptionKmr" class="dk__desc">{{ detailItem.descriptionKmr }}</p>
+                    <div v-if="detailItem.readingKmr" class="dk__reading">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+                        <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                        <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+                      </svg>
+                      <span>خوێنەر: <strong>{{ detailItem.readingKmr }}</strong></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Audio Files -->
+              <div class="dk__section" v-if="detailItem.files?.length">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                  </svg>
+                  فایلە دەنگییەکان
+                  <span class="dk__sec-count">{{ detailItem.files.length }}</span>
+                </div>
+
+                <div class="dk__tracks">
+                  <div v-for="(f, i) in detailItem.files" :key="f.id || i" class="dk__track">
+                    <div class="dk__track-num">{{ i + 1 }}</div>
+                    <div class="dk__track-body">
+                      <div class="dk__track-top">
+                        <span class="dk__track-name">{{ f.readerName || `تراک ${i + 1}` }}</span>
+                        <div class="dk__track-meta">
+                          <span class="dk__track-chip">{{ f.fileType || 'OTHER' }}</span>
+                          <span v-if="f.durationSeconds" class="dk__track-dur">{{ fmtDuration(f.durationSeconds) }}</span>
+                          <span v-if="f.sizeBytes" class="dk__track-size">{{ fmtSize(f.sizeBytes) }}</span>
+                        </div>
+                      </div>
+
+                      <audio v-if="f.fileUrl" controls class="dk__track-player" :src="f.fileUrl" preload="none"></audio>
+
+                      <div v-else class="dk__track-links">
+                        <a v-if="f.externalUrl" :href="f.externalUrl" target="_blank" class="dk__ext-link">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                          </svg>
+                          لینکی دەرەکی
+                        </a>
+
+                        <a v-if="f.embedUrl" :href="f.embedUrl" target="_blank" class="dk__ext-link dk__ext-link--embed">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                          </svg>
+                          لینکی ئێمبێد
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Topic -->
+              <div class="dk__section" v-if="detailItem.topic">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                  </svg>
+                  موضوع / بابەت
+                </div>
+
+                <div class="dk__topic-card">
+                  <div class="dk__topic-icon">🏷</div>
+                  <div class="dk__topic-info">
+                    <span class="dk__topic-name">{{ detailItem.topic.nameCkb || '—' }}</span>
+                    <span v-if="detailItem.topic.nameKmr" class="dk__topic-name-alt">{{ detailItem.topic.nameKmr }}</span>
+                    <span class="dk__topic-id">ID: {{ detailItem.topic.id }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tags & Keywords -->
+              <div class="dk__section" v-if="detailItem.tagsCkb?.length || detailItem.tagsKmr?.length || detailItem.keywordsCkb?.length || detailItem.keywordsKmr?.length">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
+                    <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
+                  </svg>
+                  تاگ و کلیلەوشەکان
+                </div>
+
+                <div class="dk__tags-grid">
+                  <div v-if="detailItem.tagsCkb?.length" class="dk__tag-group">
+                    <span class="dk__tag-label">تاگ (سۆرانی)</span>
+                    <div class="dk__tag-list">
+                      <span v-for="t in detailItem.tagsCkb" :key="'tc'+t" class="dk__chip dk__chip--ckb">{{ t }}</span>
+                    </div>
+                  </div>
+
+                  <div v-if="detailItem.tagsKmr?.length" class="dk__tag-group">
+                    <span class="dk__tag-label">تاگ (کورمانجی)</span>
+                    <div class="dk__tag-list">
+                      <span v-for="t in detailItem.tagsKmr" :key="'tk'+t" class="dk__chip dk__chip--kmr">{{ t }}</span>
+                    </div>
+                  </div>
+
+                  <div v-if="detailItem.keywordsCkb?.length" class="dk__tag-group">
+                    <span class="dk__tag-label">کلیلەوشە (سۆرانی)</span>
+                    <div class="dk__tag-list">
+                      <span v-for="k in detailItem.keywordsCkb" :key="'kc'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
+                    </div>
+                  </div>
+
+                  <div v-if="detailItem.keywordsKmr?.length" class="dk__tag-group">
+                    <span class="dk__tag-label">کلیلەوشە (کورمانجی)</span>
+                    <div class="dk__tag-list">
+                      <span v-for="k in detailItem.keywordsKmr" :key="'kk'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Locations -->
+              <div class="dk__section" v-if="detailItem.locations?.length">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  شوێنەکان
+                </div>
+
+                <div class="dk__locations">
+                  <div v-for="loc in detailItem.locations" :key="loc" class="dk__loc-card">
+                    <span class="dk__loc-pin">📍</span><span>{{ loc }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Info Grid -->
+              <div class="dk__section">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                  </svg>
+                  زانیاری گشتی
+                </div>
+
+                <div class="dk__info-grid">
+                  <div class="dk__info-item"><span class="dk__info-icon">🆔</span><div class="dk__info-data"><span class="dk__info-label">ناسنامە</span><span class="dk__info-value">#{{ detailItem.id }}</span></div></div>
+                  <div class="dk__info-item"><span class="dk__info-icon">🎵</span><div class="dk__info-data"><span class="dk__info-label">جۆری دەنگ</span><span class="dk__info-value">{{ detailItem.soundType || '—' }}</span></div></div>
+                  <div class="dk__info-item"><span class="dk__info-icon">📼</span><div class="dk__info-data"><span class="dk__info-label">دۆخی تراک</span><span class="dk__info-value">{{ detailItem.trackState === 'MULTI' ? 'چەند تراک (MULTI)' : 'تاک تراک (SINGLE)' }}</span></div></div>
+
+                  <div class="dk__info-item"><span class="dk__info-icon">🖼</span><div class="dk__info-data"><span class="dk__info-label">CKB</span><span class="dk__info-value">{{ detailItem.ckbCoverUrl ? '✓' : '—' }}</span></div></div>
+                  <div class="dk__info-item"><span class="dk__info-icon">🖼</span><div class="dk__info-data"><span class="dk__info-label">KMR</span><span class="dk__info-value">{{ detailItem.kmrCoverUrl ? '✓' : '—' }}</span></div></div>
+                  <div class="dk__info-item"><span class="dk__info-icon">🎨</span><div class="dk__info-data"><span class="dk__info-label">Hover</span><span class="dk__info-value" :class="detailItem.hoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.hoverUrl ? '✓' : '—' }}</span></div></div>
+
+                  <div class="dk__info-item"><span class="dk__info-icon">📅</span><div class="dk__info-data"><span class="dk__info-label">کاتی دروستکردن</span><span class="dk__info-value">{{ fmtDateFull(detailItem.createdAt) }}</span></div></div>
+                  <div class="dk__info-item" v-if="detailItem.updatedAt"><span class="dk__info-icon">🔄</span><div class="dk__info-data"><span class="dk__info-label">دوایین نوێکردنەوە</span><span class="dk__info-value">{{ fmtDateFull(detailItem.updatedAt) }}</span></div></div>
+                </div>
+              </div>
+
             </div>
+
+            <!-- Footer -->
+            <div class="dk__foot">
+              <RouterLink :to="{ name: 'AdminSoundTrackEdit', params: { id: detailItem.id } }" class="btn btn--primary btn--sm">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
+                </svg>
+                دەستکاریکردن
+              </RouterLink>
+              <button class="btn btn--ghost btn--sm" @click="detailItem = null">داخستن</button>
+            </div>
+
           </div>
         </div>
       </Transition>
     </Teleport>
 
-    <!-- ══ DETAIL MODAL ══ -->
+    <!-- Delete Confirm -->
     <Teleport to="body">
-      <Transition name="pdm-fade">
-        <div v-if="detail" class="pdm-overlay" @click.self="closeDetail">
-          <Transition name="pdm-rise" appear>
-            <div v-if="detail" class="pdm" role="dialog">
-
-              <button class="pdm-x" @click="closeDetail" aria-label="داخستن">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-
-              <!-- ════ LEFT — PLAYER ════ -->
-              <div class="pdm-media">
-
-                <div class="pdm-media__empty" v-if="!detailFiles.length">
-                  <div class="pdm-media__empty-icon">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
-                      <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-                    </svg>
-                  </div>
-                  <span>هیچ فایلێک نییە</span>
-                  <img v-if="detail.coverUrl" :src="detail.coverUrl" class="pdm-media__cover-fallback" />
-                </div>
-
-                <div class="audio-stage" v-else>
-
-                  <!-- Cover + Title -->
-                  <div class="audio-stage__top">
-                    <div class="audio-stage__cover" v-if="detail.coverUrl">
-                      <img :src="detail.coverUrl" alt="cover" />
-                    </div>
-                    <div class="audio-stage__meta">
-                      <div class="audio-stage__title">{{ bestTitle(detail) || '—' }}</div>
-                      <div class="audio-stage__sub">
-                        <span class="audio-type-badge" :style="soundTypeStyle(detail.soundType)">{{ detail.soundType || '—' }}</span>
-                        <span class="sep">•</span>{{ trackStateLabel(detail.trackState) }}
-                        <template v-if="selectedFile?.readerName">
-                          <span class="sep">•</span><span class="reader-name">{{ selectedFile.readerName }}</span>
-                        </template>
-                      </div>
-                      <div class="audio-stage__dims">
-                        <span v-if="selectedFile?.fileType" class="ftype-badge">{{ selectedFile.fileType }}</span>
-                        <span v-if="selectedFile?.durationSeconds">⏱ {{ fmtDuration(selectedFile.durationSeconds) }}</span>
-                        <span v-if="selectedFile?.sizeBytes">💾 {{ fmtBytes(selectedFile.sizeBytes) }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- ══ PLAYER ZONE ══ -->
-                  <div class="player-zone">
-
-                    <!-- BLOCK 1: Direct file (S3 / CDN) -->
-                    <div v-if="selectedFile?.fileUrl" class="pblock pblock--file">
-                      <div class="pblock__hd">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                        Direct Audio
-                      </div>
-                      <audio :src="selectedFile.fileUrl" controls preload="none" class="native-audio"></audio>
-                      <a :href="selectedFile.fileUrl" target="_blank" class="raw-link">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        {{ truncUrl(selectedFile.fileUrl) }}
-                      </a>
-                    </div>
-
-                    <!-- BLOCK 2: Embed URL -->
-                    <div v-if="selectedFile?.embedUrl" class="pblock pblock--embed">
-                      <div class="pblock__hd">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                        Embed Player
-                      </div>
-                      <!-- If direct audio stream, use <audio> -->
-                      <audio v-if="isDirectAudio(selectedFile.embedUrl)" :src="selectedFile.embedUrl" controls preload="none" class="native-audio"></audio>
-                      <!-- Otherwise render iframe -->
-                      <div v-else class="iframe-wrap">
-                        <iframe
-                          :src="selectedFile.embedUrl"
-                          frameborder="0"
-                          allow="autoplay; encrypted-media; fullscreen"
-                          allowfullscreen
-                          class="embed-iframe"
-                        ></iframe>
-                      </div>
-                      <a :href="selectedFile.embedUrl" target="_blank" class="raw-link">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        {{ truncUrl(selectedFile.embedUrl) }}
-                      </a>
-                    </div>
-
-                    <!-- BLOCK 3: External link (YouTube, SoundCloud, etc.) -->
-                    <div v-if="selectedFile?.externalUrl" class="pblock pblock--ext">
-                      <div class="pblock__hd">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
-                        External Link
-                      </div>
-                      <a :href="selectedFile.externalUrl" target="_blank" class="ext-btn">
-                        <span class="ext-btn__platform">{{ platformLabel(selectedFile.externalUrl) }}</span>
-                        <span class="ext-btn__url">{{ truncUrl(selectedFile.externalUrl) }}</span>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ext-btn__arrow"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                      </a>
-                    </div>
-
-                    <!-- No source at all -->
-                    <div v-if="!selectedFile?.fileUrl && !selectedFile?.embedUrl && !selectedFile?.externalUrl" class="no-src">
-                      هیچ لینکێک نییە بۆ ئەم فایلە
-                    </div>
-                  </div>
-
-                  <!-- ══ FILE LIST (MULTI) ══ -->
-                  <div class="flist" v-if="detailFiles.length > 1">
-                    <div class="flist__label">{{ detailFiles.length }} فایل — یەکێک هەڵبژێرە</div>
-                    <button
-                      v-for="(f, idx) in detailFiles"
-                      :key="fileKey(f)"
-                      class="flist__item"
-                      :class="{ 'flist__item--on': fileKey(f) === fileKey(selectedFile) }"
-                      @click="selectedFile = f"
-                      type="button"
-                    >
-                      <div class="flist__item-left">
-                        <span class="flist__num">{{ idx + 1 }}</span>
-                        <div>
-                          <div class="flist__name">{{ f.readerName || ('فایل ' + (idx + 1)) }}</div>
-                          <div class="flist__tags">
-                            <span v-if="f.fileUrl"     class="utag utag--file">FILE</span>
-                            <span v-if="f.embedUrl"    class="utag utag--embed">EMBED</span>
-                            <span v-if="f.externalUrl" class="utag utag--ext">EXT</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="flist__item-right">
-                        <span class="ftype-badge">{{ f.fileType || 'OTHER' }}</span>
-                        <span v-if="f.durationSeconds" class="flist__dur">{{ fmtDuration(f.durationSeconds) }}</span>
-                        <span v-if="f.sizeBytes"       class="flist__sz">{{ fmtBytes(f.sizeBytes) }}</span>
-                      </div>
-                    </button>
-                  </div>
-
-                </div>
-              </div>
-
-              <!-- ════ RIGHT — INFO ════ -->
-              <div class="pdm-info">
-                <div class="pdm-info__head">
-                  <div class="pdm-info__head-meta">
-                    <span class="pdm-id-tag"># {{ detail.id }}</span>
-                    <span class="type-pill" :style="soundTypeStyle(detail.soundType)">{{ detail.soundType || '—' }}</span>
-                    <span class="state-pill" :class="`state-pill--${(detail.trackState||'').toLowerCase()}`">{{ trackStateLabel(detail.trackState) }}</span>
-                    <span class="inst-pill" v-if="isInstitute(detail)">پڕۆژەی ناوەند</span>
-                  </div>
-
-                  <h2 class="pdm-title">{{ bestTitle(detail) || '—' }}</h2>
-                  <p class="pdm-subtitle" v-if="altTitle(detail)">{{ altTitle(detail) }}</p>
-
-                  <div class="pdm-langs">
-                    <span v-for="l in (detail.contentLanguages||[])" :key="l" class="pdm-lang" :class="`pdm-lang--${l.toLowerCase()}`">
-                      {{ l === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
-                    </span>
-                  </div>
-
-                  <!-- Quick stats -->
-                  <div class="pdm-stats">
-                    <div class="pdm-stat">
-                      <div class="pdm-stat__k">فایل</div>
-                      <div class="pdm-stat__v">{{ (detail.files||[]).length }}</div>
-                    </div>
-                    <div class="pdm-stat" v-if="detail.totalDurationSeconds">
-                      <div class="pdm-stat__k">کاتی گشتی</div>
-                      <div class="pdm-stat__v">{{ fmtDuration(detail.totalDurationSeconds) }}</div>
-                    </div>
-                    <div class="pdm-stat" v-if="detail.totalSizeBytes">
-                      <div class="pdm-stat__k">قەبارەی گشتی</div>
-                      <div class="pdm-stat__v">{{ fmtBytes(detail.totalSizeBytes) }}</div>
-                    </div>
-                  </div>
-
-                  <RouterLink class="pdm-edit-btn" :to="`/admin/soundtracks/${detail.id}/edit`" @click="closeDetail">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
-                    </svg>
-                    دەستکاری دەنگ
-                  </RouterLink>
-                </div>
-
-                <!-- Language tabs -->
-                <div class="pdm-tabs" v-if="(detail.contentLanguages||[]).length > 1">
-                  <button v-for="l in (detail.contentLanguages||[])" :key="l" class="pdm-tab" :class="{ 'pdm-tab--on': detailLang === l }" @click="detailLang = l">
-                    <span class="pdm-tab__pip" :class="`pdm-tab__pip--${l.toLowerCase()}`"></span>
-                    {{ l === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
-                  </button>
-                </div>
-
-                <div class="pdm-info__body">
-
-                  <!-- Description -->
-                  <div class="acc" v-if="activeContent(detail)?.description">
-                    <button class="acc__hd" @click="toggleAcc('desc')">
-                      <span class="acc__hd-left">
-                        <span class="acc__ico acc__ico--desc">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                          </svg>
-                        </span>
-                        <span class="acc__title">وەسف</span>
-                      </span>
-                      <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('desc')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('desc')" class="acc__body">
-                        <p class="acc__text acc__text--desc">{{ activeContent(detail).description }}</p>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <!-- Reading + Director + Locations -->
-                  <div class="acc" v-if="activeContent(detail)?.reading || detail.director || (detail.locations||[]).length">
-                    <button class="acc__hd" @click="toggleAcc('meta')">
-                      <span class="acc__hd-left">
-                        <span class="acc__ico acc__ico--meta">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                          </svg>
-                        </span>
-                        <span class="acc__title">زانیاری زیاتر</span>
-                      </span>
-                      <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('meta')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('meta')" class="acc__body">
-                        <div class="acc__meta-grid">
-                          <div class="acc__meta-row" v-if="activeContent(detail)?.reading">
-                            <span class="acc__meta-k">خوێندن</span>
-                            <span class="acc__meta-v">{{ activeContent(detail).reading }}</span>
-                          </div>
-                          <div class="acc__meta-row" v-if="detail.director">
-                            <span class="acc__meta-k">Director</span>
-                            <span class="acc__meta-v">{{ detail.director }}</span>
-                          </div>
-                          <div class="acc__meta-row" v-if="(detail.locations||[]).length">
-                            <span class="acc__meta-k">
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                              شوێن
-                            </span>
-                            <span class="acc__meta-v">{{ (detail.locations||[]).join('، ') }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <!-- All Files (URLs detail) -->
-                  <div class="acc" v-if="detailFiles.length">
-                    <button class="acc__hd" @click="toggleAcc('files')">
-                      <span class="acc__hd-left">
-                        <span class="acc__ico acc__ico--files">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-                          </svg>
-                        </span>
-                        <span class="acc__title">زانیاری فایلەکان</span>
-                        <span class="acc__badge acc__badge--files">{{ detailFiles.length }}</span>
-                      </span>
-                      <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('files')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('files')" class="acc__body acc__body--nop">
-                        <div class="fcard" v-for="(f, idx) in detailFiles" :key="f.id || idx">
-                          <!-- File header -->
-                          <div class="fcard__head">
-                            <span class="fcard__num">{{ idx + 1 }}</span>
-                            <span class="fcard__reader">{{ f.readerName || 'بێ ناوی خوێنەر' }}</span>
-                            <span class="ftype-badge ftype-badge--sm">{{ f.fileType || 'OTHER' }}</span>
-                          </div>
-                          <!-- File stats row -->
-                          <div class="fcard__stats" v-if="f.durationSeconds || f.sizeBytes || f.id">
-                            <span v-if="f.id"              class="fstat">ID: {{ f.id }}</span>
-                            <span v-if="f.durationSeconds" class="fstat">⏱ {{ fmtDuration(f.durationSeconds) }}</span>
-                            <span v-if="f.sizeBytes"       class="fstat">💾 {{ fmtBytes(f.sizeBytes) }}</span>
-                          </div>
-                          <!-- fileUrl -->
-                          <div v-if="f.fileUrl" class="fcard__url-row">
-                            <span class="fcard__url-label fcard__url-label--file">FILE URL</span>
-                            <a :href="f.fileUrl" target="_blank" class="fcard__url-link">{{ f.fileUrl }}</a>
-                          </div>
-                          <!-- embedUrl -->
-                          <div v-if="f.embedUrl" class="fcard__url-row">
-                            <span class="fcard__url-label fcard__url-label--embed">EMBED URL</span>
-                            <a :href="f.embedUrl" target="_blank" class="fcard__url-link">{{ f.embedUrl }}</a>
-                          </div>
-                          <!-- externalUrl -->
-                          <div v-if="f.externalUrl" class="fcard__url-row">
-                            <span class="fcard__url-label fcard__url-label--ext">EXTERNAL URL</span>
-                            <a :href="f.externalUrl" target="_blank" class="fcard__url-link">{{ f.externalUrl }}</a>
-                          </div>
-                        </div>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <!-- Tags -->
-                  <div class="acc" v-if="activeTags(detail).length">
-                    <button class="acc__hd" @click="toggleAcc('tags')">
-                      <span class="acc__hd-left">
-                        <span class="acc__ico acc__ico--tag">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
-                            <line x1="7" y1="7" x2="7.01" y2="7"/>
-                          </svg>
-                        </span>
-                        <span class="acc__title">تاگەکان</span>
-                        <span class="acc__badge acc__badge--tag">{{ activeTags(detail).length }}</span>
-                      </span>
-                      <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('tags')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('tags')" class="acc__body">
-                        <div class="acc__chips">
-                          <span v-for="tg in activeTags(detail)" :key="tg" class="acc__chip acc__chip--tag">{{ tg }}</span>
-                        </div>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <!-- Keywords -->
-                  <div class="acc" v-if="activeKeywords(detail).length">
-                    <button class="acc__hd" @click="toggleAcc('kw')">
-                      <span class="acc__hd-left">
-                        <span class="acc__ico acc__ico--kw">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-                          </svg>
-                        </span>
-                        <span class="acc__title">کیووەردەکان</span>
-                        <span class="acc__badge acc__badge--kw">{{ activeKeywords(detail).length }}</span>
-                      </span>
-                      <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('kw')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('kw')" class="acc__body">
-                        <div class="acc__chips">
-                          <span v-for="kw in activeKeywords(detail)" :key="kw" class="acc__chip acc__chip--kw">{{ kw }}</span>
-                        </div>
-                      </div>
-                    </Transition>
-                  </div>
-
-                  <!-- System info -->
-                  <div class="acc acc--system">
-                    <button class="acc__hd acc__hd--system" @click="toggleAcc('sys')">
-                      <span class="acc__hd-left">
-                        <span class="acc__ico acc__ico--sys">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="3" width="20" height="14" rx="2"/>
-                            <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                          </svg>
-                        </span>
-                        <span class="acc__title">زانیاری سیستەم</span>
-                      </span>
-                      <svg class="acc__chevron" :class="{'acc__chevron--open':openAccordions.has('sys')}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('sys')" class="acc__body acc__body--flush">
-                        <div class="acc__sys-grid">
-                          <div class="acc__sys-cell" v-if="detail.createdAt">
-                            <div class="acc__sys-k">دروستکراوە لە</div>
-                            <div class="acc__sys-v">{{ fmtDatetime(detail.createdAt) }}</div>
-                          </div>
-                          <div class="acc__sys-cell" v-if="detail.updatedAt">
-                            <div class="acc__sys-k">دواین نوێکردنەوە</div>
-                            <div class="acc__sys-v">{{ fmtDatetime(detail.updatedAt) }}</div>
-                          </div>
-                          <div class="acc__sys-cell acc__sys-cell--full">
-                            <div class="acc__sys-k">ID</div>
-                            <div class="acc__sys-v acc__sys-v--mono">{{ detail.id }}</div>
-                          </div>
-                          <div class="acc__sys-cell acc__sys-cell--full" v-if="detail.coverUrl">
-                            <div class="acc__sys-k">Cover URL</div>
-                            <a :href="detail.coverUrl" target="_blank" class="acc__sys-v acc__sys-v--link">{{ detail.coverUrl }}</a>
-                          </div>
-                        </div>
-                      </div>
-                    </Transition>
-                  </div>
-
-                </div><!-- /pdm-info__body -->
-              </div><!-- /pdm-info -->
-
+      <Transition name="modal">
+        <div v-if="deleteTarget" class="modal-bg" @click.self="deleteTarget = null">
+          <div class="modal modal--sm">
+            <div class="modal__del-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+              </svg>
             </div>
-          </Transition>
+
+            <h3 class="modal__del-title">سڕینەوەی دەنگ</h3>
+            <p class="modal__del-sub">
+              دەتەوێت <strong>{{ deleteTarget.titleCkb || deleteTarget.titleKmr }}</strong> بسڕیتەوە؟
+              ئەم کردارە گەرێنەوەی نییە.
+            </p>
+
+            <div class="modal__del-acts">
+              <button class="btn btn--danger btn--sm" :disabled="deleting" @click="doDelete">
+                <span v-if="deleting" class="spin-sm"></span>
+                {{ deleting ? 'سڕینەوەدەکرێت...' : 'بەڵێ، بیسڕەرەوە' }}
+              </button>
+              <button class="btn btn--ghost btn--sm" @click="deleteTarget = null">پاشگەزبوونەوە</button>
+            </div>
+
+          </div>
         </div>
       </Transition>
     </Teleport>
@@ -583,797 +544,328 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api.js'
 
-const items           = ref([])
-const loading         = ref(false)
-const error           = ref('')
-const searchQ         = ref('')
-const filterLang      = ref('')
-const delTarget       = ref(null)
-const deleting        = ref(false)
-const toast           = ref({ show: false, type: 'success', msg: '' })
-const detail          = ref(null)
-const detailLang      = ref('CKB')
-const detailOverlayEl = ref(null)
-const openAccordions  = ref(new Set(['desc', 'meta', 'files', 'tags', 'kw']))
-const selectedFile    = ref(null)
-let searchTimer       = null
-let toastTimer        = null
+const items        = ref([])
+const loading      = ref(false)
+const search       = ref('')
+const filterLang   = ref('')
+const filterState  = ref('')
+const filterTopic  = ref('')
+const filterAlbum  = ref('')
+const detailItem   = ref(null)
+const deleteTarget = ref(null)
+const deleting     = ref(false)
 
-/* ── helpers ── */
-const ensureArray = (v) => Array.isArray(v) ? v : []
-const cleanUrl = (u) => (typeof u === 'string' ? u.trim() : '')
-const isHttpUrl = (u) => /^https?:\/\//i.test(cleanUrl(u))
+const normalize = (d) => ({
+  ...d,
+  titleCkb:        d.ckbContent?.title        || '',
+  titleKmr:        d.kmrContent?.title        || '',
+  descriptionCkb:  d.ckbContent?.description  || '',
+  descriptionKmr:  d.kmrContent?.description  || '',
+  readingCkb:      d.ckbContent?.reading      || '',
+  readingKmr:      d.kmrContent?.reading      || '',
+  tagsCkb:         [...(d.tags?.ckb     || [])],
+  tagsKmr:         [...(d.tags?.kmr     || [])],
+  keywordsCkb:     [...(d.keywords?.ckb || [])],
+  keywordsKmr:     [...(d.keywords?.kmr || [])],
+  locations:       Array.isArray(d.locations) ? [...d.locations] : [...(d.locations || [])],
+  files:           d.files || [],
+  albumOfMemories: d.albumOfMemories ?? false,
+  totalDurationSeconds: d.totalDurationSeconds || 0,
+  totalSizeBytes:      d.totalSizeBytes || 0,
+  topic: d.topicId
+    ? { id: d.topicId, nameCkb: d.topicNameCkb || '', nameKmr: d.topicNameKmr || '' }
+    : null,
+  contentLanguages: Array.isArray(d.contentLanguages) ? d.contentLanguages : [...(d.contentLanguages || [])],
 
-const decodeHtmlEntities = (str = '') =>
-  String(str)
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+  // ✅ map response cover fields
+  ckbCoverUrl: d.ckbCoverUrl || '',
+  kmrCoverUrl: d.kmrCoverUrl || '',
+  hoverUrl:    d.hoverCoverUrl || '',
+})
 
-const getUrlObj = (u) => {
-  try { return new URL(cleanUrl(u)) } catch { return null }
-}
+const availableTopics = computed(() => {
+  const seen = new Set()
+  const result = []
+  items.value.forEach(item => {
+    if (item.topic && !seen.has(item.topic.id)) {
+      seen.add(item.topic.id)
+      result.push(item.topic)
+    }
+  })
+  return result
+})
 
-const extractIframeSrcFromHtml = (raw = '') => {
-  const s = String(raw || '')
-  if (!/<iframe[\s\S]*?>/i.test(s)) return ''
-  const m = s.match(/src\s*=\s*["']([^"']+)["']/i)
-  return m?.[1] ? decodeHtmlEntities(m[1]) : ''
-}
+const filtered = computed(() => {
+  let list = items.value
+  const q = search.value.trim().toLowerCase()
 
-const extractYouTubeId = (raw = '') => {
-  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
-  const u = getUrlObj(input)
-  if (!u) return ''
-
-  const host = u.hostname.toLowerCase()
-  if (host.includes('youtu.be')) {
-    return u.pathname.replace('/', '').split('/')[0] || ''
+  if (q) {
+    list = list.filter(item =>
+      (item.titleCkb || '').toLowerCase().includes(q) ||
+      (item.titleKmr || '').toLowerCase().includes(q) ||
+      (item.soundType || '').toLowerCase().includes(q) ||
+      (item.topic?.nameCkb || '').toLowerCase().includes(q) ||
+      (item.topic?.nameKmr || '').toLowerCase().includes(q) ||
+      (item.tagsCkb || []).some(t => t.toLowerCase().includes(q)) ||
+      (item.tagsKmr || []).some(t => t.toLowerCase().includes(q))
+    )
   }
 
-  if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
-    if (u.searchParams.get('v')) return u.searchParams.get('v')
-    const parts = u.pathname.split('/').filter(Boolean)
-    const idxEmbed = parts.indexOf('embed')
-    if (idxEmbed !== -1 && parts[idxEmbed + 1]) return parts[idxEmbed + 1]
-    const idxShorts = parts.indexOf('shorts')
-    if (idxShorts !== -1 && parts[idxShorts + 1]) return parts[idxShorts + 1]
-    const idxLive = parts.indexOf('live')
-    if (idxLive !== -1 && parts[idxLive + 1]) return parts[idxLive + 1]
-  }
-  return ''
-}
+  if (filterLang.value)  list = list.filter(item => (item.contentLanguages || []).includes(filterLang.value))
+  if (filterState.value) list = list.filter(item => item.trackState === filterState.value)
+  if (filterTopic.value) list = list.filter(item => item.topic?.id === Number(filterTopic.value))
 
-const extractSpotifyEmbed = (raw = '') => {
-  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
-  const u = getUrlObj(input)
-  if (!u) return ''
-  const host = u.hostname.toLowerCase()
-  if (!host.includes('spotify.com')) return ''
-
-  // already embed url
-  if (u.pathname.includes('/embed/')) return u.toString()
-
-  // open.spotify.com/track/... -> open.spotify.com/embed/track/...
-  const parts = u.pathname.split('/').filter(Boolean)
-  if (parts.length >= 2) {
-    return `${u.protocol}//${u.hostname}/embed/${parts.join('/')}`
-  }
-  return u.toString()
-}
-
-const extractSoundCloudEmbed = (raw = '') => {
-  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
-  const u = getUrlObj(input)
-  if (!u) return ''
-  const host = u.hostname.toLowerCase()
-
-  // already soundcloud widget
-  if (host.includes('w.soundcloud.com')) return u.toString()
-
-  // normal soundcloud link -> widget URL
-  if (host.includes('soundcloud.com')) {
-    return `https://w.soundcloud.com/player/?url=${encodeURIComponent(u.toString())}`
-  }
-
-  return ''
-}
-
-const toEmbeddableAudioUrl = (raw = '') => {
-  let u = decodeHtmlEntities(cleanUrl(raw))
-  if (!u) return ''
-
-  const iframeSrc = extractIframeSrcFromHtml(u)
-  if (iframeSrc) u = iframeSrc
-
-  if (!isHttpUrl(u)) return ''
-
-  const ytId = extractYouTubeId(u)
-  if (ytId) return `https://www.youtube.com/embed/${ytId}`
-
-  const spotify = extractSpotifyEmbed(u)
-  if (spotify) return spotify
-
-  const soundcloud = extractSoundCloudEmbed(u)
-  if (soundcloud) return soundcloud
-
-  return u
-}
-
-const getExt = (u = '') => {
-  const s = extractIframeSrcFromHtml(u) || decodeHtmlEntities(u)
-  const obj = getUrlObj(s)
-  const path = obj?.pathname || s.split('?')[0] || ''
-  const m = path.toLowerCase().match(/\.([a-z0-9]+)$/i)
-  return m?.[1] || ''
-}
-
-const AUDIO_EXTS = ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'opus', 'weba']
-const inferAudioMime = (url = '') => {
-  const ext = getExt(url)
-  const map = {
-    mp3: 'audio/mpeg',
-    wav: 'audio/wav',
-    ogg: 'audio/ogg',
-    aac: 'audio/aac',
-    flac: 'audio/flac',
-    m4a: 'audio/mp4',
-    opus: 'audio/ogg',
-    weba: 'audio/webm',
-  }
-  return map[ext] || ''
-}
-
-/* ── normalize backend data ── */
-const normalizeFile = (f = {}) => {
-  const out = { ...f }
-
-  // support multiple backend naming styles
-  out.fileUrl     = cleanUrl(out.fileUrl || out.url || '')
-  out.embedUrl    = cleanUrl(out.embedUrl || out.embed || '')
-  out.externalUrl = cleanUrl(out.externalUrl || out.link || '')
-  out.fileType    = (out.fileType || out.type || 'OTHER').toString().toUpperCase()
-
-  const directCandidate = out.fileUrl || out.externalUrl || ''
-  const embedCandidate  = out.embedUrl || out.externalUrl || out.fileUrl || ''
-
-  const normalized = {
-    ...out,
-    directUrl: '',
-    embedPreviewUrl: '',
-    openUrl: out.externalUrl || out.fileUrl || out.embedUrl || '',
-    mimeType: '',
-  }
-
-  // if fileUrl accidentally contains iframe HTML, treat as embed
-  if (extractIframeSrcFromHtml(out.fileUrl)) {
-    normalized.embedPreviewUrl = toEmbeddableAudioUrl(out.fileUrl)
-  }
-
-  if (!normalized.embedPreviewUrl && out.embedUrl) {
-    normalized.embedPreviewUrl = toEmbeddableAudioUrl(out.embedUrl)
-  }
-
-  if (isDirectAudio(directCandidate)) {
-    normalized.directUrl = decodeHtmlEntities(directCandidate)
-    normalized.mimeType = inferAudioMime(normalized.directUrl)
-  } else if (!normalized.embedPreviewUrl && embedCandidate) {
-    normalized.embedPreviewUrl = toEmbeddableAudioUrl(embedCandidate)
-  }
-
-  return normalized
-}
-
-const normalizeItem = (t = {}) => {
-  const out = { ...t }
-
-  if (!out.ckbContent && out.content?.ckb) out.ckbContent = out.content.ckb
-  if (!out.kmrContent && out.content?.kmr) out.kmrContent = out.content.kmr
-
-  if (!ensureArray(out.contentLanguages).length) {
-    const langs = []
-    if (out.ckbContent?.title || out.ckbContent?.description) langs.push('CKB')
-    if (out.kmrContent?.title || out.kmrContent?.description) langs.push('KMR')
-    out.contentLanguages = langs
-  }
-
-  out.tags = out.tags || {}
-  out.tags.ckb = ensureArray(out.tags?.ckb || out.tagsCkb)
-  out.tags.kmr = ensureArray(out.tags?.kmr || out.tagsKmr)
-
-  out.keywords = out.keywords || {}
-  out.keywords.ckb = ensureArray(out.keywords?.ckb || out.keywordsCkb)
-  out.keywords.kmr = ensureArray(out.keywords?.kmr || out.keywordsKmr)
-
-  out.locations = ensureArray(out.locations)
-
-  out.files = ensureArray(out.files || out.soundFiles || out.tracks || []).map(normalizeFile)
-
-  return out
-}
-
-/* ── Filtered list ── */
-const filteredItems = computed(() => {
-  let list = ensureArray(items.value)
-
-  if (searchQ.value.trim()) {
-    const q = searchQ.value.trim().toLowerCase()
-    list = list.filter(t => {
-      const t1   = (t.ckbContent?.title  || '').toLowerCase()
-      const t2   = (t.kmrContent?.title  || '').toLowerCase()
-      const d1   = (t.ckbContent?.description || '').toLowerCase()
-      const d2   = (t.kmrContent?.description || '').toLowerCase()
-      const tags = [...ensureArray(t.tags?.ckb), ...ensureArray(t.tags?.kmr)].join(' ').toLowerCase()
-      const kws  = [...ensureArray(t.keywords?.ckb), ...ensureArray(t.keywords?.kmr)].join(' ').toLowerCase()
-      const locs = ensureArray(t.locations).join(' ').toLowerCase()
-      const type = (t.soundType || '').toLowerCase()
-      const reading = (t.reading || '').toLowerCase()
-      const director = (t.director || '').toLowerCase()
-      return t1.includes(q) || t2.includes(q) || d1.includes(q) || d2.includes(q) || tags.includes(q) || kws.includes(q) || locs.includes(q) || type.includes(q) || reading.includes(q) || director.includes(q)
-    })
-  }
-
-  if (filterLang.value) {
-    list = list.filter(t => ensureArray(t.contentLanguages).includes(filterLang.value))
+  if (filterAlbum.value !== '') {
+    const val = filterAlbum.value === 'true'
+    list = list.filter(item => item.trackState === 'MULTI' && item.albumOfMemories === val)
   }
 
   return list
 })
 
-/* ── API ── */
-const load = async () => {
+const fetchAll = async () => {
   loading.value = true
-  error.value = ''
   try {
     const { data } = await api.get('/api/v1/soundtracks')
-    const payload = data?.data ?? data ?? []
-
-    if (Array.isArray(payload)) {
-      items.value = payload.map(normalizeItem)
-    } else if (Array.isArray(payload?.content)) {
-      items.value = payload.content.map(normalizeItem)
-    } else if (Array.isArray(payload?.data?.content)) {
-      items.value = payload.data.content.map(normalizeItem)
-    } else {
-      items.value = []
-    }
+    const arr = data?.data ?? data ?? []
+    items.value = (Array.isArray(arr) ? arr : []).map(normalize)
   } catch (e) {
-    error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
+    console.error(e)
   } finally {
     loading.value = false
   }
 }
 
-const onSearch = () => {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    // client-side filter only
-  }, 250)
-}
-
-const clearSearch = () => { searchQ.value = '' }
-
-/* ── Delete ── */
-const confirmDelete = (t) => { delTarget.value = t }
+const openDetail = (item) => { detailItem.value = item }
+const confirmDelete = (item) => { deleteTarget.value = item }
 
 const doDelete = async () => {
-  if (!delTarget.value) return
+  if (!deleteTarget.value) return
   deleting.value = true
-  const deletingId = delTarget.value.id
-
   try {
-    await api.delete(`/api/v1/soundtracks/${deletingId}`)
-    showToast('success', 'دەنگەکە بە سەرکەوتنی سڕایەوە')
-
-    if (detail.value?.id === deletingId) closeDetail()
-
-    delTarget.value = null
-    await load()
+    await api.delete(`/api/v1/soundtracks/${deleteTarget.value.id}`)
+    items.value = items.value.filter(x => x.id !== deleteTarget.value.id)
+    deleteTarget.value = null
   } catch (e) {
-    showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
+    console.error(e)
   } finally {
     deleting.value = false
   }
 }
 
-/* ── Detail ── */
-const openDetail = async (t) => {
-  const item = normalizeItem(t)
-  detail.value = item
-  detailLang.value = ensureArray(item.contentLanguages).includes('CKB')
-    ? 'CKB'
-    : (ensureArray(item.contentLanguages)[0] || 'CKB')
-
-  openAccordions.value = new Set(['desc', 'meta', 'files', 'tags', 'kw'])
-  selectedFile.value = ensureArray(item.files)[0] || null
-
-  document.body.style.overflow = 'hidden'
-  window.addEventListener('keydown', onGlobalKeydown)
-
-  await nextTick()
-  detailOverlayEl.value?.focus?.()
+const fmtDate = (d) => {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('ckb', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-const closeDetail = () => {
-  detail.value = null
-  selectedFile.value = null
-  document.body.style.overflow = ''
-  window.removeEventListener('keydown', onGlobalKeydown)
+const fmtDateFull = (d) => {
+  if (!d) return '—'
+  const dt = new Date(d)
+  return dt.toLocaleDateString('ckb', { year: 'numeric', month: 'long', day: 'numeric' })
+    + '  ·  '
+    + dt.toLocaleTimeString('ckb', { hour: '2-digit', minute: '2-digit' })
 }
 
-watch(detail, () => {
-  if (detail.value) {
-    selectedFile.value = ensureArray(detail.value.files)[0] || null
-  }
-})
-
-const onGlobalKeydown = (e) => {
-  if (e.key === 'Escape' && detail.value) closeDetail()
+const fmtDuration = (seconds) => {
+  if (!seconds || seconds <= 0) return '—'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  return `${m}:${String(s).padStart(2,'0')}`
 }
 
-const toggleAcc = (key) => {
-  const s = new Set(openAccordions.value)
-  s.has(key) ? s.delete(key) : s.add(key)
-  openAccordions.value = s
+const fmtSize = (bytes) => {
+  if (!bytes || bytes <= 0) return '—'
+  if (bytes < 1024)       return bytes + ' B'
+  if (bytes < 1048576)    return (bytes / 1024).toFixed(1) + ' KB'
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB'
+  return (bytes / 1073741824).toFixed(2) + ' GB'
 }
 
-/* ── Helpers ── */
-const detailFiles = computed(() => ensureArray(detail.value?.files))
-
-const bestTitle = (t) =>
-  t?.ckbContent?.title || t?.kmrContent?.title || t?.content?.ckb?.title || t?.content?.kmr?.title || ''
-
-const altTitle = (t) => {
-  const ckb = t?.ckbContent?.title || t?.content?.ckb?.title || ''
-  const kmr = t?.kmrContent?.title || t?.content?.kmr?.title || ''
-  if (ckb && kmr && ckb !== kmr) return detailLang.value === 'CKB' ? kmr : ckb
-  return ''
-}
-
-const activeContent = (t) =>
-  detailLang.value === 'CKB'
-    ? (t?.ckbContent || t?.content?.ckb || {})
-    : (t?.kmrContent || t?.content?.kmr || {})
-
-const activeTags = (t) =>
-  detailLang.value === 'CKB'
-    ? [...ensureArray(t?.tags?.ckb || t?.tagsCkb)]
-    : [...ensureArray(t?.tags?.kmr || t?.tagsKmr)]
-
-const activeKeywords = (t) =>
-  detailLang.value === 'CKB'
-    ? [...ensureArray(t?.keywords?.ckb || t?.keywordsCkb)]
-    : [...ensureArray(t?.keywords?.kmr || t?.keywordsKmr)]
-
-const isInstitute = (t) => !!(t?.thisProjectOfInstitute ?? t?.isThisProjectOfInstitute ?? false)
-const trackStateLabel = (v) => ({ SINGLE:'تاک', MULTI:'چەند' }[v] || v || '—')
-
-const fileKey = (f) =>
-  f ? `${f.id || ''}|${f.fileType || 'OTHER'}|${f.fileUrl || f.embedUrl || f.externalUrl || ''}` : ''
-
-/* current file presentation for template */
-const selectedFilePresentation = computed(() => {
-  const f = selectedFile.value
-  if (!f) {
-    return {
-      directAudioUrl: '',
-      embedUrl: '',
-      openUrl: '',
-      mimeType: '',
-      isAudio: false,
-      hasPreview: false,
-    }
-  }
-
-  const normalized = normalizeFile(f)
-  return {
-    directAudioUrl: normalized.directUrl || '',
-    embedUrl: normalized.embedPreviewUrl || '',
-    openUrl: normalized.openUrl || '',
-    mimeType: normalized.mimeType || '',
-    isAudio: !!normalized.directUrl,
-    hasPreview: !!(normalized.directUrl || normalized.embedPreviewUrl),
-  }
-})
-
-/* Dynamic color for any soundType string */
-const soundTypeStyle = (type) => {
-  if (!type) return {}
-  const presets = {
-    LAWK:   { background:'rgba(40,90,220,.12)',  color:'#1a47a0', border:'1px solid rgba(40,90,220,.22)' },
-    HAIRAN: { background:'rgba(140,21,21,.10)',  color:'#8c1515', border:'1px solid rgba(140,21,21,.22)' },
-  }
-  const key = String(type).toUpperCase()
-  if (presets[key]) return presets[key]
-
-  let hash = 0
-  for (let i = 0; i < String(type).length; i++) hash = String(type).charCodeAt(i) + ((hash << 5) - hash)
-  const hue = Math.abs(hash) % 360
-  return {
-    background:`hsla(${hue},55%,45%,.12)`,
-    color:`hsl(${hue},55%,28%)`,
-    border:`1px solid hsla(${hue},55%,45%,.25)`
-  }
-}
-
-/* Detect direct audio stream URLs → use <audio>, else iframe */
-const isDirectAudio = (url) => {
-  const raw = cleanUrl(url)
-  if (!raw) return false
-
-  // If pasted iframe html -> not direct audio
-  if (extractIframeSrcFromHtml(raw)) return false
-
-  const decoded = decodeHtmlEntities(raw)
-  const lower = decoded.toLowerCase()
-  const ext = getExt(decoded)
-
-  if (AUDIO_EXTS.includes(ext)) return true
-
-  return (
-    lower.includes('/stream') ||
-    (lower.includes('s3.') && !lower.includes('youtube')) ||
-    lower.includes('audio')
-  )
-}
-
-/* Platform label for external link button */
-const platformLabel = (url) => {
-  const u = decodeHtmlEntities(url || '').toLowerCase()
-  if (!u) return '🔗 Open link'
-  if (u.includes('youtube.com') || u.includes('youtu.be')) return '▶ YouTube'
-  if (u.includes('soundcloud.com')) return '☁ SoundCloud'
-  if (u.includes('spotify.com'))    return '🎵 Spotify'
-  if (u.includes('deezer.com'))     return '🎶 Deezer'
-  if (u.includes('apple.com'))      return '🍎 Apple Music'
-  return '🔗 Open link'
-}
-
-const truncUrl = (url) => {
-  const raw = decodeHtmlEntities(url || '')
-  if (!raw) return ''
-  try {
-    const u = new URL(raw)
-    const path = u.pathname.length > 28 ? u.pathname.slice(0, 28) + '…' : u.pathname
-    return u.hostname + path
-  } catch {
-    return raw.slice(0, 42) + (raw.length > 42 ? '…' : '')
-  }
-}
-
-const fmtDuration = (sec) => {
-  const s  = Math.max(0, Number(sec || 0))
-  const hh = Math.floor(s / 3600)
-  const mm = Math.floor((s % 3600) / 60)
-  const ss = Math.floor(s % 60)
-  const p  = (x) => String(x).padStart(2, '0')
-  return hh > 0 ? `${hh}:${p(mm)}:${p(ss)}` : `${mm}:${p(ss)}`
-}
-
-const fmtBytes = (b) => {
-  const n = Math.max(0, Number(b || 0))
-  if (!n) return '0 B'
-  const u = ['B', 'KB', 'MB', 'GB']
-  let i = 0, v = n
-  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++ }
-  return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${u[i]}`
-}
-
-const fmtDatetime = (d) =>
-  d
-    ? new Date(d).toLocaleString('ar-IQ', {
-        year:'numeric',
-        month:'short',
-        day:'numeric',
-        hour:'2-digit',
-        minute:'2-digit'
-      })
-    : '—'
-
-const showToast = (type, msg) => {
-  clearTimeout(toastTimer)
-  toast.value = { show: true, type, msg }
-  toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
-}
-
-onMounted(load)
-
-onBeforeUnmount(() => {
-  clearTimeout(searchTimer)
-  clearTimeout(toastTimer)
-  document.body.style.overflow = ''
-  window.removeEventListener('keydown', onGlobalKeydown)
-})
+onMounted(fetchAll)
 </script>
 
 <style scoped>
-.stl { direction:rtl; max-width:1400px; margin:0 auto; }
-.stl__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; gap:1rem; flex-wrap:wrap; }
-.stl__title { font-size:1.55rem; font-weight:700; color:var(--text); }
-.stl__sub   { color:var(--muted); font-size:.83rem; margin-top:.2rem; }
-
-.btn { display:inline-flex; align-items:center; gap:.45rem; padding:.65rem 1.1rem; border-radius:var(--radius-sm); font-weight:700; font-size:.87rem; cursor:pointer; border:1px solid transparent; transition:var(--transition); text-decoration:none; white-space:nowrap; font-family:inherit; }
-.btn--primary { background:var(--crimson); color:#fff; box-shadow:0 6px 20px rgba(140,21,21,.22); }
-.btn--primary:hover { background:var(--crimson-lt); transform:translateY(-1px); }
-.btn--ghost   { background:transparent; border-color:var(--border); color:var(--text); }
-.btn--ghost:hover { border-color:var(--crimson); color:var(--crimson); }
-.btn--danger  { background:#c0392b; color:#fff; border-color:#c0392b; }
-.btn--danger:hover { background:#a93226; }
-.btn--sm { padding:.45rem .85rem; font-size:.82rem; }
-.btn:disabled { opacity:.5; cursor:not-allowed; transform:none!important; }
-
-.stl__bar { display:flex; gap:.75rem; margin-bottom:1.25rem; flex-wrap:wrap; }
-.search { flex:1; min-width:240px; position:relative; display:flex; align-items:center; }
-.search__ico { position:absolute; right:.85rem; color:var(--muted); pointer-events:none; }
-.search__input { width:100%; padding:.65rem 2.3rem .65rem 2.5rem; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--white); color:var(--text); font-size:.9rem; outline:none; transition:var(--transition); font-family:inherit; }
-.search__input:focus { border-color:var(--crimson); box-shadow:0 0 0 3px rgba(140,21,21,.1); }
-.search__clear { position:absolute; left:.7rem; background:var(--cream-dk); border:1px solid var(--border); border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--muted); transition:var(--transition); padding:0; }
-.search__clear:hover { background:var(--crimson); border-color:var(--crimson); color:#fff; }
-.sel { padding:.65rem .9rem; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--white); color:var(--text); font-size:.87rem; outline:none; cursor:pointer; transition:var(--transition); font-family:inherit; }
-.sel:focus { border-color:var(--crimson); }
-
-.toast { display:flex; align-items:center; gap:.65rem; padding:.75rem 1.1rem; border-radius:var(--radius-sm); font-weight:600; font-size:.87rem; margin-bottom:1rem; }
-.toast--success { background:rgba(22,120,70,.09); border:1px solid rgba(22,120,70,.22); color:#166044; }
-.toast--error   { background:rgba(140,21,21,.07); border:1px solid rgba(140,21,21,.18); color:var(--crimson); }
-
-.skeletons { display:flex; flex-direction:column; gap:.55rem; }
-.skel { height:58px; border-radius:var(--radius-sm); background:linear-gradient(90deg,var(--cream-dk) 25%,#eae8e4 50%,var(--cream-dk) 75%); background-size:200% 100%; animation:shimmer 1.4s ease infinite; }
-@keyframes shimmer { 0%{background-position:200% 0}100%{background-position:-200% 0} }
-
-.state-box { display:flex; flex-direction:column; align-items:center; gap:.85rem; padding:4rem 2rem; color:var(--muted); text-align:center; background:var(--white); border:1px solid var(--border); border-radius:var(--radius-md); font-size:.9rem; }
-.state-box--error { color:var(--crimson); }
-.state-box__ico { width:58px; height:58px; border-radius:50%; background:var(--cream-dk); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; }
-
-.table-meta { font-size:.8rem; color:var(--muted); padding:.6rem .9rem; background:var(--cream-dk); border-bottom:1px solid var(--border); }
-.table-wrap { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow-sm); }
-.tbl { width:100%; border-collapse:collapse; font-size:.87rem; }
-.tbl thead tr { background:var(--cream-dk); border-bottom:2px solid var(--border); }
-.tbl th { padding:.8rem .9rem; text-align:right; font-weight:700; color:var(--text); font-size:.79rem; white-space:nowrap; }
-.tbl__row { border-bottom:1px solid var(--cream-dk); cursor:pointer; transition:background var(--transition); }
-.tbl__row:hover { background:rgba(140,21,21,.03); }
-.tbl__row:last-child { border-bottom:none; }
-.tbl td { padding:.72rem .9rem; vertical-align:middle; }
-.tbl__id   { font-size:.78rem; color:var(--muted); font-weight:600; }
-.tbl__name { font-weight:600; color:var(--text); line-height:1.3; }
-.tbl__name--kmr { font-weight:500; color:var(--muted); }
-.tbl__date { font-size:.82rem; color:var(--muted); white-space:nowrap; }
-.tbl__dash { color:var(--border); }
-
-.cover-wrap  { width:50px; height:38px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
-.cover-img   { width:100%; height:100%; object-fit:cover; display:block; }
-.cover-empty { width:50px; height:38px; border-radius:8px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--border); }
-
-.type-pill  { display:inline-flex; padding:.22rem .65rem; border-radius:99px; font-size:.73rem; font-weight:700; white-space:nowrap; }
-.state-pill { display:inline-flex; padding:.22rem .65rem; border-radius:99px; font-size:.73rem; font-weight:800; white-space:nowrap; }
-.state-pill--single { background:rgba(22,120,70,.09); color:#166044; border:1px solid rgba(22,120,70,.18); }
-.state-pill--multi  { background:rgba(80,40,140,.08); color:#5028a0; border:1px solid rgba(80,40,140,.16); }
-.lang-dot      { display:inline-flex; padding:.18rem .5rem; border-radius:6px; font-size:.72rem; font-weight:700; }
-.lang-dot--ckb { background:rgba(254,221,0,.2); color:#806e00; border:1px solid rgba(254,221,0,.4); }
-.lang-dot--kmr { background:rgba(30,90,200,.1);  color:#1a47a0; border:1px solid rgba(30,90,200,.2); }
-.lang-row  { display:flex; gap:.3rem; flex-wrap:wrap; }
-.file-pill { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem; color:var(--muted); font-weight:700; }
-
-.tbl__acts { display:flex; gap:.35rem; }
-.act { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--cream); color:var(--muted); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; transition:var(--transition); }
-.act--view:hover { background:rgba(30,90,200,.08); border-color:rgba(30,90,200,.28); color:#1a47a0; }
-.act--edit:hover { background:rgba(30,150,80,.08); border-color:rgba(30,150,80,.28); color:#166044; }
-.act--del:hover  { background:rgba(140,21,21,.08); border-color:rgba(140,21,21,.25); color:var(--crimson); }
-
-/* ── DELETE MODAL ── */
-.overlay   { position:fixed; inset:0; z-index:200; background:rgba(20,10,10,.5); display:flex; align-items:center; justify-content:center; padding:1rem; }
-.del-modal { background:var(--white); border-radius:var(--radius-lg); padding:2rem; max-width:400px; width:100%; box-shadow:0 30px 80px rgba(0,0,0,.25); text-align:center; }
-.del-modal__ico   { width:62px; height:62px; border-radius:50%; background:rgba(140,21,21,.07); border:1px solid rgba(140,21,21,.14); display:flex; align-items:center; justify-content:center; margin:0 auto .85rem; }
-.del-modal__title { font-size:1.15rem; font-weight:700; margin-bottom:.5rem; }
-.del-modal__body  { color:var(--muted); font-size:.9rem; line-height:1.7; margin-bottom:1.5rem; }
-.del-modal__acts  { display:flex; gap:.75rem; justify-content:center; }
-.spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg) } }
-.fade-enter-active,.fade-leave-active { transition:opacity .15s }
-.fade-enter-from,.fade-leave-to       { opacity:0 }
-.slide-down-enter-active,.slide-down-leave-active { transition:.3s ease }
-.slide-down-enter-from,.slide-down-leave-to       { opacity:0; transform:translateY(-8px) }
-.modal-enter-active,.modal-leave-active { transition:.25s ease }
-.modal-enter-from,.modal-leave-to       { opacity:0 }
-.modal-enter-active .del-modal,.modal-leave-active .del-modal { transition:.25s ease }
-.modal-enter-from .del-modal,.modal-leave-to .del-modal { transform:scale(.94) translateY(8px) }
-
-/* ══════════════════════════════════════════════════
-   DETAIL MODAL
-══════════════════════════════════════════════════ */
-.pdm-overlay { position:fixed; inset:0; z-index:400; background:rgba(5,2,2,.78); backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:1.5rem; overflow-y:auto; }
-.pdm { position:relative; width:100%; max-width:1100px; max-height:calc(100vh - 3rem); background:#141010; border-radius:20px; overflow:hidden; display:grid; grid-template-columns:1fr 430px; box-shadow:0 0 0 1px rgba(255,255,255,.07),0 40px 120px rgba(0,0,0,.75); }
-@media (max-width:840px) { .pdm { grid-template-columns:1fr; max-height:none; } }
-
-.pdm-x { position:absolute; top:1rem; left:1rem; z-index:50; width:36px; height:36px; border-radius:50%; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.85); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .22s ease; backdrop-filter:blur(8px); }
-.pdm-x:hover { background:rgba(140,21,21,.8); color:#fff; transform:rotate(90deg) scale(1.08); }
-
-/* ── Left / Media ── */
-.pdm-media { display:flex; flex-direction:column; background:#0c0808; min-height:480px; overflow-y:auto; }
-.pdm-media::-webkit-scrollbar { width:3px } .pdm-media::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:99px; }
-.pdm-media__empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.75rem; color:rgba(255,255,255,.25); font-size:.85rem; padding:2rem; position:relative; }
-.pdm-media__empty-icon { width:72px; height:72px; border-radius:50%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; }
-.pdm-media__cover-fallback { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.18; }
-
-/* Audio Stage */
-.audio-stage { flex:1; display:flex; flex-direction:column; gap:1rem; padding:1.25rem 1.15rem 1.5rem; }
-.audio-stage__top  { display:flex; gap:.9rem; align-items:center; }
-.audio-stage__cover{ width:80px; height:80px; border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); flex-shrink:0; }
-.audio-stage__cover img { width:100%; height:100%; object-fit:cover; display:block; }
-.audio-stage__meta { min-width:0; }
-.audio-stage__title{ color:rgba(255,255,255,.92); font-weight:800; font-size:1.05rem; line-height:1.25; }
-.audio-stage__sub  { color:rgba(255,255,255,.5); font-size:.8rem; margin-top:.3rem; display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; }
-.audio-stage__dims { color:rgba(255,255,255,.3); font-size:.74rem; margin-top:.3rem; display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; }
-.sep         { opacity:.3; }
-.reader-name { color:rgba(255,255,255,.75); font-weight:700; }
-.audio-type-badge { display:inline-flex; padding:.16rem .52rem; border-radius:8px; font-size:.72rem; font-weight:800; }
-.ftype-badge      { display:inline-flex; padding:.14rem .45rem; border-radius:6px; font-size:.7rem; font-weight:900; background:rgba(254,221,0,.12); border:1px solid rgba(254,221,0,.22); color:rgba(254,221,0,.9); }
-.ftype-badge--sm  { font-size:.65rem; padding:.1rem .36rem; }
-
-/* Player blocks */
-.player-zone { display:flex; flex-direction:column; gap:.7rem; }
-
-.pblock { border-radius:14px; padding:.85rem 1rem; display:flex; flex-direction:column; gap:.55rem; }
-.pblock--file  { background:rgba(22,180,90,.06);  border:1px solid rgba(22,180,90,.14); }
-.pblock--embed { background:rgba(80,120,255,.06); border:1px solid rgba(80,120,255,.14); }
-.pblock--ext   { background:rgba(255,180,30,.05); border:1px solid rgba(255,180,30,.14); }
-
-.pblock__hd { display:flex; align-items:center; gap:.4rem; font-size:.69rem; font-weight:900; letter-spacing:.05em; text-transform:uppercase; }
-.pblock--file  .pblock__hd { color:rgba(22,200,90,.75); }
-.pblock--embed .pblock__hd { color:rgba(80,140,255,.75); }
-.pblock--ext   .pblock__hd { color:rgba(255,190,50,.75); }
-
-.native-audio { width:100%; border-radius:8px; }
-
-/* iframe embed */
-.iframe-wrap  { border-radius:10px; overflow:hidden; background:#000; line-height:0; }
-.embed-iframe { width:100%; height:165px; border:none; display:block; }
-
-/* raw link under players */
-.raw-link { display:inline-flex; align-items:center; gap:.35rem; font-size:.71rem; color:rgba(255,255,255,.3); text-decoration:none; transition:.18s; word-break:break-all; }
-.raw-link:hover { color:rgba(255,255,255,.7); }
-
-/* External link big button */
-.ext-btn { display:flex; flex-direction:column; gap:.2rem; padding:.8rem 1rem; border-radius:12px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.88); text-decoration:none; transition:.2s; position:relative; }
-.ext-btn:hover { background:rgba(140,21,21,.55); border-color:rgba(140,21,21,.8); }
-.ext-btn__platform { font-weight:800; font-size:.92rem; }
-.ext-btn__url      { font-size:.72rem; color:rgba(255,255,255,.35); word-break:break-all; }
-.ext-btn__arrow    { position:absolute; top:.7rem; left:.8rem; color:rgba(255,255,255,.35); }
-
-.no-src { padding:.8rem; text-align:center; color:rgba(255,255,255,.18); font-size:.82rem; background:rgba(255,255,255,.03); border-radius:12px; border:1px dashed rgba(255,255,255,.07); }
-
-/* File list (multi) */
-.flist { display:flex; flex-direction:column; gap:.4rem; }
-.flist__label { font-size:.7rem; font-weight:800; color:rgba(255,255,255,.28); text-transform:uppercase; letter-spacing:.05em; padding:.15rem 0; }
-.flist__item  { display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.6rem .75rem; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); color:rgba(255,255,255,.75); cursor:pointer; transition:.2s; font-family:inherit; text-align:right; }
-.flist__item:hover { border-color:rgba(255,255,255,.18); transform:translateY(-1px); }
-.flist__item--on   { border-color:rgba(140,21,21,.85)!important; box-shadow:0 0 0 1px rgba(140,21,21,.35); }
-.flist__item-left  { display:flex; align-items:center; gap:.55rem; min-width:0; }
-.flist__item-right { display:flex; align-items:center; gap:.4rem; flex-shrink:0; }
-.flist__num  { width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,.08); color:rgba(255,255,255,.45); font-size:.7rem; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.flist__name { font-weight:700; font-size:.83rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.flist__tags { display:flex; gap:.22rem; margin-top:.18rem; }
-.flist__dur  { font-size:.72rem; color:rgba(255,255,255,.38); font-weight:600; }
-.flist__sz   { font-size:.72rem; color:rgba(255,255,255,.28); font-weight:600; }
-
-.utag       { font-size:.62rem; font-weight:900; padding:.1rem .33rem; border-radius:4px; letter-spacing:.04em; }
-.utag--file  { background:rgba(22,180,90,.15);  color:rgba(22,200,90,.9);  border:1px solid rgba(22,180,90,.25); }
-.utag--embed { background:rgba(80,120,255,.15); color:rgba(80,150,255,.9); border:1px solid rgba(80,120,255,.25); }
-.utag--ext   { background:rgba(255,180,0,.12);  color:rgba(255,195,40,.9); border:1px solid rgba(255,180,0,.22); }
-
-/* ── Right info panel ── */
-.pdm-info { display:flex; flex-direction:column; background:#faf8f5; border-right:1px solid rgba(0,0,0,.08); max-height:calc(100vh - 3rem); overflow:hidden; }
-.pdm-info__head { flex:0 0 auto; padding:1.6rem 1.4rem 1.1rem; background:#fff; border-bottom:1px solid #ece7df; }
-.pdm-info__head-meta { display:flex; align-items:center; gap:.5rem; margin-bottom:.7rem; flex-wrap:wrap; }
-.pdm-id-tag  { font-size:.72rem; font-weight:700; color:#b0a898; letter-spacing:.06em; }
-.pdm-title   { font-size:1.35rem; font-weight:800; color:#1a1410; line-height:1.25; letter-spacing:-.02em; margin:0 0 .3rem; }
-.pdm-subtitle{ font-size:.88rem; color:#9a9286; font-weight:500; margin:0 0 .65rem; }
-.pdm-langs   { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:.8rem; }
-.pdm-lang    { display:inline-flex; padding:.2rem .65rem; border-radius:6px; font-size:.72rem; font-weight:700; }
-.pdm-lang--ckb { background:rgba(254,221,0,.14); color:#7a6200; border:1px solid rgba(254,221,0,.35); }
-.pdm-lang--kmr { background:rgba(40,90,220,.08); color:#2848b0; border:1px solid rgba(40,90,220,.18); }
-.inst-pill   { display:inline-flex; padding:.2rem .6rem; border-radius:99px; font-size:.72rem; font-weight:900; background:rgba(22,120,70,.1); color:#186040; border:1px solid rgba(22,120,70,.22); }
-
-/* Quick stats bar */
-.pdm-stats { display:flex; gap:0; margin-bottom:.9rem; border-radius:10px; overflow:hidden; border:1px solid #ece7df; }
-.pdm-stat  { flex:1; padding:.55rem .7rem; background:#faf8f5; border-left:1px solid #ece7df; }
-.pdm-stat:first-child { border-left:none; }
-.pdm-stat__k { font-size:.67rem; font-weight:700; color:#b8b0a4; text-transform:uppercase; letter-spacing:.04em; }
-.pdm-stat__v { font-size:.88rem; font-weight:800; color:#1a1410; margin-top:.12rem; }
-
-.pdm-edit-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.1rem; border-radius:10px; background:#8c1515; color:#fff; border:none; font-size:.82rem; font-weight:700; text-decoration:none; cursor:pointer; transition:all .2s ease; width:100%; justify-content:center; font-family:inherit; box-shadow:0 4px 16px rgba(140,21,21,.28); }
-.pdm-edit-btn:hover { background:#a61c1c; transform:translateY(-1px); }
-
-.pdm-tabs { flex:0 0 auto; display:flex; background:#f0ece5; border-bottom:1px solid #e4dfd7; }
-.pdm-tab  { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; padding:.65rem 1rem; border:none; background:none; color:#9a9286; font-weight:700; font-size:.83rem; cursor:pointer; transition:all .2s; font-family:inherit; border-bottom:2px solid transparent; }
-.pdm-tab--on { color:#8c1515; background:#faf8f5; border-bottom-color:#8c1515; }
-.pdm-tab__pip     { width:7px; height:7px; border-radius:50%; }
-.pdm-tab__pip--ckb{ background:#c8a800; }
-.pdm-tab__pip--kmr{ background:#4a7af0; }
-
-.pdm-info__body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0; scroll-behavior:smooth; padding-bottom:1.5rem; }
-.pdm-info__body::-webkit-scrollbar { width:3px } .pdm-info__body::-webkit-scrollbar-thumb { background:#d4cec6; border-radius:99px; }
-
-/* Accordions */
-.acc { border-bottom:1px solid #ede8e0; }
-.acc:last-child { border-bottom:none; }
-.acc__hd { width:100%; display:flex; align-items:center; justify-content:space-between; padding:.95rem 1.3rem; background:none; border:none; cursor:pointer; font-family:inherit; transition:background .18s ease; gap:.5rem; }
-.acc__hd:hover { background:rgba(140,21,21,.03); }
-.acc__hd--system:hover { background:rgba(100,80,50,.04); }
-.acc__hd-left { display:flex; align-items:center; gap:.7rem; flex:1; min-width:0; }
-.acc__ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .2s ease; }
-.acc__hd:hover .acc__ico { transform:scale(1.08); }
-.acc__ico--desc  { background:rgba(140,21,21,.09); color:#8c1515;  border:1px solid rgba(140,21,21,.16); }
-.acc__ico--meta  { background:rgba(22,120,70,.09);  color:#166044;  border:1px solid rgba(22,120,70,.18); }
-.acc__ico--files { background:rgba(80,40,160,.09);  color:#5028a0;  border:1px solid rgba(80,40,160,.18); }
-.acc__ico--tag   { background:rgba(200,168,0,.12);  color:#7a6200;  border:1px solid rgba(200,168,0,.22); }
-.acc__ico--kw    { background:rgba(40,90,220,.09);  color:#2848b0;  border:1px solid rgba(40,90,220,.16); }
-.acc__ico--sys   { background:rgba(80,80,80,.08);   color:#505050;  border:1px solid rgba(80,80,80,.14);  }
-.acc__title  { font-size:.92rem; font-weight:700; color:#1e1812; letter-spacing:-.01em; }
-.acc__badge  { display:inline-flex; padding:.18rem .58rem; border-radius:99px; font-size:.71rem; font-weight:800; letter-spacing:.04em; }
-.acc__badge--tag   { background:rgba(200,168,0,.12); color:#7a6200; border:1px solid rgba(200,168,0,.22); }
-.acc__badge--kw    { background:rgba(40,90,220,.09); color:#2848b0; border:1px solid rgba(40,90,220,.16); }
-.acc__badge--files { background:rgba(80,40,160,.09); color:#5028a0; border:1px solid rgba(80,40,160,.18); }
-.acc__chevron { color:#c8c0b4; flex-shrink:0; transition:transform .28s cubic-bezier(.34,1.56,.64,1),color .18s; }
-.acc__chevron--open { transform:rotate(180deg); color:#8c1515; }
-.acc__hd:hover .acc__chevron { color:#8c1515; }
-
-.acc__body       { overflow:hidden; padding:0 1.3rem 1.1rem; }
-.acc__body--flush{ padding:0 0 .5rem; }
-.acc__body--nop  { padding:0; }
-.acc-body-enter-active { transition:all .3s cubic-bezier(.22,1,.36,1); }
-.acc-body-leave-active { transition:all .22s ease; }
-.acc-body-enter-from,.acc-body-leave-to { opacity:0; transform:translateY(-6px); }
-
-.acc__text--desc { font-size:.9rem; color:#2e2418; line-height:1.85; white-space:pre-line; margin:0; padding:.2rem 0; max-height:260px; overflow-y:auto; scrollbar-width:thin; }
-.acc__meta-grid { display:flex; flex-direction:column; gap:.5rem; }
-.acc__meta-row  { display:flex; align-items:baseline; gap:.75rem; font-size:.88rem; }
-.acc__meta-k    { flex:0 0 auto; font-size:.74rem; font-weight:700; color:#b8b0a4; text-transform:uppercase; letter-spacing:.04em; display:inline-flex; align-items:center; gap:.25rem; min-width:80px; }
-.acc__meta-v    { color:#2e2418; font-weight:600; line-height:1.4; }
-
-/* File cards (inside accordion) */
-.fcard { padding:.7rem 1.3rem; border-bottom:1px solid #f0ebe3; }
-.fcard:last-child { border-bottom:none; }
-.fcard__head  { display:flex; align-items:center; gap:.5rem; margin-bottom:.4rem; flex-wrap:wrap; }
-.fcard__num   { width:22px; height:22px; border-radius:50%; background:#8c1515; color:#fff; font-size:.7rem; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.fcard__reader{ font-weight:700; font-size:.86rem; color:#1e1812; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.fcard__stats { display:flex; gap:.55rem; flex-wrap:wrap; margin-bottom:.45rem; }
-.fstat        { font-size:.74rem; color:#a0998e; font-weight:600; }
-
-.fcard__url-row   { display:flex; align-items:flex-start; gap:.5rem; padding:.25rem 0; border-top:1px dashed #ede8e0; }
-.fcard__url-label { font-size:.63rem; font-weight:900; letter-spacing:.05em; flex-shrink:0; padding:.15rem .42rem; border-radius:5px; margin-top:.1rem; }
-.fcard__url-label--file  { background:rgba(22,180,90,.12); color:#186040; border:1px solid rgba(22,180,90,.22); }
-.fcard__url-label--embed { background:rgba(80,120,255,.1); color:#2848b0; border:1px solid rgba(80,120,255,.22); }
-.fcard__url-label--ext   { background:rgba(200,140,0,.1);  color:#7a5200; border:1px solid rgba(200,140,0,.2);  }
-.fcard__url-link { font-size:.76rem; color:#8c1515; word-break:break-all; text-decoration:none; font-weight:500; line-height:1.5; }
-.fcard__url-link:hover { text-decoration:underline; }
-
-.acc__chips { display:flex; flex-wrap:wrap; gap:.42rem; }
-.acc__chip  { display:inline-flex; align-items:center; gap:.3rem; padding:.32rem .78rem; border-radius:8px; font-size:.82rem; font-weight:600; cursor:default; transition:transform .15s ease; }
-.acc__chip:hover { transform:translateY(-2px); }
-.acc__chip--tag { background:rgba(200,168,0,.11); color:#7a6200; border:1px solid rgba(200,168,0,.22); }
-.acc__chip--kw  { background:rgba(40,90,220,.08); color:#2848b0; border:1px solid rgba(40,90,220,.15); }
-
-.acc--system { background:#faf7f2; }
-.acc__sys-grid { display:grid; grid-template-columns:1fr 1fr; padding:0 1.3rem .75rem; gap:0; }
-.acc__sys-cell { padding:.72rem .65rem .72rem 0; border-bottom:1px solid #ede8e0; border-left:1px solid #ede8e0; }
-.acc__sys-cell:nth-child(odd) { border-left:none; padding-right:.65rem; }
-.acc__sys-cell--full { grid-column:1/-1; border-left:none; }
-.acc__sys-cell:last-child,.acc__sys-cell:nth-last-child(2):not(.acc__sys-cell--full) { border-bottom:none; }
-.acc__sys-k { font-size:.68rem; font-weight:700; color:#c0b8ac; letter-spacing:.05em; margin-bottom:.25rem; text-transform:uppercase; }
-.acc__sys-v { font-size:.84rem; color:#2e2418; font-weight:600; line-height:1.4; }
-.acc__sys-v--mono { font-family:'Courier New',monospace; font-size:.78rem; letter-spacing:.04em; }
-.acc__sys-v--link { color:#8c1515; font-size:.73rem; font-weight:500; word-break:break-all; text-decoration:none; display:block; }
-.acc__sys-v--link:hover { text-decoration:underline; }
-
-.pdm-fade-enter-active,.pdm-fade-leave-active { transition:opacity .3s ease; }
-.pdm-fade-enter-from,.pdm-fade-leave-to       { opacity:0; }
-.pdm-rise-enter-active { transition:opacity .38s ease,transform .38s cubic-bezier(.22,1,.36,1); }
-.pdm-rise-leave-active { transition:opacity .22s ease,transform .22s ease; }
-.pdm-rise-enter-from   { opacity:0; transform:scale(.94) translateY(20px); }
-.pdm-rise-leave-to     { opacity:0; transform:scale(.97) translateY(10px); }
+.slist { direction: rtl; max-width: 1300px; margin: 0 auto; }
+.slist__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.2rem; }
+.slist__title { margin: 0 0 .3rem; font-size: clamp(1.2rem, 2.5vw, 2rem); font-weight: 900; color: #2E2D29; }
+.slist__sub { margin: 0; color: #767571; font-weight: 600; }
+.toolbar { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1rem; }
+.toolbar__search { flex: 1; min-width: 200px; height: 44px; display: flex; align-items: center; gap: .5rem; padding: 0 .9rem; border: 1.5px solid #E0DFDC; border-radius: 10px; background: #fff; color: #9E9A94; }
+.toolbar__search input { border: none; outline: none; background: transparent; font: inherit; color: #2E2D29; width: 100%; }
+.toolbar__select { height: 44px; padding: 0 .8rem; border: 1.5px solid #E0DFDC; border-radius: 10px; background: #fff; font: inherit; color: #2E2D29; cursor: pointer; outline: none; }
+.toolbar__select:focus { border-color: #8C1515; }
+.panel { background: #fff; border: 1px solid #E0DFDC; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+.table { width: 100%; border-collapse: collapse; }
+.table thead th { padding: .75rem 1rem; text-align: right; font-size: .75rem; font-weight: 700; color: #767571; background: #FAFAF9; border-bottom: 1px solid #E0DFDC; white-space: nowrap; }
+.table__row { cursor: pointer; transition: background .12s; }
+.table__row:hover { background: #FAFAF9; }
+.table__row td { padding: .75rem 1rem; border-bottom: 1px solid #F0EEEB; vertical-align: middle; font-size: .85rem; }
+.table__row:last-child td { border-bottom: none; }
+.table__num { color: #9E9A94; font-size: .78rem; font-weight: 600; }
+.cover-cell { width: 46px; height: 46px; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; flex-shrink: 0; }
+.cover-cell__img { width: 100%; height: 100%; object-fit: cover; display: block; position: absolute; inset: 0; transition: opacity .2s ease, transform .2s ease; }
+.cover-cell__img--base  { opacity: 1; transform: scale(1); }
+.cover-cell__img--hover { opacity: 0; transform: scale(1.05); }
+.cover-cell:hover .cover-cell__img--hover { opacity: 1; transform: scale(1); }
+.cover-cell:hover .cover-cell__img--base  { opacity: 0; }
+.cover-cell__empty { width: 100%; height: 100%; background: #F0EEEB; display: flex; align-items: center; justify-content: center; color: #C0BDB8; }
+.cover-cell__hover-badge { position: absolute; bottom: 2px; left: 2px; width: 14px; height: 14px; border-radius: 3px; background: rgba(124,58,237,.85); color: #fff; font-size: .55rem; font-weight: 900; display: flex; align-items: center; justify-content: center; z-index: 5; pointer-events: none; }
+.title-cell { display: flex; flex-direction: column; gap: .15rem; }
+.title-cell__main { font-weight: 700; color: #2E2D29; }
+.title-cell__sub { font-size: .76rem; color: #9E9A94; }
+.badges { display: flex; flex-wrap: wrap; gap: .3rem; }
+.badge { display: inline-block; padding: .18rem .55rem; border-radius: 99px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.badge--type   { background: rgba(15,118,110,.08);  color: #0f766e; border: 1px solid rgba(15,118,110,.15); }
+.badge--single { background: rgba(67,56,202,.08);   color: #4338ca; border: 1px solid rgba(67,56,202,.15); }
+.badge--multi  { background: rgba(161,98,7,.08);    color: #a16207; border: 1px solid rgba(161,98,7,.15); }
+.badge--album  { background: rgba(190,24,93,.08);   color: #be185d; border: 1px solid rgba(190,24,93,.2); }
+.badge--normal { background: rgba(100,116,139,.08); color: #64748b; border: 1px solid rgba(100,116,139,.15); }
+.topic-pill { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border-radius: 99px; background: rgba(140,21,21,.07); color: #8C1515; border: 1px solid rgba(140,21,21,.15); font-size: .75rem; font-weight: 700; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-count { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; color: #767571; font-weight: 600; }
+.date-cell { color: #9E9A94; font-size: .78rem; white-space: nowrap; }
+.act-btns { display: flex; gap: .35rem; }
+.icon-btn { width: 30px; height: 30px; border-radius: 7px; border: 1px solid #E0DFDC; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: .15s; color: #6E6B66; }
+.icon-btn:hover { background: #F0EEEB; }
+.icon-btn--edit:hover { color: #4338ca; border-color: rgba(67,56,202,.3); background: rgba(67,56,202,.05); }
+.icon-btn--del:hover  { color: #dc2626; border-color: rgba(220,38,38,.3); background: rgba(220,38,38,.05); }
+.empty-card { background: #fff; border: 1px solid #E0DFDC; border-radius: 16px; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6rem; color: #9E9A94; text-align: center; padding: 2rem; }
+.empty-card__title { font-weight: 800; font-size: 1rem; color: #2E2D29; }
+.empty-card__sub { font-size: .84rem; }
+.loading-card { background: #fff; border: 1px solid #E0DFDC; border-radius: 16px; min-height: 200px; display: flex; align-items: center; justify-content: center; gap: .7rem; color: #767571; font-weight: 600; }
+.spinner { width: 24px; height: 24px; border-radius: 50%; border: 3px solid #E0DFDC; border-top-color: #8C1515; animation: spin .7s linear infinite; }
+.dk-bg { position: fixed; inset: 0; z-index: 1000; background: rgba(10,8,6,.6); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.dk { background: #FDFCFB; border-radius: 20px; width: 100%; max-width: 780px; max-height: 92vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.06); position: relative; animation: dk-enter .35s cubic-bezier(.16,1,.3,1) both; }
+.dk--memories { box-shadow: 0 32px 80px rgba(140,21,21,.2), 0 0 0 1px rgba(190,24,93,.15), 0 0 60px rgba(190,24,93,.08); }
+@keyframes dk-enter { from { opacity: 0; transform: scale(.95) translateY(16px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.dk__close { position: absolute; top: 12px; left: 12px; z-index: 20; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: .2s; color: #6E6B66; }
+.dk__close:hover { background: #fff; color: #2E2D29; transform: scale(1.08); }
+.dk__hero { position: relative; min-height: 220px; background: linear-gradient(135deg, #1a0505 0%, #4a1010 40%, #8C1515 100%); background-size: cover; background-position: center; border-radius: 20px 20px 0 0; overflow: hidden; }
+.dk__hero-hover { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity .22s ease; pointer-events: none; }
+.dk__hero:hover .dk__hero-hover { opacity: 1; }
+.dk__hero-grain { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events: none; }
+.dk__hero-gradient { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.82) 0%, rgba(0,0,0,.3) 40%, transparent 70%); pointer-events: none; }
+.dk__hero-content { position: relative; z-index: 5; padding: 1.5rem 1.5rem 1.3rem; display: flex; flex-direction: column; justify-content: flex-end; min-height: 220px; gap: .55rem; }
+.dk__ribbon { display: inline-flex; align-items: center; gap: .45rem; padding: .4rem .85rem; border-radius: 99px; background: linear-gradient(135deg, rgba(190,24,93,.9), rgba(220,38,93,.85)); color: #fff; font-size: .78rem; font-weight: 800; backdrop-filter: blur(4px); box-shadow: 0 4px 16px rgba(190,24,93,.35); align-self: flex-start; animation: ribbon-glow 3s ease-in-out infinite alternate; }
+@keyframes ribbon-glow { from { box-shadow: 0 4px 16px rgba(190,24,93,.35); } to { box-shadow: 0 4px 24px rgba(190,24,93,.55); } }
+.dk__hero-badges { display: flex; flex-wrap: wrap; gap: .35rem; }
+.dk__badge { display: inline-flex; align-items: center; gap: .25rem; padding: .22rem .6rem; border-radius: 99px; font-size: .72rem; font-weight: 700; backdrop-filter: blur(8px); }
+.dk__badge--type   { background: rgba(255,255,255,.15); color: rgba(255,255,255,.9); border: 1px solid rgba(255,255,255,.18); }
+.dk__badge--single { background: rgba(99,102,241,.25); color: #c7d2fe; border: 1px solid rgba(99,102,241,.3); }
+.dk__badge--multi  { background: rgba(245,158,11,.25); color: #fde68a; border: 1px solid rgba(245,158,11,.3); }
+.dk__badge--topic  { background: rgba(140,21,21,.4);   color: #fecdd3; border: 1px solid rgba(255,255,255,.15); }
+.dk__badge--hover  { background: rgba(124,58,237,.35); color: #e9d5ff; border: 1px solid rgba(124,58,237,.4); }
+.dk__hero-title    { color: #fff; font-size: 1.45rem; font-weight: 900; margin: 0; line-height: 1.35; letter-spacing: -.01em; }
+.dk__hero-subtitle { color: rgba(255,255,255,.6); font-size: .88rem; margin: 0; font-weight: 600; }
+.dk__hero-stats    { display: flex; gap: .9rem; margin-top: .25rem; flex-wrap: wrap; }
+.dk__stat { display: inline-flex; align-items: center; gap: .3rem; font-size: .76rem; font-weight: 700; color: rgba(255,255,255,.7); }
+.dk__body { padding: 1.4rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+.dk__sec-head { display: flex; align-items: center; gap: .5rem; font-size: .82rem; font-weight: 800; color: #8C1515; text-transform: uppercase; letter-spacing: .06em; padding-bottom: .6rem; border-bottom: 2px solid rgba(140,21,21,.1); margin-bottom: .85rem; flex-wrap: wrap; }
+.dk__sec-count { background: rgba(140,21,21,.08); border: 1px solid rgba(140,21,21,.15); border-radius: 99px; padding: .1rem .5rem; font-size: .72rem; color: #8C1515; }
+.dk__sec-meta { display: inline-flex; align-items: center; gap: .25rem; background: rgba(0,0,0,.04); border: 1px solid #E0DFDC; border-radius: 99px; padding: .1rem .5rem; font-size: .72rem; color: #767571; }
+.dk__covers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .85rem; }
+@media (max-width: 600px) { .dk__covers-grid { grid-template-columns: 1fr 1fr; } }
+.dk__cover-item { display: flex; flex-direction: column; gap: .4rem; }
+.dk__cover-item--empty { opacity: .5; }
+.dk__cover-label { display: inline-flex; align-items: center; gap: .25rem; padding: .18rem .55rem; border-radius: 6px; font-size: .7rem; font-weight: 800; align-self: flex-start; }
+.dk__cover-label--ckb   { background: rgba(200,168,0,.12); color: #8a7000; border: 1px solid rgba(200,168,0,.2); }
+.dk__cover-label--kmr   { background: rgba(74,122,240,.1); color: #2d5ac0; border: 1px solid rgba(74,122,240,.18); }
+.dk__cover-label--hover { background: rgba(124,58,237,.08); color: #6d28d9; border: 1px solid rgba(124,58,237,.18); }
+.dk__cover-img-wrap { border-radius: 10px; overflow: hidden; border: 1px solid #E8E5E0; aspect-ratio: 1/1; background: #F0EEEB; position: relative; }
+.dk__cover-img-wrap--hover { border-style: dashed; border-color: rgba(124,58,237,.3); background: rgba(124,58,237,.04); }
+.dk__cover-img-wrap--empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; color: #C0BDB8; font-size: .75rem; font-weight: 600; }
+.dk__cover-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dk__cover-hover-overlay { position: absolute; inset: 0; background: rgba(124,58,237,.12); display: flex; align-items: center; justify-content: center; opacity: 0; transition: .2s; }
+.dk__cover-img-wrap--hover:hover .dk__cover-hover-overlay { opacity: 1; }
+.dk__cover-hover-overlay span { font-size: .7rem; font-weight: 800; color: #6d28d9; background: rgba(255,255,255,.9); padding: .2rem .5rem; border-radius: 6px; }
+.dk__cover-link { display: inline-flex; align-items: center; gap: .3rem; font-size: .72rem; color: #767571; text-decoration: none; padding: .2rem 0; font-weight: 600; }
+.dk__cover-link:hover { color: #8C1515; }
+.dk__cover-link--hover:hover { color: #6d28d9; }
+.dk__content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 600px) { .dk__content-grid { grid-template-columns: 1fr; } }
+.dk__content-col { padding: 1rem; border-radius: 12px; background: #fff; border: 1px solid #EEECE8; }
+.dk__lang-tag { display: inline-flex; padding: .18rem .55rem; border-radius: 6px; font-size: .7rem; font-weight: 800; margin-bottom: .65rem; }
+.dk__lang-tag--ckb { background: rgba(200,168,0,.12); color: #8a7000; border: 1px solid rgba(200,168,0,.2); }
+.dk__lang-tag--kmr { background: rgba(74,122,240,.1);  color: #2d5ac0; border: 1px solid rgba(74,122,240,.18); }
+.dk__content-title { font-size: 1rem; font-weight: 800; color: #2E2D29; margin-bottom: .5rem; }
+.dk__desc { font-size: .88rem; color: #3E3C38; line-height: 1.7; margin: 0 0 .5rem; }
+.dk__reading { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: #767571; padding: .5rem .7rem; border-radius: 8px; background: #FAFAF9; border: 1px solid #F0EEEB; }
+.dk__reading strong { color: #2E2D29; }
+.dk__tracks { display: flex; flex-direction: column; gap: .65rem; }
+.dk__track { display: flex; gap: .7rem; padding: .85rem 1rem; background: #fff; border: 1px solid #EEECE8; border-radius: 12px; transition: .15s; }
+.dk__track:hover { border-color: rgba(140,21,21,.2); box-shadow: 0 2px 12px rgba(140,21,21,.06); }
+.dk__track-num { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #8C1515, #a31d1d); color: #fff; font-size: .72rem; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: .1rem; }
+.dk__track-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .4rem; }
+.dk__track-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.dk__track-name { font-weight: 700; font-size: .88rem; color: #2E2D29; }
+.dk__track-meta { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.dk__track-chip { padding: .12rem .45rem; border-radius: 5px; background: rgba(15,118,110,.07); color: #0f766e; border: 1px solid rgba(15,118,110,.12); font-size: .68rem; font-weight: 800; }
+.dk__track-dur, .dk__track-size { font-size: .74rem; color: #9E9A94; font-weight: 600; }
+.dk__track-id { font-size: .68rem; color: #B0ADA7; font-weight: 600; }
+.dk__track-urls { display: flex; gap: .35rem; flex-wrap: wrap; }
+.dk__url-tag { display: inline-flex; align-items: center; gap: .2rem; padding: .1rem .4rem; border-radius: 4px; font-size: .66rem; font-weight: 800; }
+.dk__url-tag--file  { background: rgba(15,118,110,.07); color: #0f766e; border: 1px solid rgba(15,118,110,.15); }
+.dk__url-tag--ext   { background: rgba(67,56,202,.07); color: #4338ca; border: 1px solid rgba(67,56,202,.15); }
+.dk__url-tag--embed { background: rgba(124,58,237,.07); color: #7c3aed; border: 1px solid rgba(124,58,237,.15); }
+.dk__track-player { width: 100%; height: 34px; border-radius: 8px; }
+.dk__track-links { display: flex; gap: .6rem; flex-wrap: wrap; }
+.dk__ext-link { display: inline-flex; align-items: center; gap: .3rem; font-size: .8rem; font-weight: 700; color: #4338ca; text-decoration: none; padding: .35rem .65rem; border-radius: 8px; background: rgba(67,56,202,.06); border: 1px solid rgba(67,56,202,.12); transition: .15s; }
+.dk__ext-link:hover { background: rgba(67,56,202,.12); }
+.dk__ext-link--embed { color: #7c3aed; background: rgba(124,58,237,.06); border-color: rgba(124,58,237,.12); }
+.dk__ext-link--embed:hover { background: rgba(124,58,237,.12); }
+.dk__topic-card { display: flex; align-items: center; gap: .75rem; padding: .9rem 1rem; border-radius: 12px; background: rgba(140,21,21,.04); border: 1.5px solid rgba(140,21,21,.12); }
+.dk__topic-icon { font-size: 1.4rem; }
+.dk__topic-info { display: flex; flex-direction: column; gap: .15rem; }
+.dk__topic-name { font-weight: 800; font-size: .92rem; color: #8C1515; }
+.dk__topic-name-alt { font-size: .82rem; color: #767571; font-weight: 600; }
+.dk__topic-id { font-size: .72rem; color: #B0ADA7; font-weight: 600; }
+.dk__tags-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+@media (max-width: 600px) { .dk__tags-grid { grid-template-columns: 1fr; } }
+.dk__tag-group { display: flex; flex-direction: column; gap: .4rem; }
+.dk__tag-label { font-size: .74rem; font-weight: 700; color: #9E9A94; }
+.dk__tag-list { display: flex; flex-wrap: wrap; gap: .3rem; }
+.dk__chip { display: inline-flex; padding: .22rem .6rem; border-radius: 8px; font-size: .78rem; font-weight: 700; }
+.dk__chip--ckb { background: rgba(140,21,21,.07); color: #8C1515; border: 1px solid rgba(140,21,21,.12); }
+.dk__chip--kmr { background: rgba(67,56,202,.07); color: #4338ca; border: 1px solid rgba(67,56,202,.12); }
+.dk__chip--kw  { background: rgba(15,118,110,.07); color: #0f766e; border: 1px solid rgba(15,118,110,.12); }
+.dk__locations { display: flex; flex-wrap: wrap; gap: .5rem; }
+.dk__loc-card { display: inline-flex; align-items: center; gap: .35rem; padding: .5rem .8rem; border-radius: 10px; background: rgba(161,98,7,.06); border: 1px solid rgba(161,98,7,.14); color: #92640a; font-size: .84rem; font-weight: 700; }
+.dk__loc-pin { font-size: .9rem; }
+.dk__info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid #EEECE8; border-radius: 12px; overflow: hidden; background: #fff; }
+@media (max-width: 500px) { .dk__info-grid { grid-template-columns: 1fr; } }
+.dk__info-item { display: flex; align-items: flex-start; gap: .65rem; padding: .75rem 1rem; border-bottom: 1px solid #F5F3F0; border-left: 1px solid #F5F3F0; }
+.dk__info-item:nth-child(odd) { border-left: none; }
+@media (max-width: 500px) { .dk__info-item { border-left: none !important; } }
+.dk__info-item:last-child, .dk__info-item:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+.dk__info-icon { font-size: 1rem; flex-shrink: 0; margin-top: .1rem; }
+.dk__info-data { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+.dk__info-label { font-size: .72rem; font-weight: 700; color: #9E9A94; text-transform: uppercase; letter-spacing: .04em; }
+.dk__info-value { font-size: .86rem; font-weight: 700; color: #2E2D29; word-break: break-word; }
+.dk__info-value--yes { color: #be185d; }
+.dk__foot { padding: 1rem 1.5rem; border-top: 1px solid #F0EEEB; display: flex; gap: .6rem; background: #FDFCFB; border-radius: 0 0 20px 20px; position: sticky; bottom: 0; }
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal { background: #fff; border-radius: 18px; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(0,0,0,.2); position: relative; }
+.modal--sm { max-width: 420px; padding: 2rem; text-align: center; }
+.modal__del-icon { width: 60px; height: 60px; border-radius: 50%; background: rgba(220,38,38,.08); border: 1px solid rgba(220,38,38,.15); display: flex; align-items: center; justify-content: center; color: #dc2626; margin: 0 auto 1rem; }
+.modal__del-title { font-size: 1.1rem; font-weight: 800; margin-bottom: .5rem; }
+.modal__del-sub { color: #767571; font-size: .88rem; line-height: 1.6; margin-bottom: 1.2rem; }
+.modal__del-acts { display: flex; gap: .6rem; justify-content: center; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; text-decoration: none; border-radius: 10px; padding: .75rem 1.1rem; font-weight: 800; border: 1px solid transparent; transition: .15s; cursor: pointer; font: inherit; white-space: nowrap; }
+.btn:hover { transform: translateY(-1px); }
+.btn--primary { background: #8C1515; color: #fff; box-shadow: 0 8px 20px rgba(140,21,21,.18); }
+.btn--ghost   { background: #fff; color: #6E6B66; border-color: #E0DFDC; }
+.btn--danger  { background: #dc2626; color: #fff; box-shadow: 0 8px 20px rgba(220,38,38,.18); }
+.btn--sm { padding: .5rem .9rem; font-size: .84rem; }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.muted { color: #9E9A94; }
+.spin-sm { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.modal-enter-active, .modal-leave-active { transition: all .25s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
+.modal-enter-from .modal, .modal-leave-to .modal { transform: scale(.96) translateY(12px); }
+.modal-enter-from .dk, .modal-leave-to .dk { transform: scale(.96) translateY(12px); }
 </style>

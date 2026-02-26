@@ -1,4 +1,3 @@
-// src/router.js
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 
@@ -38,17 +37,13 @@ import ImageCollectionEditor from './components/AdminDashboard/pages/publishment
 import SoundTrackList   from './components/AdminDashboard/pages/publishment/sound/SoundTrackList.vue'
 import SoundTrackEditor from './components/AdminDashboard/pages/publishment/sound/SoundTrackEditor.vue'
 
-// Admin — Films
-import FilmList   from './components/AdminDashboard/pages/publishment/film/FilmList.vue'
-import FilmEditor from './components/AdminDashboard/pages/publishment/film/FilmEditor.vue'
+// Admin — Videos  (replaces Films)
+import VideoList   from './components/AdminDashboard/pages/publishment/video/VideoList.vue'
+import VideoEditor from './components/AdminDashboard/pages/publishment/video/VideoEditor.vue'
 
 // Admin — Writings
 import WritingList   from './components/AdminDashboard/pages/publishment/writing/WritingList.vue'
 import WritingEditor from './components/AdminDashboard/pages/publishment/writing/WritingEditor.vue'
-
-// Admin — Albums of Memories ✅
-import AlbumsList  from './components/AdminDashboard/pages/publishment/album_of_memories/AlbumsList.vue'
-import AlbumEditor from './components/AdminDashboard/pages/publishment/album_of_memories/AlbumEditor.vue'
 
 const routes = [
   // Public
@@ -83,6 +78,11 @@ const routes = [
       { path: 'news/new',      name: 'AdminNewsCreate', component: NewsEditor },
       { path: 'news/:id/edit', name: 'AdminNewsEdit',   component: NewsEditor, props: true },
 
+      // Videos  (/admin/videos)
+      { path: 'videos',          name: 'AdminVideoList',   component: VideoList },
+      { path: 'videos/new',      name: 'AdminVideoCreate', component: VideoEditor },
+      { path: 'videos/:id/edit', name: 'AdminVideoEdit',   component: VideoEditor, props: true },
+
       // Image Collections
       { path: 'image-collections',          name: 'AdminImageCollectionList',   component: ImageCollectionList },
       { path: 'image-collections/new',      name: 'AdminImageCollectionCreate', component: ImageCollectionEditor },
@@ -93,22 +93,12 @@ const routes = [
       { path: 'soundtracks/new',      name: 'AdminSoundTrackCreate', component: SoundTrackEditor },
       { path: 'soundtracks/:id/edit', name: 'AdminSoundTrackEdit',   component: SoundTrackEditor, props: true },
 
-      // Films
-      { path: 'films',          name: 'AdminFilmList',   component: FilmList },
-      { path: 'films/new',      name: 'AdminFilmCreate', component: FilmEditor },
-      { path: 'films/:id/edit', name: 'AdminFilmEdit',   component: FilmEditor, props: true },
-
       // Writings
       { path: 'writings',          name: 'AdminWritingList',   component: WritingList },
       { path: 'writings/new',      name: 'AdminWritingCreate', component: WritingEditor },
       { path: 'writings/:id/edit', name: 'AdminWritingEdit',   component: WritingEditor, props: true },
 
-      // Albums of Memories ✅
-      { path: 'albums',          name: 'AdminAlbumList',   component: AlbumsList },
-      { path: 'albums/new',      name: 'AdminAlbumCreate', component: AlbumEditor },
-      { path: 'albums/:id/edit', name: 'AdminAlbumEdit',   component: AlbumEditor, props: true },
-
-      // Generic dynamic resources (MUST be last)
+      // Generic dynamic resources — MUST be last
       { path: ':resource',          name: 'AdminResourceList',   component: ResourceList },
       { path: ':resource/new',      name: 'AdminResourceCreate', component: ResourceEditor },
       { path: ':resource/:id/edit', name: 'AdminResourceEdit',   component: ResourceEditor, props: true },
