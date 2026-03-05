@@ -12,8 +12,10 @@ import Publishments from './components/pages/Publishments.vue'
 import Projects     from './components/pages/Projects.vue'
 
 // Auth pages
-import Login    from './components/LoginView.vue'
-import Register from './components/RegisterView.vue'
+import Login              from './components/LoginView.vue'
+import Register           from './components/RegisterView.vue'
+import OAuth2Redirect     from './components/OAuth2RedirectHandler.vue'
+import UserProfile        from './components/UserProfileView.vue' // ✅ NEW
 
 // Admin layout + pages
 import AdminLayout    from './components/AdminDashboard/AdminLayout.vue'
@@ -37,7 +39,7 @@ import ImageCollectionEditor from './components/AdminDashboard/pages/publishment
 import SoundTrackList   from './components/AdminDashboard/pages/publishment/sound/SoundTrackList.vue'
 import SoundTrackEditor from './components/AdminDashboard/pages/publishment/sound/SoundTrackEditor.vue'
 
-// Admin — Videos  (replaces Films)
+// Admin — Videos
 import VideoList   from './components/AdminDashboard/pages/publishment/video/VideoList.vue'
 import VideoEditor from './components/AdminDashboard/pages/publishment/video/VideoEditor.vue'
 
@@ -45,8 +47,12 @@ import VideoEditor from './components/AdminDashboard/pages/publishment/video/Vid
 import WritingList   from './components/AdminDashboard/pages/publishment/writing/WritingList.vue'
 import WritingEditor from './components/AdminDashboard/pages/publishment/writing/WritingEditor.vue'
 
+// Admin — About
+import AdminAboutList   from './components/AdminDashboard/pages/about/AdminAboutList.vue'
+import AdminAboutEditor from './components/AdminDashboard/pages/about/AdminAboutEditor.vue'
+
 const routes = [
-  // Public
+  // ── Public ────────────────────────────────────────────────────
   { path: '/',             name: 'Home',         component: Home },
   { path: '/about',        name: 'About',        component: About },
   { path: '/contact',      name: 'Contact',      component: Contact },
@@ -56,11 +62,40 @@ const routes = [
   { path: '/publishments', name: 'Publishments', component: Publishments },
   { path: '/projects',     name: 'Projects',     component: Projects },
 
-  // Auth
-  { path: '/login',    name: 'Login',    component: Login,    meta: { guestOnly: true } },
-  { path: '/register', name: 'Register', component: Register, meta: { guestOnly: true } },
+  // ── Auth ──────────────────────────────────────────────────────
+  { 
+    path: '/login',    
+    name: 'Login',    
+    component: Login,    
+    meta: { guestOnly: true } 
+  },
+  { 
+    path: '/register', 
+    name: 'Register', 
+    component: Register, 
+    meta: { guestOnly: true } 
+  },
 
-  // Admin
+  // OAuth2 redirect landing page
+  {
+    path: '/oauth2/redirect',
+    name: 'OAuth2Redirect',
+    component: OAuth2Redirect,
+    meta: { public: true },
+  },
+
+  // ✅ NEW: User Profile (Accessible to all authenticated users)
+  {
+    path: '/profile',
+    name: 'UserProfile',
+    component: UserProfile,
+    meta: { 
+      requiresAuth: true,
+      title: 'تەنیشت بەکارهێنەر'
+    }
+  },
+
+  // ── Admin ─────────────────────────────────────────────────────
   {
     path: '/admin',
     component: AdminLayout,
@@ -78,7 +113,7 @@ const routes = [
       { path: 'news/new',      name: 'AdminNewsCreate', component: NewsEditor },
       { path: 'news/:id/edit', name: 'AdminNewsEdit',   component: NewsEditor, props: true },
 
-      // Videos  (/admin/videos)
+      // Videos
       { path: 'videos',          name: 'AdminVideoList',   component: VideoList },
       { path: 'videos/new',      name: 'AdminVideoCreate', component: VideoEditor },
       { path: 'videos/:id/edit', name: 'AdminVideoEdit',   component: VideoEditor, props: true },
@@ -98,6 +133,11 @@ const routes = [
       { path: 'writings/new',      name: 'AdminWritingCreate', component: WritingEditor },
       { path: 'writings/:id/edit', name: 'AdminWritingEdit',   component: WritingEditor, props: true },
 
+      // About
+      { path: 'about',          name: 'AdminAboutList',   component: AdminAboutList },
+      { path: 'about/new',      name: 'AdminAboutCreate', component: AdminAboutEditor },
+      { path: 'about/:id/edit', name: 'AdminAboutEdit',   component: AdminAboutEditor, props: true },
+
       // Generic dynamic resources — MUST be last
       { path: ':resource',          name: 'AdminResourceList',   component: ResourceList },
       { path: ':resource/new',      name: 'AdminResourceCreate', component: ResourceEditor },
@@ -105,7 +145,7 @@ const routes = [
     ],
   },
 
-  // Fallback
+  // ── Fallback ──────────────────────────────────────────────────
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
@@ -115,19 +155,37 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
+// Navigation Guard
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
+  // Update page title if available
+  if (to.meta?.title) {
+    document.title = `${to.meta.title} · KHI`
+  } else {
+    document.title = 'پەیمانگای کەلەپووری کوردی · KHI'
+  }
+
+  // Allow public routes
+  if (to.meta?.public) return true
+
+  // Handle guest-only routes (login/register)
   if (to.meta?.guestOnly && auth.isAuthenticated) {
     return auth.hasAdminAccess ? { path: '/admin' } : { path: '/' }
   }
 
+  // Allow non-auth routes
   if (!to.meta?.requiresAuth) return true
 
+  // Check authentication
   if (!auth.isAuthenticated) {
-    return { path: '/login', query: { redirect: to.fullPath } }
+    return { 
+      path: '/login', 
+      query: { redirect: to.fullPath } 
+    }
   }
 
+  // Check role authorization for admin routes
   const allowed = to.meta.roles || []
   if (allowed.length && !allowed.includes(auth.role)) {
     return { path: '/', query: { denied: '1' } }

@@ -1,599 +1,548 @@
 <template>
   <main id="main-content" class="about">
-    <!-- HERO -->
-    <header class="hero">
-      <div class="hero__bg" :style="{ backgroundImage: `url(${heroImage})` }"></div>
-      <div class="hero__overlay"></div>
 
-      <div class="container hero__content">
-        <p class="hero__kicker">دەربارە</p>
-        <h1 class="hero__title">دەربارەی ناوەند</h1>
-        <p class="hero__sub">
-          ئەمە demo ـە. داتاکان fake ـن، بەڵام لەگەڵ schema ـەکەت (about_sections + about_media) گونجاوە.
-        </p>
-
-        <div class="hero__stats">
-          <div class="stat">
-            <span class="stat__label">ژمارەی بەشەکان</span>
-            <span class="stat__value">{{ sections.length }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat__label">بینراو</span>
-            <span class="stat__value">{{ sections.filter(s => s.is_visible).length }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat__label">میدیا</span>
-            <span class="stat__value">{{ totalMedia }}</span>
-          </div>
-        </div>
-
-        <div class="hero__ctaRow">
-          <a class="ghostBtn" href="#sections">بینینی بەشەکان ↓</a>
-          <button class="ghostBtn" type="button" @click="scrollTo('values')">ئامانج و بەرزترین‌ها ↓</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- QUICK NAV -->
-    <section class="quickNav" id="sections">
-      <div class="container">
-        <div class="quickNav__bar">
-          <div class="quickNav__left">
-            <h2 class="quickNav__title">بەشەکان</h2>
-            <p class="quickNav__sub">کلیک بکە بۆ چوونە ناو بەشەکان بە smooth scroll.</p>
-          </div>
-
-          <div class="quickNav__right">
-            <a
-              v-for="s in visibleSections"
-              :key="s.slug"
-              class="jump"
-              :href="'#' + s.slug"
-            >
-              {{ s.title }}
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTIONS -->
-    <section class="section">
-      <div class="container">
-        <div class="gridHead">
-          <h2 class="gridHead__title">دەربارەی ناوەند</h2>
-          <p class="gridHead__sub">پاکیزە • ڕێک • ستانفۆرد-وەک</p>
-        </div>
-
-        <div class="cards">
-          <article
-            v-for="s in visibleSections"
-            :key="s.slug"
-            class="card"
-            :id="s.slug"
-          >
-            <div class="card__media">
-              <img :src="coverFor(s).url" :alt="s.title" />
-              <span class="badge badge--dark">{{ s.slug }}</span>
-              <span class="badge badge--light">{{ s.media.length }} میدیا</span>
-            </div>
-
-            <div class="card__body">
-              <h3 class="card__title">{{ s.title }}</h3>
-              <p class="card__text">{{ s.body }}</p>
-
-              <div class="meta">
-                <span class="meta__pill">Sort: {{ s.sort_order }}</span>
-                <span class="meta__pill meta__pill--muted">Updated: {{ s.updated_at }}</span>
-              </div>
-
-              <div class="ctaRow">
-                <button class="btnX btnX--primary" type="button" @click="openSection(s)">
-                  View media →
-                </button>
-                <button class="btnX" type="button" @click="copyLink(s.slug)">
-                  Copy link
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- VALUES / HIGHLIGHTS -->
-    <section class="values" id="values">
-      <div class="container">
-        <div class="values__wrap">
-          <div class="values__left">
-            <span class="kicker">Highlights</span>
-            <h2 class="values__title">ئامانج و ڕێنماییەکان</h2>
-            <p class="values__text">
-              دیزاینەکە وەک ستانفۆرد: سادە، سپی، کارتە پاکیزەکان، و حرکتە نەرمه‌کان.
-              دواتر دەتوانیت ئەم دەقانە لە DB بخوێنیت.
-            </p>
-
-            <div class="bullets">
-              <div class="bullet">
-                <b>ئەرشیڤ</b>
-                <span>پاراستنی دەنگ/وێنە/فیلم بۆ داهاتوو.</span>
-              </div>
-              <div class="bullet">
-                <b>توێژینەوە</b>
-                <span>سەرچاوە و داتاسێت بۆ توێژەران.</span>
-              </div>
-              <div class="bullet">
-                <b>خزمەتگوزاری</b>
-                <span>هۆڵ، ستۆدیۆ، چاپ، کتێبخانە (وەک Services page).</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="values__right">
-            <div class="panel">
-              <b>Quick facts (demo)</b>
-              <div class="fact"><span>دامەزراندن</span><b>2026</b></div>
-              <div class="fact"><span>شوێن</span><b>سلێمانی</b></div>
-              <div class="fact"><span>ژمارەی بەش</span><b>{{ visibleSections.length }}</b></div>
-              <div class="fact"><span>کۆی میدیا</span><b>{{ totalMedia }}</b></div>
-              <button class="btnX btnX--primary" type="button" @click="scrollTo('main-content')">Back to top ↑</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- MODAL -->
-    <div v-if="active" class="modal" @click.self="closeSection" role="dialog" aria-modal="true">
-      <div class="modal__panel">
-        <button class="modal__close" @click="closeSection" aria-label="Close">✕</button>
-
-        <div class="modal__top">
-          <div class="topline">
-            <span class="pillX">{{ active.title }}</span>
-            <span class="pillX pillX--muted">{{ active.slug }}</span>
-            <span class="pillX pillX--muted">{{ active.media.length }} میدیا</span>
-          </div>
-          <p class="modal__summary">{{ active.body }}</p>
-        </div>
-
-        <div class="body">
-          <div class="body__left">
-            <div class="preview">
-              <template v-if="selected?.media_type === 'image'">
-                <img class="preview__img" :src="selected.url" :alt="selected.caption || active.title" />
-              </template>
-
-              <template v-else-if="selected?.media_type === 'video'">
-                <video class="preview__video" controls :poster="selected.poster || coverFor(active).url">
-                  <source :src="selected.url" type="video/mp4" />
-                </video>
-              </template>
-
-              <template v-else-if="selected?.media_type === 'audio'">
-                <div class="preview__audioWrap">
-                  <img class="preview__audioCover" :src="coverFor(active).url" :alt="active.title" />
-                  <div class="preview__audioMeta">
-                    <b>{{ selected.caption || 'دەنگ (demo)' }}</b>
-                    <span>{{ selected.note || 'نمونە بۆ audio player' }}</span>
-                    <audio class="preview__audio" controls>
-                      <source :src="selected.url" type="audio/mpeg" />
-                    </audio>
-                  </div>
-                </div>
-              </template>
-
-              <template v-else>
-                <div class="preview__doc">
-                  <div class="docIcon">📄</div>
-                  <div class="docText">
-                    <b>{{ selected?.caption || 'Document (demo)' }}</b>
-                    <span>{{ selected?.url }}</span>
-                  </div>
-                  <button class="btnX" type="button" @click="fakeOpenDoc">Open</button>
-                </div>
-              </template>
-            </div>
-
-            <div class="caption">
-              <b>{{ selected?.caption || active.title }}</b>
-              <p>{{ selected?.note || 'نمونەی دەق بۆ caption.' }}</p>
-            </div>
-          </div>
-
-          <div class="body__right">
-            <div class="thumbHead">
-              <h3 class="thumbHead__title">میدیا</h3>
-              <span class="thumbHead__sub">کلیک بکە بۆ گۆڕینی پیشاندان</span>
-            </div>
-
-            <div class="thumbs">
-              <button
-                v-for="m in active.media"
-                :key="m.id"
-                class="thumb"
-                :class="{ 'is-active': selected?.id === m.id }"
-                @click="selected = m"
-                type="button"
-              >
-                <div class="thumb__icon">{{ iconFor(m.media_type) }}</div>
-                <div class="thumb__info">
-                  <b class="thumb__title">{{ m.caption || labelFor(m.media_type) }}</b>
-                  <span class="thumb__sub">{{ m.media_type }}</span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal__foot">
-          <button class="btnX btnX--primary" type="button" @click="closeSection">Close</button>
-        </div>
-      </div>
+    <!-- LOADING -->
+    <div v-if="loading" class="state-screen">
+      <div class="spinner"></div>
+      <p>بارکردنی دەربارە…</p>
     </div>
 
-    <button class="toTop" @click="scrollTo('main-content')" aria-label="Back to top">↑</button>
+    <!-- ERROR -->
+    <div v-else-if="error" class="state-screen">
+      <p class="state-err">{{ error }}</p>
+      <button class="text-btn" @click="fetchAbout">دووبارە هەوڵبدەرەوە</button>
+    </div>
+
+    <!-- EMPTY -->
+    <div v-else-if="!page" class="state-screen">
+      <p>هیچ پەڕەیەکی دەربارە نییە.</p>
+    </div>
+
+    <!-- PAGE -->
+    <template v-else>
+
+      <!-- HERO IMAGE — full bleed, no text overlay -->
+      <div class="hero">
+        <img :src="heroImage" alt="" class="hero__img" />
+      </div>
+
+      <!-- PAGE TITLE -->
+      <div class="page-header container">
+        <h1 class="page-header__title">{{ page.title }}</h1>
+        <p v-if="page.subtitle" class="page-header__lead">{{ page.subtitle }}</p>
+      </div>
+
+      <div class="container"><hr class="rule" /></div>
+
+      <!-- BLOCKS -->
+      <div class="blocks container">
+        <template v-for="(block, idx) in pairedBlocks" :key="idx">
+
+          <!-- TEXT + IMAGE paired into two columns -->
+          <div
+            v-if="block.type === 'pair'"
+            class="section-pair"
+            :class="{ 'section-pair--flip': idx % 2 !== 0 }"
+          >
+            <div class="section-pair__text">
+              <h3 v-if="block.text.title" class="section-h">{{ block.text.title }}</h3>
+              <div class="prose" v-html="fmt(block.text.contentText)"></div>
+            </div>
+            <figure class="fig" @click="openLb(block.image)">
+              <img :src="resolveUrl(block.image.mediaUrl)" :alt="block.image.altText || ''" loading="lazy" />
+              <figcaption v-if="block.image.title || block.image.contentText">
+                {{ [block.image.title, block.image.contentText].filter(Boolean).join(' — ') }}
+              </figcaption>
+            </figure>
+          </div>
+
+          <!-- TEXT standalone -->
+          <div v-else-if="block.type === 'text'" class="section-text" :id="`block-${block.data.sequence}`">
+            <h3 v-if="block.data.title" class="section-h">{{ block.data.title }}</h3>
+            <div class="prose" v-html="fmt(block.data.contentText)"></div>
+          </div>
+
+          <!-- IMAGE standalone (full-width) -->
+          <figure
+            v-else-if="block.type === 'image'"
+            class="fig fig--full"
+            :id="`block-${block.data.sequence}`"
+            @click="openLb(block.data)"
+          >
+            <img :src="resolveUrl(block.data.mediaUrl)" :alt="block.data.altText || ''" loading="lazy" />
+            <figcaption v-if="block.data.title || block.data.contentText">
+              <strong v-if="block.data.title">{{ block.data.title }}</strong>
+              {{ block.data.contentText }}
+            </figcaption>
+          </figure>
+
+          <!-- VIDEO -->
+          <div v-else-if="block.type === 'video'" class="section-video" :id="`block-${block.data.sequence}`">
+            <h3 v-if="block.data.title" class="section-h">{{ block.data.title }}</h3>
+            <div class="video-box">
+              <iframe v-if="isEmbed(block.data.mediaUrl)" :src="toEmbed(block.data.mediaUrl)"
+                frameborder="0" allowfullscreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+              </iframe>
+              <video v-else controls preload="metadata">
+                <source :src="resolveUrl(block.data.mediaUrl)" />
+              </video>
+            </div>
+            <p v-if="block.data.contentText" class="media-cap">{{ block.data.contentText }}</p>
+          </div>
+
+          <!-- AUDIO -->
+          <div v-else-if="block.type === 'audio'" class="section-audio" :id="`block-${block.data.sequence}`">
+            <div class="audio-inner">
+              <div class="audio-inner__info">
+                <h3 v-if="block.data.title" class="section-h">{{ block.data.title }}</h3>
+                <p v-if="block.data.contentText" class="prose">{{ block.data.contentText }}</p>
+              </div>
+              <audio controls class="audio-el">
+                <source :src="resolveUrl(block.data.mediaUrl)" />
+              </audio>
+            </div>
+          </div>
+
+          <!-- QUOTE -->
+          <div v-else-if="block.type === 'quote'" class="section-quote" :id="`block-${block.data.sequence}`">
+            <blockquote>
+              <p>{{ block.data.contentText }}</p>
+              <cite v-if="block.data.title">{{ block.data.title }}</cite>
+            </blockquote>
+          </div>
+
+          <!-- STATS -->
+          <div v-else-if="block.type === 'stats'" class="section-stats" :id="`block-${block.data.sequence}`">
+            <h3 v-if="block.data.title" class="section-h section-h--center">{{ block.data.title }}</h3>
+            <p v-if="block.data.contentText" class="prose prose--center">{{ block.data.contentText }}</p>
+            <div class="stats-row" v-if="getStats(block.data).length">
+              <div class="stat" v-for="(s, si) in getStats(block.data)" :key="si">
+                <span class="stat__n">{{ s.value }}</span>
+                <span class="stat__l">{{ s.label }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- GALLERY item -->
+          <figure
+            v-else-if="block.type === 'gallery'"
+            class="fig"
+            :id="`block-${block.data.sequence}`"
+            @click="openLb(block.data)"
+          >
+            <img :src="resolveUrl(block.data.mediaUrl)" :alt="block.data.altText || ''" loading="lazy" />
+            <figcaption v-if="block.data.title">{{ block.data.title }}</figcaption>
+          </figure>
+
+          <hr v-if="idx < pairedBlocks.length - 1" class="section-rule" />
+        </template>
+      </div>
+
+      <!-- META -->
+      <div v-if="page.metaDescription" class="meta-footer container">
+        <p>{{ page.metaDescription }}</p>
+      </div>
+
+      <!-- MULTI-PAGE NAV -->
+      <div class="page-nav container" v-if="allPages.length > 1">
+        <span class="page-nav__lbl">پەڕەکانی دەربارە:</span>
+        <button
+          v-for="p in allPages" :key="p.id"
+          class="page-nav__btn"
+          :class="{ 'is-active': p.id === page.id }"
+          @click="switchPage(p)"
+        >{{ p.title }}</button>
+      </div>
+
+    </template>
+
+    <!-- LIGHTBOX -->
+    <Teleport to="body">
+      <Transition name="lb">
+        <div v-if="lightbox" class="lightbox" @click.self="lightbox = null">
+          <button class="lightbox__x" @click="lightbox = null" aria-label="داخستن">✕</button>
+          <img :src="resolveUrl(lightbox.mediaUrl)" :alt="lightbox.altText || lightbox.title || ''" />
+          <p v-if="lightbox.title || lightbox.contentText" class="lightbox__cap">
+            <strong v-if="lightbox.title">{{ lightbox.title }}</strong>
+            <template v-if="lightbox.title && lightbox.contentText"> — </template>
+            {{ lightbox.contentText }}
+          </p>
+        </div>
+      </Transition>
+    </Teleport>
+
   </main>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import { API_BASE_URL } from '../consts.js'
 
-/* smooth scroll helper */
-function scrollTo(id) {
-  const el = document.getElementById(id)
-  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-  if (!el) return
-  const top = el.getBoundingClientRect().top + window.scrollY - 90
-  window.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' })
-}
+const api      = axios.create({ baseURL: API_BASE_URL })
+const API_ROOT = API_BASE_URL.replace('/api/v1', '')
 
-function iconFor(type) {
-  return type === 'image' ? '🖼️' : type === 'video' ? '🎬' : type === 'audio' ? '🎧' : '📄'
-}
-function labelFor(type) {
-  return type === 'image' ? 'وێنە' : type === 'video' ? 'ڤیدیۆ' : type === 'audio' ? 'دەنگ' : 'دۆکیومێنت'
-}
+const allPages = ref([])
+const page     = ref(null)
+const loading  = ref(true)
+const error    = ref(null)
+const lightbox = ref(null)
 
-/* fake data like about_sections + about_media */
-const heroImage = 'https://picsum.photos/seed/aboutHero/2200/1100'
-
-const sections = ref([
-  {
-    id: 1,
-    slug: 'institution',
-    title: 'دەربارەی دامەزراوە',
-    body: 'دەقی demo: ئامانج و کردارە سەرەکییەکان، پاراستن، ڕووناکی، و بەرهەمهێنان.',
-    sort_order: 1,
-    is_visible: 1,
-    created_at: '2026-01-02',
-    updated_at: '2026-01-20',
-    media: [
-      { id: 'am1', media_type: 'image', url: 'https://picsum.photos/seed/about1/1600/1000', caption: 'وێنەی ناوەند' },
-      { id: 'am2', media_type: 'video', url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', caption: 'Tour (demo)' },
-      { id: 'am3', media_type: 'document', url: 'https://example.com/about.pdf', caption: 'PDF (demo)' },
-    ],
-  },
-  {
-    id: 2,
-    slug: 'team',
-    title: 'تیم و هاوبەشەکان',
-    body: 'دەقی demo: تیمی کار و هاوبەشییەکان، بەرهەم و پلاندانان.',
-    sort_order: 2,
-    is_visible: 1,
-    created_at: '2026-01-05',
-    updated_at: '2026-01-18',
-    media: [
-      { id: 'am4', media_type: 'image', url: 'https://picsum.photos/seed/about2/1600/1000', caption: 'تیم (demo)' },
-      { id: 'am5', media_type: 'image', url: 'https://picsum.photos/seed/about3/1600/1000', caption: 'هاوبەشی (demo)' },
-    ],
-  },
-  {
-    id: 3,
-    slug: 'departments',
-    title: 'بەشەکان و کاریگەری',
-    body: 'دەقی demo: بەشەکانی ناوەند، کار و توێژینەوە و ڕووناکی بۆ کۆمەڵگا.',
-    sort_order: 3,
-    is_visible: 1,
-    created_at: '2026-01-08',
-    updated_at: '2026-01-19',
-    media: [
-      { id: 'am6', media_type: 'image', url: 'https://picsum.photos/seed/about4/1600/1000', caption: 'بەشەکان' },
-      { id: 'am7', media_type: 'audio', url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3', caption: 'دەنگی نموونە', note: 'Demo only' },
-    ],
-  },
-  {
-    id: 4,
-    slug: 'vision',
-    title: 'بینین و ئامانج',
-    body: 'دەقی demo: بینینی داهاتوو، پلان بۆ ئەرشیڤی گشتی دیژیتاڵ و پەیوەندی بە جیهان.',
-    sort_order: 4,
-    is_visible: 1,
-    created_at: '2026-01-10',
-    updated_at: '2026-01-21',
-    media: [
-      { id: 'am8', media_type: 'image', url: 'https://picsum.photos/seed/about5/1600/1000', caption: 'Vision (demo)' },
-      { id: 'am9', media_type: 'document', url: 'https://example.com/strategy.pdf', caption: 'Strategy (demo)' },
-    ],
-  },
-])
-
-const visibleSections = computed(() =>
-  [...sections.value].filter(s => !!s.is_visible).sort((a,b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-)
-
-const totalMedia = computed(() =>
-  visibleSections.value.reduce((sum, s) => sum + (s.media?.length || 0), 0)
-)
-
-function coverFor(section) {
-  const img = section.media.find(m => m.media_type === 'image')
-  return img || { url: 'https://picsum.photos/seed/aboutFallback/1600/1000' }
-}
-
-/* modal */
-const active = ref(null)
-const selected = ref(null)
-
-function openSection(s) {
-  active.value = s
-  selected.value = s.media.find(m => m.media_type === 'image') || s.media[0]
-  document.body.style.overflow = 'hidden'
-}
-function closeSection() {
-  active.value = null
-  selected.value = null
-  document.body.style.overflow = ''
-}
-
-async function copyLink(slug) {
-  const url = `${window.location.origin}${window.location.pathname}#${slug}`
+async function fetchAbout() {
+  loading.value = true; error.value = null
   try {
-    await navigator.clipboard.writeText(url)
-    alert('Copied ✅')
-  } catch {
-    alert(url)
-  }
+    const { data } = await api.get('/about')
+    const list = Array.isArray(data) ? data : (data?.data || [])
+    allPages.value = list.filter(p => p.active !== false)
+    const slug = window.location.hash?.replace('#', '')
+    page.value = allPages.value.find(p => p.slug === slug) || allPages.value[0] || null
+  } catch (e) {
+    error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
+  } finally { loading.value = false }
 }
 
-function fakeOpenDoc() {
-  alert('Demo: open document')
+function switchPage(p) {
+  page.value = p
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
+
+const blocks = computed(() =>
+  (page.value?.blocks || []).slice().sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+)
+
+// Pair adjacent TEXT + IMAGE blocks → two-column rows; everything else standalone
+const pairedBlocks = computed(() => {
+  const raw = blocks.value
+  const out = []
+  let i = 0
+  while (i < raw.length) {
+    const cur  = raw[i]
+    const next = raw[i + 1]
+    if (cur.contentType === 'TEXT' && next?.contentType === 'IMAGE') {
+      out.push({ type: 'pair', text: cur, image: next })
+      i += 2
+    } else {
+      out.push({ type: cur.contentType.toLowerCase(), data: cur })
+      i++
+    }
+  }
+  return out
+})
+
+const heroImage = computed(() => {
+  const img = blocks.value.find(b => b.contentType === 'IMAGE' && b.mediaUrl)
+  return img ? resolveUrl(img.mediaUrl) : 'https://picsum.photos/seed/khi/1600/640'
+})
+
+function resolveUrl(url) {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${API_ROOT}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
+function fmt(text) {
+  if (!text) return ''
+  return text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')
+}
+
+function isEmbed(url) {
+  return url && (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com'))
+}
+
+function toEmbed(url) {
+  if (!url) return ''
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`
+  const vm = url.match(/vimeo\.com\/(\d+)/)
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}`
+  return url
+}
+
+function getStats(block) {
+  try {
+    const m = block.metadata
+    return (m?.items && Array.isArray(m.items)) ? m.items : (Array.isArray(m) ? m : [])
+  } catch { return [] }
+}
+
+function openLb(block) { lightbox.value = block }
+
+onMounted(fetchAbout)
 </script>
 
 <style scoped>
-.about{
-  --brand:#8C1515; --bg:#fff; --alt:#f6f7f8; --text:#2E2D29; --muted:#5f6368;
-  --line:rgba(0,0,0,.10); --shadow:0 18px 54px rgba(0,0,0,.18); --shadow2:0 10px 26px rgba(0,0,0,.10);
-  --radius:18px; --container:1200px;
+/* ═══════════════════════════════════════════════════════════
+   ABOUT — Stanford editorial
+   Full-bleed imagery · Serif type · Cardinal red · White space
+   Zero glassmorphism · Zero pill tags · Zero shadow cards
+═══════════════════════════════════════════════════════════ */
 
-  background:var(--bg); color:var(--text); min-height:100vh;
+.about {
+  --red:    #8C1515;
+  --text:   #2e2d29;
+  --muted:  #767674;
+  --line:   #d1cfc9;
+  --bg:     #ffffff;
+  --alt:    #f4f4f4;
+  --w:      1060px;
+  --serif:  Georgia, "Times New Roman", serif;
+  --sans:   "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
 }
 
-/* smooth scroll (no @media here) */
-:global(html){ scroll-behavior:smooth; }
+:global(html) { scroll-behavior: smooth; }
 
-.container{ max-width:var(--container); margin:0 auto; padding:0 22px; }
+.container { max-width: var(--w); margin: 0 auto; padding: 0 32px; }
 
-/* hero */
-.hero{ position:relative; min-height:56vh; overflow:hidden; display:grid; place-items:center; }
-.hero__bg{ position:absolute; inset:0; background-size:cover; background-position:center; transform:scale(1.02); }
-.hero__overlay{ position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.62) 0%,rgba(0,0,0,.24) 55%,rgba(0,0,0,.55) 100%); }
-.hero__content{ position:relative; z-index:2; padding-top:140px; padding-bottom:48px; color:#fff; }
-.hero__kicker{ margin:0 0 10px; letter-spacing:.16em; text-transform:uppercase; font-weight:800; opacity:.92; font-size:12px; }
-.hero__title{ font-family:Georgia,"Times New Roman",serif; font-weight:900; font-size:62px; line-height:1.02; margin:0 0 12px; }
-.hero__sub{ margin:0 0 18px; max-width:70ch; opacity:.92; color:rgba(255,255,255,.92); }
-.hero__stats{ display:flex; gap:14px; margin-bottom:14px; }
-.stat{ background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); border-radius:14px; padding:10px 12px; backdrop-filter:blur(10px); }
-.stat__label{ display:block; font-size:12px; opacity:.9; }
-.stat__value{ display:block; font-weight:900; font-size:18px; }
-
-.hero__ctaRow{ display:flex; gap:10px; }
-.ghostBtn{
-  border:1px solid rgba(255,255,255,.28);
-  background:rgba(255,255,255,.10);
-  color:#fff;
-  border-radius:999px;
-  padding:10px 12px;
-  font-weight:900;
-  cursor:pointer;
-  text-decoration:none;
-  transition: transform .16s ease, background .16s ease;
+/* ── States ── */
+.state-screen {
+  min-height: 60vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  color: var(--muted);
 }
-.ghostBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.16); }
-
-/* quick nav */
-.quickNav{ background:var(--alt); border-bottom:1px solid rgba(0,0,0,.06); padding:16px 0; }
-.quickNav__bar{
-  border:1px solid var(--line);
-  background:#fff;
-  border-radius:22px;
-  padding:14px 14px;
-  box-shadow: var(--shadow2);
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:14px;
+.state-err { color: var(--red); font-weight: 600; }
+.spinner {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid #e0ddd8; border-top-color: var(--red);
+  animation: spin .7s linear infinite;
 }
-.quickNav__title{ margin:0; font-family:Georgia,"Times New Roman",serif; font-weight:900; font-size:22px; }
-.quickNav__sub{ margin:6px 0 0; color:var(--muted); }
-.quickNav__right{ display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end; }
-.jump{
-  border:1px solid rgba(0,0,0,.10);
-  background:rgba(0,0,0,.03);
-  border-radius:999px;
-  padding:9px 12px;
-  font-weight:900;
-  color:#111;
-  text-decoration:none;
-  transition: transform .16s ease, background .16s ease, border-color .16s ease;
-}
-.jump:hover{ transform: translateY(-1px); background: rgba(140,21,21,.08); border-color: rgba(140,21,21,.18); }
-
-/* section */
-.section{ padding:26px 0 40px; }
-.gridHead{ display:flex; align-items:baseline; justify-content:space-between; margin:18px 0 16px; }
-.gridHead__title{ font-family:Georgia,"Times New Roman",serif; font-weight:900; margin:0; font-size:26px; }
-.gridHead__sub{ margin:0; color:var(--muted); }
-
-/* cards */
-.cards{ display:grid; grid-template-columns: repeat(2, 1fr); gap:16px; }
-.card{
-  border:1px solid var(--line);
-  background:#fff;
-  border-radius:22px;
-  overflow:hidden;
-  box-shadow: 0 0 0 rgba(0,0,0,0);
-  transition: transform .18s ease, box-shadow .18s ease;
-}
-.card:hover{ transform: translateY(-3px); box-shadow: var(--shadow2); }
-.card__media{ position:relative; aspect-ratio: 16/9; overflow:hidden; }
-.card__media img{ width:100%; height:100%; object-fit:cover; transform:scale(1.02); transition: transform .35s ease; display:block; }
-.card:hover .card__media img{ transform: scale(1.07); }
-
-.badge{
-  position:absolute; top:12px; left:12px;
-  border-radius:999px; padding:6px 10px;
-  font-weight:900; font-size:12px;
-  border:1px solid rgba(0,0,0,.10);
-  background: rgba(255,255,255,.92);
-}
-.badge--dark{ left:auto; right:12px; background: rgba(0,0,0,.62); color:#fff; border-color: rgba(255,255,255,.14); }
-.badge--light{ top:auto; bottom:12px; background: rgba(255,255,255,.88); }
-
-.card__body{ padding:14px 14px 16px; }
-.card__title{ margin:0 0 8px; font-weight:900; font-size:20px; }
-.card__text{ margin:0 0 12px; color:var(--muted); line-height:1.6; }
-
-.meta{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-.meta__pill{
-  border-radius:999px; padding:6px 10px; font-weight:900; font-size:12px;
-  background: rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.08);
-}
-.meta__pill--muted{ opacity:.85; }
-
-.ctaRow{ display:flex; gap:10px; }
-.btnX{
-  border:1px solid rgba(0,0,0,.12);
-  background:#fff;
-  border-radius:12px;
-  padding:12px 14px;
-  font-weight:900;
-  cursor:pointer;
-  transition: transform .16s ease, box-shadow .16s ease;
-}
-.btnX:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); }
-.btnX--primary{
-  background: var(--brand);
-  border-color: rgba(140,21,21,.25);
-  color:#fff;
-  box-shadow: 0 16px 42px rgba(140,21,21,.22);
+@keyframes spin { to { transform: rotate(360deg); } }
+.text-btn {
+  background: none; border: none; padding: 0;
+  color: var(--red); font: inherit; font-weight: 700;
+  text-decoration: underline; cursor: pointer;
 }
 
-/* values */
-.values{ background: var(--alt); border-top:1px solid rgba(0,0,0,.06); padding:26px 0 60px; }
-.values__wrap{ display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; }
-.kicker{ display:inline-flex; border-radius:999px; padding:7px 10px; font-weight:900; font-size:12px;
-  background: rgba(140,21,21,.10); border:1px solid rgba(140,21,21,.20); color:#6b0f0f; }
-.values__title{ font-family:Georgia,"Times New Roman",serif; font-weight:900; font-size:30px; margin:10px 0 10px; }
-.values__text{ margin:0 0 14px; color:var(--muted); line-height:1.7; }
-.bullets{ display:grid; gap:10px; }
-.bullet{
-  border:1px solid rgba(0,0,0,.08);
-  background:#fff;
-  border-radius:16px;
-  padding:12px;
-  box-shadow: var(--shadow2);
+/* ── HERO ── */
+.hero { width: 100%; overflow: hidden; }
+.hero__img {
+  display: block; width: 100%;
+  height: clamp(280px, 40vw, 560px);
+  object-fit: cover; object-position: center 30%;
 }
-.bullet b{ display:block; margin-bottom:6px; }
-.bullet span{ color:var(--muted); }
 
-.panel{
-  border:1px solid rgba(0,0,0,.10);
-  background:#fff;
-  border-radius:22px;
-  padding:14px;
-  box-shadow: var(--shadow2);
+/* ── Page header ── */
+.page-header { padding: 48px 32px 28px; }
+.page-header__title {
+  font-family: var(--serif);
+  font-size: clamp(30px, 4.5vw, 52px);
+  font-weight: 400;
+  line-height: 1.1;
+  margin: 0 0 14px;
+  color: var(--text);
 }
-.panel b{ display:block; margin-bottom:10px; }
-.fact{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-top:1px solid rgba(0,0,0,.06); }
-.fact span{ color:var(--muted); font-weight:800; }
-.fact b{ margin:0; }
-
-/* modal */
-.modal{ position:fixed; inset:0; background: rgba(0,0,0,.62); z-index:9999; display:grid; place-items:center; padding:26px; }
-.modal__panel{
-  width: 1100px; max-width:1100px;
-  background:#fff; border-radius:22px;
-  border:1px solid rgba(0,0,0,.10);
-  box-shadow: var(--shadow);
-  overflow:hidden; position:relative;
+.page-header__lead {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 72ch;
+  margin: 0;
+  line-height: 1.7;
 }
-.modal__close{
-  position:absolute; top:12px; right:12px; width:44px; height:44px;
-  border-radius:999px; border:1px solid rgba(0,0,0,.12); background:#fff; font-weight:900; cursor:pointer;
+
+/* ── Rules ── */
+.rule        { border: none; border-top: 1px solid var(--line); margin: 0 0 48px; }
+.section-rule { border: none; border-top: 1px solid var(--line); margin: 56px 0; }
+
+/* ── Blocks wrapper ── */
+.blocks { padding-bottom: 72px; }
+
+/* ── Typography inside blocks ── */
+.section-h {
+  font-family: var(--serif);
+  font-size: clamp(19px, 2.2vw, 24px);
+  font-weight: 400;
+  line-height: 1.25;
+  margin: 0 0 14px;
+  color: var(--text);
 }
-.modal__top{ padding:18px 18px 14px; border-bottom:1px solid rgba(0,0,0,.08); }
-.topline{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
-.pillX{ border-radius:999px; padding:7px 10px; font-weight:900; background:rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.08); }
-.pillX--muted{ opacity:.85; }
-.modal__summary{ margin:0; color:var(--muted); }
+.section-h--center { text-align: center; }
 
-.body{ display:grid; grid-template-columns: 1.6fr 1fr; }
-.body__left{ padding:16px 16px 18px; border-right:1px solid rgba(0,0,0,.08); }
-.body__right{ padding:16px 16px 18px; }
+.prose { color: var(--text); line-height: 1.8; font-size: 1rem; }
+.prose--center { text-align: center; }
+.prose :deep(p) { margin: 0 0 .9em; }
+.prose :deep(p:last-child) { margin: 0; }
 
-.preview{ border-radius:16px; border:1px solid rgba(0,0,0,.10); overflow:hidden; background:#0b0b0b; }
-.preview__img{ width:100%; height:520px; object-fit:cover; display:block; }
-.preview__video{ width:100%; height:520px; display:block; background:#000; }
-
-.preview__audioWrap{ height:520px; background:#fff; display:grid; grid-template-columns:260px 1fr; gap:14px; padding:16px; }
-.preview__audioCover{ width:100%; height:100%; border-radius:14px; object-fit:cover; border:1px solid rgba(0,0,0,.10); }
-.preview__audioMeta{ display:grid; gap:10px; color:var(--muted); }
-.preview__audioMeta b{ color:#111; }
-.preview__audio{ width:100%; }
-
-.preview__doc{ height:520px; background:#fff; display:grid; grid-template-columns:72px 1fr auto; align-items:center; gap:12px; padding:18px; }
-.docIcon{ width:60px; height:60px; border-radius:16px; background:rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.10); display:grid; place-items:center; font-size:26px; }
-.docText{ display:grid; gap:6px; color:var(--muted); }
-.docText b{ color:#111; }
-
-.caption{ margin-top:12px; color:var(--muted); }
-.caption b{ color:#111; }
-
-.thumbHead{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; }
-.thumbHead__title{ margin:0; font-weight:900; font-size:16px; }
-.thumbHead__sub{ color:var(--muted); font-size:12px; }
-
-.thumbs{ display:grid; gap:10px; max-height:610px; overflow:auto; padding-right:6px; }
-.thumb{
-  width:100%; text-align:left;
-  border:1px solid rgba(0,0,0,.10);
-  background:#fff;
-  border-radius:14px;
-  padding:12px;
-  cursor:pointer;
-  display:grid;
-  grid-template-columns:46px 1fr;
-  gap:10px;
-  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+/* ── TEXT + IMAGE pair (two-column) ── */
+.section-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: start;
 }
-.thumb:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); }
-.thumb.is-active{ border-color: rgba(140,21,21,.32); box-shadow: 0 0 0 4px rgba(140,21,21,.10); }
-.thumb__icon{ width:46px; height:46px; border-radius:14px; background:rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.10); display:grid; place-items:center; font-size:18px; }
-.thumb__info{ display:grid; gap:5px; }
-.thumb__title{ font-size:13px; font-weight:900; color:#111; }
-.thumb__sub{ font-size:12px; color:var(--muted); }
+.section-pair--flip { direction: rtl; }
+.section-pair--flip > * { direction: ltr; }
 
-.modal__foot{ padding:14px 16px; border-top:1px solid rgba(0,0,0,.08); display:flex; justify-content:flex-end; gap:10px; }
+/* ── Standalone text ── */
+.section-text { max-width: 72ch; }
 
-/* to top */
-.toTop{
-  position:fixed; bottom:18px; left:18px;
-  width:46px; height:46px; border-radius:999px;
-  border:1px solid rgba(0,0,0,.12); background:#fff; font-weight:900; cursor:pointer;
-  box-shadow: var(--shadow2); transition: transform .16s ease;
-  z-index:2000;
+/* ── Figures ── */
+.fig { margin: 0; cursor: zoom-in; }
+.fig img {
+  width: 100%; display: block;
+  transition: opacity .22s;
+  border-radius: 1px;
 }
-.toTop:hover{ transform: translateY(-2px); }
+.fig:hover img { opacity: .9; }
+.fig figcaption {
+  margin-top: 10px;
+  font-size: .87rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.fig--full img {
+  max-height: 500px;
+  object-fit: cover;
+}
+
+/* ── Video ── */
+.section-video { max-width: 820px; }
+.video-box {
+  position: relative; aspect-ratio: 16/9;
+  background: #111; border-radius: 2px; overflow: hidden;
+  margin-bottom: 10px;
+}
+.video-box iframe,
+.video-box video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+}
+.media-cap { font-size: .9rem; color: var(--muted); margin: 0; }
+
+/* ── Audio ── */
+.section-audio {
+  background: var(--alt);
+  border-top: 3px solid var(--red);
+  padding: 28px 32px;
+}
+.audio-inner {
+  display: flex; align-items: center;
+  gap: 32px; flex-wrap: wrap;
+}
+.audio-inner__info { flex: 1; min-width: 180px; }
+.audio-el { flex: 0 0 260px; width: 260px; }
+
+/* ── Quote ── */
+.section-quote { padding-left: 24px; border-left: 4px solid var(--red); max-width: 68ch; }
+.section-quote blockquote { margin: 0; }
+.section-quote blockquote p {
+  font-family: var(--serif);
+  font-size: clamp(18px, 2vw, 22px);
+  font-style: italic;
+  line-height: 1.65;
+  margin: 0 0 12px;
+}
+.section-quote blockquote cite {
+  display: block; font-style: normal;
+  font-weight: 700; font-size: .9rem; color: var(--red);
+}
+
+/* ── Stats ── */
+.section-stats { text-align: center; }
+.stats-row {
+  display: flex; justify-content: center; flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-top: 28px;
+}
+.stat {
+  flex: 1; min-width: 130px;
+  padding: 28px 20px;
+  border-right: 1px solid var(--line);
+}
+.stat:last-child { border-right: none; }
+.stat__n {
+  display: block;
+  font-family: var(--serif);
+  font-size: 2.6rem;
+  font-weight: 400;
+  color: var(--red);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.stat__l {
+  display: block;
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+}
+
+/* ── Meta footer ── */
+.meta-footer {
+  padding: 28px 32px 52px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .95rem;
+  max-width: 74ch;
+  line-height: 1.7;
+}
+.meta-footer p { margin: 0; }
+
+/* ── Page nav ── */
+.page-nav {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 24px 32px 56px;
+  border-top: 1px solid var(--line);
+}
+.page-nav__lbl {
+  font-size: .82rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+}
+.page-nav__btn {
+  background: none; border: 1px solid var(--line);
+  border-radius: 2px; padding: 7px 16px;
+  font: inherit; font-size: .9rem; font-weight: 600;
+  color: var(--text); cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.page-nav__btn:hover { border-color: var(--red); color: var(--red); }
+.page-nav__btn.is-active { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* ── Lightbox ── */
+.lightbox {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.92);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 48px 24px 24px;
+}
+.lightbox__x {
+  position: absolute; top: 18px; right: 18px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: none; border: 1px solid rgba(255,255,255,.3);
+  color: #fff; font-size: 1rem; cursor: pointer;
+  transition: border-color .15s;
+}
+.lightbox__x:hover { border-color: #fff; }
+.lightbox img { max-width: 88vw; max-height: 78vh; display: block; border-radius: 2px; }
+.lightbox__cap {
+  margin-top: 12px; color: rgba(255,255,255,.7);
+  font-size: .88rem; text-align: center;
+}
+.lightbox__cap strong { color: #fff; }
+
+.lb-enter-active, .lb-leave-active { transition: opacity .25s ease; }
+.lb-enter-from, .lb-leave-to { opacity: 0; }
+
+/* ── Responsive ── */
+@media (max-width: 800px) {
+  .section-pair { grid-template-columns: 1fr; gap: 24px; }
+  .section-pair--flip { direction: ltr; }
+  .hero__img { height: 220px; }
+  .audio-inner { flex-direction: column; }
+  .audio-el { width: 100%; flex: none; }
+  .stat { border-right: none; border-bottom: 1px solid var(--line); }
+  .stat:last-child { border-bottom: none; }
+  .stats-row { flex-direction: column; }
+  .section-audio { padding: 20px; }
+  .container { padding: 0 18px; }
+}
 </style>

@@ -17,9 +17,9 @@
     <div class="icl__bar">
       <div class="search">
         <svg class="search__ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input v-model="searchQ" class="search__input" placeholder="گەڕان بە ناونیشان یا تاگ…" @input="onSearch" />
+        <input v-model="searchQ" class="search__input" placeholder="گەڕان بە ناونیشان، تاگ، کۆکەر…" />
         <Transition name="fade">
-          <button v-if="searchQ" class="search__clear" @click="clearSearch">
+          <button v-if="searchQ" class="search__clear" @click="searchQ = ''">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </Transition>
@@ -34,6 +34,10 @@
         <option value="SINGLE">تەنها وێنە</option>
         <option value="GALLERY">گەلەری</option>
         <option value="PHOTO_STORY">چیرۆکی وێنە</option>
+      </select>
+      <select v-model="filterTopic" class="sel">
+        <option value="">هەموو موضوعەکان</option>
+        <option v-for="t in availableTopics" :key="t.id" :value="t.id">{{ t.nameCkb || t.nameKmr }}</option>
       </select>
     </div>
 
@@ -75,6 +79,7 @@
             <th>ناونیشانی سۆرانی</th>
             <th>ناونیشانی کورمانجی</th>
             <th style="width:130px">جۆر</th>
+            <th style="width:120px">موضوع</th>
             <th style="width:112px">بەروار</th>
             <th style="width:88px">زمان</th>
             <th style="width:72px">وێنە</th>
@@ -82,11 +87,17 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="c in filteredItems" :key="c.id" class="tbl__row" @click="openDetail(c)">
-            <td><span class="tbl__id">#{{ c.id }}</span></td>
+          <tr v-for="(c, idx) in filteredItems" :key="c.id" class="tbl__row" @click="openDetail(c)">
+            <td><span class="tbl__id">{{ idx + 1 }}</span></td>
             <td>
-              <div class="cover-wrap" v-if="c.coverUrl"><img class="cover-img" :src="c.coverUrl" loading="lazy" /></div>
-              <div class="cover-empty" v-else><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div class="cover-wrap" v-if="c.ckbCoverUrl || c.kmrCoverUrl || c.hoverUrl">
+                <img class="cover-img cover-img--base"  :src="c.ckbCoverUrl || c.kmrCoverUrl || c.hoverUrl" loading="lazy" />
+                <img class="cover-img cover-img--hover" :src="c.hoverUrl || c.ckbCoverUrl || c.kmrCoverUrl" loading="lazy" v-if="c.hoverUrl" />
+                <div class="cover-hover-badge" v-if="c.hoverUrl" title="دارای Hover Image">H</div>
+              </div>
+              <div class="cover-empty" v-else>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>
             </td>
             <td><div class="tbl__name">{{ c.ckbContent?.title || '—' }}</div></td>
             <td><div class="tbl__name tbl__name--kmr">{{ c.kmrContent?.title || '—' }}</div></td>
@@ -94,6 +105,10 @@
               <span class="type-pill" :class="`type-pill--${(c.collectionType||'').toLowerCase()}`">
                 {{ typeLabel(c.collectionType) }}
               </span>
+            </td>
+            <td>
+              <span v-if="c.topic" class="topic-pill">{{ c.topic.nameCkb || c.topic.nameKmr }}</span>
+              <span v-else class="tbl__dash">—</span>
             </td>
             <td class="tbl__date">{{ fmtDate(c.publishmentDate) }}</td>
             <td>
@@ -110,9 +125,15 @@
             </td>
             <td @click.stop>
               <div class="tbl__acts">
-                <button class="act act--view" title="تەواوی زانیاری" @click="openDetail(c)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                <RouterLink class="act act--edit" :to="`/admin/image-collections/${c.id}/edit`"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg></RouterLink>
-                <button class="act act--del" @click="confirmDelete(c)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+                <button class="act act--view" title="تەواوی زانیاری" @click="openDetail(c)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <RouterLink class="act act--edit" :to="`/admin/image-collections/${c.id}/edit`">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                </RouterLink>
+                <button class="act act--del" @click="confirmDelete(c)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                </button>
               </div>
             </td>
           </tr>
@@ -125,7 +146,9 @@
       <Transition name="modal">
         <div v-if="delTarget" class="overlay" @click.self="delTarget=null">
           <div class="del-modal">
-            <div class="del-modal__ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8C1515" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg></div>
+            <div class="del-modal__ico">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8C1515" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+            </div>
             <h3 class="del-modal__title">دڵنیای لە سڕینەوە؟</h3>
             <p class="del-modal__body">کۆکراوەی <strong>«{{ bestTitle(delTarget) || '#'+delTarget.id }}»</strong><br/>بە تەواوی سڕاوەتەوە و ناگەڕێتەوە.</p>
             <div class="del-modal__acts">
@@ -139,193 +162,356 @@
       </Transition>
     </Teleport>
 
-    <!-- ══ DETAIL MODAL ══ -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
+    <!--  DETAIL MODAL                                                         -->
+    <!-- ══════════════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
-      <Transition name="pdm-fade">
-        <div v-if="detail" class="pdm-overlay" @click.self="closeDetail">
-          <Transition name="pdm-rise" appear>
-            <div v-if="detail" class="pdm" role="dialog">
+      <Transition name="modal">
+        <div v-if="detailItem" class="dk-bg" @click.self="detailItem = null">
+          <div class="dk">
+            <button class="dk__close" @click="detailItem = null">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
 
-              <button class="pdm-x" @click="closeDetail" aria-label="داخستن">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
+            <!-- ── Hero ── -->
+            <div
+              class="dk__hero"
+              :style="(detailItem.ckbCoverUrl || detailItem.kmrCoverUrl)
+                ? `background-image:url(${detailItem.ckbCoverUrl || detailItem.kmrCoverUrl})`
+                : ''"
+            >
+              <div v-if="detailItem.hoverUrl" class="dk__hero-hover" :style="`background-image:url(${detailItem.hoverUrl})`" />
+              <div class="dk__hero-grain"></div>
+              <div class="dk__hero-gradient"></div>
 
-              <!-- ════ LEFT — GALLERY ════ -->
-              <div class="pdm-media">
-                <div class="pdm-media__empty" v-if="!albumItems.length">
-                  <div class="pdm-media__empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
-                  <span>هیچ وێنەیەک نییە</span>
-                  <img v-if="detail.coverUrl" :src="detail.coverUrl" class="pdm-media__cover-fallback" />
+              <div class="dk__hero-content">
+                <div class="dk__hero-badges">
+                  <span class="dk__badge dk__badge--type">{{ typeLabel(detailItem.collectionType) }}</span>
+                  <span v-if="detailItem.topic" class="dk__badge dk__badge--topic">
+                    {{ detailItem.topic.nameCkb || detailItem.topic.nameKmr }}
+                  </span>
+                  <span v-if="detailItem.hoverUrl" class="dk__badge dk__badge--hover">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+                    Hover
+                  </span>
+                  <span v-for="lang in detectedLangs(detailItem)" :key="lang" class="dk__badge dk__badge--lang">
+                    {{ lang === 'CKB' ? '🇮🇶 سۆرانی' : '🌍 کورمانجی' }}
+                  </span>
                 </div>
 
-                <div class="pdm-stage" v-else>
-                  <div class="pdm-stage__image-wrap">
-                    <img :src="currentAlbumItem.displayUrl" :key="currentAlbumItem.displayUrl" class="pdm-stage__image" />
-                    <div class="pdm-stage__caption" v-if="currentAlbumCaption">{{ currentAlbumCaption }}</div>
+                <h2 class="dk__hero-title">{{ detailItem.ckbContent?.title || detailItem.kmrContent?.title || '—' }}</h2>
+                <p v-if="detailItem.ckbContent?.title && detailItem.kmrContent?.title" class="dk__hero-subtitle">{{ detailItem.kmrContent.title }}</p>
+
+                <div class="dk__hero-stats">
+                  <div class="dk__stat">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+                    {{ detailItem.imageAlbum?.length || 0 }} وێنە
                   </div>
-
-                  <button v-if="albumItems.length > 1" class="pdm-arrow pdm-arrow--prev" @click="prevImg" :disabled="imgIdx === 0">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg>
-                  </button>
-                  <button v-if="albumItems.length > 1" class="pdm-arrow pdm-arrow--next" @click="nextImg" :disabled="imgIdx === albumItems.length - 1">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
-                  </button>
-                  <div class="pdm-counter" v-if="albumItems.length > 1">{{ imgIdx + 1 }} / {{ albumItems.length }}</div>
+                  <div class="dk__stat" v-if="detailItem.publishmentDate">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    {{ fmtDate(detailItem.publishmentDate) }}
+                  </div>
+                  <div class="dk__stat" v-if="detailItem.ckbContent?.collectedBy || detailItem.kmrContent?.collectedBy">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    {{ detailItem.ckbContent?.collectedBy || detailItem.kmrContent?.collectedBy }}
+                  </div>
+                  <div class="dk__stat" v-if="detailItem.ckbContent?.location || detailItem.kmrContent?.location">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ detailItem.ckbContent?.location || detailItem.kmrContent?.location }}
+                  </div>
                 </div>
+              </div>
+            </div>
 
-                <!-- Thumbnail strip -->
-                <div class="pdm-thumbs" v-if="albumItems.length > 1">
-                  <button v-for="(m, i) in albumItems" :key="i" class="pdm-thumb" :class="{ 'pdm-thumb--on': i === imgIdx }" @click="imgIdx = i">
-                    <img v-if="m.displayUrl" :src="m.displayUrl" loading="lazy" />
-                    <span v-else class="pdm-thumb__icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
-                    <span class="pdm-thumb__bar" v-if="i === imgIdx"></span>
-                  </button>
+            <div class="dk__body">
+
+              <!-- ── 3 Cover Slots ── -->
+              <div class="dk__section">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  وێنەی کڤەر
+                </div>
+                <div class="dk__covers-grid">
+                  <!-- CKB -->
+                  <div class="dk__cover-item" :class="{ 'dk__cover-item--empty': !detailItem.ckbCoverUrl }">
+                    <span class="dk__cover-label dk__cover-label--ckb">سۆرانی (CKB)</span>
+                    <div class="dk__cover-img-wrap" :class="{ 'dk__cover-img-wrap--empty': !detailItem.ckbCoverUrl }">
+                      <img v-if="detailItem.ckbCoverUrl" :src="detailItem.ckbCoverUrl" alt="CKB Cover" />
+                      <template v-else>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span>نییە</span>
+                      </template>
+                    </div>
+                  </div>
+                  <!-- KMR -->
+                  <div class="dk__cover-item" :class="{ 'dk__cover-item--empty': !detailItem.kmrCoverUrl }">
+                    <span class="dk__cover-label dk__cover-label--kmr">کورمانجی (KMR)</span>
+                    <div class="dk__cover-img-wrap" :class="{ 'dk__cover-img-wrap--empty': !detailItem.kmrCoverUrl }">
+                      <img v-if="detailItem.kmrCoverUrl" :src="detailItem.kmrCoverUrl" alt="KMR Cover" />
+                      <template v-else>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span>نییە</span>
+                      </template>
+                    </div>
+                  </div>
+                  <!-- Hover -->
+                  <div class="dk__cover-item" :class="{ 'dk__cover-item--empty': !detailItem.hoverUrl }">
+                    <span class="dk__cover-label dk__cover-label--hover">هۆڤەر</span>
+                    <div class="dk__cover-img-wrap" :class="{ 'dk__cover-img-wrap--empty': !detailItem.hoverUrl, 'dk__cover-img-wrap--hover': !!detailItem.hoverUrl }">
+                      <img v-if="detailItem.hoverUrl" :src="detailItem.hoverUrl" alt="Hover Image" />
+                      <template v-else>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <span>نییە</span>
+                      </template>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- ════ RIGHT — INFO PANEL ════ -->
-              <div class="pdm-info">
-                <div class="pdm-info__head">
-                  <div class="pdm-info__head-meta">
-                    <span class="pdm-id-tag"># {{ detail.id }}</span>
-                    <span class="type-pill" :class="`type-pill--${(detail.collectionType||'').toLowerCase()}`">{{ typeLabel(detail.collectionType) }}</span>
-                    <span class="pdm-date-tag" v-if="detail.publishmentDate">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                      {{ fmtDate(detail.publishmentDate) }}
-                    </span>
-                  </div>
-
-                  <h2 class="pdm-title">{{ bestTitle(detail) || '—' }}</h2>
-                  <p class="pdm-subtitle" v-if="altTitle(detail)">{{ altTitle(detail) }}</p>
-
-                  <div class="pdm-langs">
-                    <span v-for="l in (detail.contentLanguages||[])" :key="l" class="pdm-lang" :class="`pdm-lang--${l.toLowerCase()}`">
-                      {{ l === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
-                    </span>
-                  </div>
-
-                  <RouterLink class="pdm-edit-btn" :to="`/admin/image-collections/${detail.id}/edit`" @click="closeDetail">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
-                    دەستکاری کۆکراوە
-                  </RouterLink>
+              <!-- ── Bilingual Content ── -->
+              <!-- ImageContent fields: title, description, location, collectedBy (no topic) -->
+              <div class="dk__section" v-if="detailItem.ckbContent || detailItem.kmrContent">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  ناوەڕۆک و زانیاری
+                  <span class="dk__sec-count" v-if="[detailItem.ckbContent, detailItem.kmrContent].filter(Boolean).length">
+                    {{ [detailItem.ckbContent, detailItem.kmrContent].filter(Boolean).length }} زمان
+                  </span>
                 </div>
 
-                <!-- Language tabs -->
-                <div class="pdm-tabs" v-if="(detail.contentLanguages||[]).length > 1">
-                  <button v-for="l in (detail.contentLanguages||[])" :key="l" class="pdm-tab" :class="{ 'pdm-tab--on': detailLang === l }" @click="detailLang = l">
-                    <span class="pdm-tab__pip" :class="`pdm-tab__pip--${l.toLowerCase()}`"></span>
-                    {{ l === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
-                  </button>
+                <div class="dk__content-grid" :class="{ 'dk__content-grid--single': !(detailItem.ckbContent && detailItem.kmrContent) }">
+
+                  <!-- ── CKB Content Column ── -->
+                  <div class="dk__content-col" v-if="detailItem.ckbContent">
+                    <div class="dk__lang-tag dk__lang-tag--ckb">🟡 سۆرانی (CKB)</div>
+                    <div class="dk__content-title" v-if="detailItem.ckbContent.title">{{ detailItem.ckbContent.title }}</div>
+                    <p v-if="detailItem.ckbContent.description" class="dk__desc">{{ detailItem.ckbContent.description }}</p>
+                    <div class="dk__meta-rows">
+                      <div class="dk__meta-row" v-if="detailItem.ckbContent.location">
+                        <span class="dk__meta-k">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          شوێن
+                        </span>
+                        <span class="dk__meta-v">{{ detailItem.ckbContent.location }}</span>
+                      </div>
+                      <div class="dk__meta-row" v-if="detailItem.ckbContent.collectedBy">
+                        <span class="dk__meta-k">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          کۆکەر
+                        </span>
+                        <span class="dk__meta-v">{{ detailItem.ckbContent.collectedBy }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ── KMR Content Column ── -->
+                  <div class="dk__content-col" v-if="detailItem.kmrContent">
+                    <div class="dk__lang-tag dk__lang-tag--kmr">🔵 Kurmancî (KMR)</div>
+                    <div class="dk__content-title" v-if="detailItem.kmrContent.title">{{ detailItem.kmrContent.title }}</div>
+                    <p v-if="detailItem.kmrContent.description" class="dk__desc">{{ detailItem.kmrContent.description }}</p>
+                    <div class="dk__meta-rows">
+                      <div class="dk__meta-row" v-if="detailItem.kmrContent.location">
+                        <span class="dk__meta-k">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          Cih
+                        </span>
+                        <span class="dk__meta-v">{{ detailItem.kmrContent.location }}</span>
+                      </div>
+                      <div class="dk__meta-row" v-if="detailItem.kmrContent.collectedBy">
+                        <span class="dk__meta-k">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                          Berhevkar
+                        </span>
+                        <span class="dk__meta-v">{{ detailItem.kmrContent.collectedBy }}</span>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
+              </div>
 
-                <div class="pdm-info__body">
-
-                  <!-- Description -->
-                  <div class="acc" v-if="activeContent(detail)?.description">
-                    <button class="acc__hd" @click="toggleAcc('desc')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--desc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span><span class="acc__title">وەسف</span></span>
-                      <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('desc') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('desc')" class="acc__body">
-                        <p class="acc__text acc__text--desc">{{ activeContent(detail).description }}</p>
+              <!-- ── Image Album ── -->
+              <div class="dk__section" v-if="detailItem.imageAlbum?.length">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
+                  وێنەکانی ئەلبووم
+                  <span class="dk__sec-count">{{ detailItem.imageAlbum.length }}</span>
+                </div>
+                <div class="dk__album-grid">
+                  <div v-for="(img, i) in detailItem.imageAlbum" :key="img.id || i" class="dk__album-item">
+                    <div class="dk__album-num">{{ i + 1 }}</div>
+                    <div class="dk__album-img-wrap">
+                      <img v-if="img.imageUrl || img.externalUrl" :src="img.imageUrl || img.externalUrl" loading="lazy" @error="e => e.target.style.display='none'" />
+                      <div v-else class="dk__album-img-empty">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                       </div>
-                    </Transition>
-                  </div>
-
-                  <!-- Topic / Location / CollectedBy -->
-                  <div class="acc" v-if="activeContent(detail)?.topic || activeContent(detail)?.location || activeContent(detail)?.collectedBy">
-                    <button class="acc__hd" @click="toggleAcc('meta')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--meta"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span><span class="acc__title">زانیاری زیاتر</span></span>
-                      <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('meta') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('meta')" class="acc__body">
-                        <div class="acc__meta-grid">
-                          <div class="acc__meta-row" v-if="activeContent(detail)?.topic">
-                            <span class="acc__meta-k">بابەت</span>
-                            <span class="acc__meta-v">{{ activeContent(detail).topic }}</span>
-                          </div>
-                          <div class="acc__meta-row" v-if="activeContent(detail)?.location">
-                            <span class="acc__meta-k"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> شوێن</span>
-                            <span class="acc__meta-v">{{ activeContent(detail).location }}</span>
-                          </div>
-                          <div class="acc__meta-row" v-if="activeContent(detail)?.collectedBy">
-                            <span class="acc__meta-k"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> کۆکەر</span>
-                            <span class="acc__meta-v">{{ activeContent(detail).collectedBy }}</span>
-                          </div>
+                    </div>
+                    <div class="dk__album-meta">
+                      <div v-if="img.captionCkb || img.captionKmr" class="dk__album-captions">
+                        <div v-if="img.captionCkb" class="dk__album-cap-row">
+                          <span class="dk__album-lang-dot dk__album-lang-dot--ckb">CKB</span>
+                          <span class="dk__album-caption">{{ img.captionCkb }}</span>
+                        </div>
+                        <div v-if="img.captionKmr" class="dk__album-cap-row">
+                          <span class="dk__album-lang-dot dk__album-lang-dot--kmr">KMR</span>
+                          <span class="dk__album-caption">{{ img.captionKmr }}</span>
                         </div>
                       </div>
-                    </Transition>
-                  </div>
-
-                  <!-- Current image caption/description -->
-                  <div class="acc" v-if="albumItems.length && (currentAlbumItem.captionCkb || currentAlbumItem.captionKmr || currentAlbumItem.descriptionCkb || currentAlbumItem.descriptionKmr)">
-                    <button class="acc__hd" @click="toggleAcc('imginfo')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--img"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span><span class="acc__title">زانیاری وێنەی ئێستا</span></span>
-                      <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('imginfo') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('imginfo')" class="acc__body">
-                        <div class="acc__meta-grid">
-                          <div class="acc__meta-row" v-if="currentAlbumItem.captionCkb"><span class="acc__meta-k">کاپشن سۆرانی</span><span class="acc__meta-v">{{ currentAlbumItem.captionCkb }}</span></div>
-                          <div class="acc__meta-row" v-if="currentAlbumItem.captionKmr"><span class="acc__meta-k">کاپشن کورمانجی</span><span class="acc__meta-v">{{ currentAlbumItem.captionKmr }}</span></div>
-                          <div class="acc__meta-row" v-if="currentAlbumItem.descriptionCkb"><span class="acc__meta-k">وەسف سۆرانی</span><span class="acc__meta-v">{{ currentAlbumItem.descriptionCkb }}</span></div>
-                          <div class="acc__meta-row" v-if="currentAlbumItem.descriptionKmr"><span class="acc__meta-k">وەسف کورمانجی</span><span class="acc__meta-v">{{ currentAlbumItem.descriptionKmr }}</span></div>
+                      <div v-if="img.descriptionCkb || img.descriptionKmr" class="dk__album-descs">
+                        <div v-if="img.descriptionCkb" class="dk__album-desc-row">
+                          <span class="dk__album-lang-dot dk__album-lang-dot--ckb">CKB</span>
+                          <span class="dk__album-desc">{{ img.descriptionCkb }}</span>
+                        </div>
+                        <div v-if="img.descriptionKmr" class="dk__album-desc-row">
+                          <span class="dk__album-lang-dot dk__album-lang-dot--kmr">KMR</span>
+                          <span class="dk__album-desc">{{ img.descriptionKmr }}</span>
                         </div>
                       </div>
-                    </Transition>
-                  </div>
-
-                  <!-- Tags -->
-                  <div class="acc" v-if="activeTags(detail).length">
-                    <button class="acc__hd" @click="toggleAcc('tags')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--tag"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="acc__title">تاگەکان</span><span class="acc__badge acc__badge--tag">{{ activeTags(detail).length }}</span></span>
-                      <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('tags') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('tags')" class="acc__body">
-                        <div class="acc__chips"><span v-for="t in activeTags(detail)" :key="t" class="acc__chip acc__chip--tag">{{ t }}</span></div>
+                      <div class="dk__album-links">
+                        <a v-if="img.externalUrl" :href="img.externalUrl" target="_blank" class="dk__ext-link">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                          لینکی دەرەکی
+                        </a>
+                        <a v-if="img.embedUrl" :href="img.embedUrl" target="_blank" class="dk__ext-link dk__ext-link--embed">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                          Embed
+                        </a>
                       </div>
-                    </Transition>
+                    </div>
                   </div>
+                </div>
+              </div>
 
-                  <!-- Keywords -->
-                  <div class="acc" v-if="activeKeywords(detail).length">
-                    <button class="acc__hd" @click="toggleAcc('kw')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--kw"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span><span class="acc__title">کیووەردەکان</span><span class="acc__badge acc__badge--kw">{{ activeKeywords(detail).length }}</span></span>
-                      <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('kw') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('kw')" class="acc__body">
-                        <div class="acc__chips"><span v-for="t in activeKeywords(detail)" :key="t" class="acc__chip acc__chip--kw">{{ t }}</span></div>
-                      </div>
-                    </Transition>
+              <!-- ── Topic Card ── -->
+              <div class="dk__section" v-if="detailItem.topic">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                  موضوع / بابەت
+                </div>
+                <div class="dk__topic-card">
+                  <div class="dk__topic-icon">🏷</div>
+                  <div class="dk__topic-info">
+                    <span class="dk__topic-name">{{ detailItem.topic.nameCkb || '—' }}</span>
+                    <span v-if="detailItem.topic.nameKmr" class="dk__topic-name-alt">{{ detailItem.topic.nameKmr }}</span>
+                    <span class="dk__topic-id">ID: {{ detailItem.topic.id }}</span>
                   </div>
+                </div>
+              </div>
 
-                  <!-- System info -->
-                  <div class="acc acc--system">
-                    <button class="acc__hd acc__hd--system" @click="toggleAcc('sys')">
-                      <span class="acc__hd-left"><span class="acc__ico acc__ico--sys"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span><span class="acc__title">زانیاری سیستەم</span></span>
-                      <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('sys') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('sys')" class="acc__body acc__body--flush">
-                        <div class="acc__sys-grid">
-                          <div class="acc__sys-cell" v-if="detail.createdAt"><div class="acc__sys-k">دروستکراوە لە</div><div class="acc__sys-v">{{ fmtDatetime(detail.createdAt) }}</div></div>
-                          <div class="acc__sys-cell" v-if="detail.updatedAt"><div class="acc__sys-k">دواین نوێکردنەوە</div><div class="acc__sys-v">{{ fmtDatetime(detail.updatedAt) }}</div></div>
-                          <div class="acc__sys-cell acc__sys-cell--full"><div class="acc__sys-k">شناسەی یەکتا (ID)</div><div class="acc__sys-v acc__sys-v--mono">{{ detail.id }}</div></div>
-                          <div class="acc__sys-cell acc__sys-cell--full" v-if="detail.coverUrl"><div class="acc__sys-k">Cover URL</div><a :href="detail.coverUrl" target="_blank" class="acc__sys-v acc__sys-v--link">{{ detail.coverUrl }}</a></div>
-                        </div>
-                      </div>
-                    </Transition>
+              <!-- ── Tags & Keywords ── -->
+              <div class="dk__section" v-if="hasTags(detailItem)">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+                  تاگ و کلیلەوشەکان
+                </div>
+                <div class="dk__tags-grid">
+                  <div v-if="detailItem.tags?.ckb?.length" class="dk__tag-group">
+                    <span class="dk__tag-label">تاگ (سۆرانی)</span>
+                    <div class="dk__tag-list">
+                      <span v-for="t in detailItem.tags.ckb" :key="'tc'+t" class="dk__chip dk__chip--ckb">{{ t }}</span>
+                    </div>
                   </div>
+                  <div v-if="detailItem.tags?.kmr?.length" class="dk__tag-group">
+                    <span class="dk__tag-label">تاگ (کورمانجی)</span>
+                    <div class="dk__tag-list">
+                      <span v-for="t in detailItem.tags.kmr" :key="'tk'+t" class="dk__chip dk__chip--kmr">{{ t }}</span>
+                    </div>
+                  </div>
+                  <div v-if="detailItem.keywords?.ckb?.length" class="dk__tag-group">
+                    <span class="dk__tag-label">کلیلەوشە (سۆرانی)</span>
+                    <div class="dk__tag-list">
+                      <span v-for="k in detailItem.keywords.ckb" :key="'kc'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
+                    </div>
+                  </div>
+                  <div v-if="detailItem.keywords?.kmr?.length" class="dk__tag-group">
+                    <span class="dk__tag-label">کلیلەوشە (کورمانجی)</span>
+                    <div class="dk__tag-list">
+                      <span v-for="k in detailItem.keywords.kmr" :key="'kk'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
+              <!-- ── Language Cards ── -->
+              <div class="dk__section" v-if="detectedLangs(detailItem).length">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                  زمانی ناوەڕۆک
+                </div>
+                <div class="dk__lang-cards">
+                  <div v-for="lang in detectedLangs(detailItem)" :key="lang"
+                    class="dk__lang-card" :class="lang === 'CKB' ? 'dk__lang-card--ckb' : 'dk__lang-card--kmr'">
+                    <span class="dk__lang-card-flag">{{ lang === 'CKB' ? '🇮🇶' : '🌍' }}</span>
+                    <div class="dk__lang-card-info">
+                      <span class="dk__lang-card-code">{{ lang }}</span>
+                      <span class="dk__lang-card-name">{{ lang === 'CKB' ? 'کوردی سۆرانی' : 'Kurdî Kurmancî' }}</span>
+                    </div>
+                    <svg class="dk__lang-card-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── General Info Grid ── -->
+              <div class="dk__section">
+                <div class="dk__sec-head">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  زانیاری گشتی
+                </div>
+                <div class="dk__info-grid">
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">🆔</span>
+                    <div class="dk__info-data"><span class="dk__info-label">ناسنامە</span><span class="dk__info-value">#{{ detailItem.id }}</span></div>
+                  </div>
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">🗂️</span>
+                    <div class="dk__info-data"><span class="dk__info-label">جۆری کۆکراوە</span><span class="dk__info-value">{{ typeLabel(detailItem.collectionType) }}</span></div>
+                  </div>
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">🖼</span>
+                    <div class="dk__info-data"><span class="dk__info-label">کڤەری CKB</span><span class="dk__info-value" :class="detailItem.ckbCoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.ckbCoverUrl ? '✓ هەیە' : '— نییە' }}</span></div>
+                  </div>
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">🖼</span>
+                    <div class="dk__info-data"><span class="dk__info-label">کڤەری KMR</span><span class="dk__info-value" :class="detailItem.kmrCoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.kmrCoverUrl ? '✓ هەیە' : '— نییە' }}</span></div>
+                  </div>
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">🎨</span>
+                    <div class="dk__info-data"><span class="dk__info-label">Hover Image</span><span class="dk__info-value" :class="detailItem.hoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.hoverUrl ? '✓ هەیە' : '— نییە' }}</span></div>
+                  </div>
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">📸</span>
+                    <div class="dk__info-data"><span class="dk__info-label">ژمارەی وێنەکان</span><span class="dk__info-value">{{ detailItem.imageAlbum?.length || 0 }}</span></div>
+                  </div>
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">🏷</span>
+                    <div class="dk__info-data"><span class="dk__info-label">موضوع</span><span class="dk__info-value" :class="detailItem.topic ? 'dk__info-value--yes' : ''">{{ detailItem.topic ? (detailItem.topic.nameCkb || detailItem.topic.nameKmr) : '— نییە' }}</span></div>
+                  </div>
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">📅</span>
+                    <div class="dk__info-data"><span class="dk__info-label">بەرواری بڵاوکردنەوە</span><span class="dk__info-value">{{ detailItem.publishmentDate ? fmtDate(detailItem.publishmentDate) : '—' }}</span></div>
+                  </div>
+                  <div class="dk__info-item">
+                    <span class="dk__info-icon">📅</span>
+                    <div class="dk__info-data"><span class="dk__info-label">دروستکراوە</span><span class="dk__info-value">{{ fmtDateFull(detailItem.createdAt) }}</span></div>
+                  </div>
+                  <div class="dk__info-item" v-if="detailItem.updatedAt">
+                    <span class="dk__info-icon">🔄</span>
+                    <div class="dk__info-data"><span class="dk__info-label">دوایین نوێکردنەوە</span><span class="dk__info-value">{{ fmtDateFull(detailItem.updatedAt) }}</span></div>
+                  </div>
                 </div>
               </div>
 
             </div>
-          </Transition>
+
+            <!-- Footer -->
+            <div class="dk__foot">
+              <RouterLink :to="`/admin/image-collections/${detailItem.id}/edit`" class="btn btn--primary btn--sm">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                دەستکاریکردن
+              </RouterLink>
+              <button class="btn btn--ghost btn--sm" @click="detailItem = null">داخستن</button>
+            </div>
+          </div>
         </div>
       </Transition>
     </Teleport>
@@ -334,282 +520,103 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import api from '@/api.js'
 
-/* ── state ── */
-const items           = ref([])
-const loading         = ref(false)
-const error           = ref('')
-const searchQ         = ref('')
-const filterLang      = ref('')
-const filterType      = ref('')
-const delTarget       = ref(null)
-const deleting        = ref(false)
-const detail          = ref(null)
-const detailLang      = ref('CKB')
-const detailOverlayEl = ref(null)
-const imgIdx          = ref(0)
-const toast           = ref({ show: false, type: 'success', msg: '' })
-const openAccordions  = ref(new Set(['desc', 'meta', 'imginfo', 'tags', 'kw']))
-let searchTimer       = null
-let toastTimer        = null
+const items        = ref([])
+const loading      = ref(false)
+const error        = ref('')
+const searchQ      = ref('')
+const filterLang   = ref('')
+const filterType   = ref('')
+const filterTopic  = ref('')
+const delTarget    = ref(null)
+const deleting     = ref(false)
+const detailItem   = ref(null)
+const toast        = ref({ show: false, type: 'success', msg: '' })
+let   toastTimer   = null
 
-/* ── helpers ── */
-const ensureArray = (v) => Array.isArray(v) ? v : []
-const cleanUrl = (u) => (typeof u === 'string' ? u.trim() : '')
+// ── Normalize raw backend record ──────────────────────────────────────────────
+const normalize = (d = {}) => {
+  const out = { ...d }
 
-const decodeHtmlEntities = (str = '') =>
-  String(str)
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+  out.ckbCoverUrl = d.ckbCoverUrl   || ''
+  out.kmrCoverUrl = d.kmrCoverUrl   || ''
+  out.hoverUrl    = d.hoverCoverUrl || ''   // hoverCoverUrl → hoverUrl for template convenience
 
-const isHttpUrl = (u) => /^https?:\/\//i.test(cleanUrl(u))
+  out.topic = d.topicId
+    ? { id: d.topicId, nameCkb: d.topicNameCkb || '', nameKmr: d.topicNameKmr || '' }
+    : null
 
-const getUrlObj = (u) => {
-  try { return new URL(cleanUrl(u)) } catch { return null }
-}
+  out.contentLanguages = Array.isArray(d.contentLanguages) ? [...d.contentLanguages] : []
 
-const extractIframeSrcFromHtml = (raw = '') => {
-  const s = String(raw || '')
-  if (!/<iframe[\s\S]*?>/i.test(s)) return ''
-  const m = s.match(/src\s*=\s*["']([^"']+)["']/i)
-  return m?.[1] ? decodeHtmlEntities(m[1]) : ''
-}
+  out.tags     = { ckb: [...(d.tags?.ckb     || [])], kmr: [...(d.tags?.kmr     || [])] }
+  out.keywords = { ckb: [...(d.keywords?.ckb || [])], kmr: [...(d.keywords?.kmr || [])] }
 
-const extractGoogleDriveFileId = (raw = '') => {
-  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
-  const u = getUrlObj(input)
-  if (!u) return ''
-  if (!u.hostname.toLowerCase().includes('drive.google.com')) return ''
-
-  const m = u.pathname.match(/\/file\/d\/([^/]+)/)
-  if (m?.[1]) return m[1]
-
-  return u.searchParams.get('id') || ''
-}
-
-const extractDropboxRawUrl = (raw = '') => {
-  const input = extractIframeSrcFromHtml(raw) || decodeHtmlEntities(raw)
-  const u = getUrlObj(input)
-  if (!u) return ''
-  const host = u.hostname.toLowerCase()
-  if (!host.includes('dropbox.com')) return ''
-
-  u.searchParams.delete('dl')
-  u.searchParams.set('raw', '1')
-  return u.toString()
-}
-
-const toEmbeddableImageUrl = (raw = '') => {
-  let u = decodeHtmlEntities(cleanUrl(raw))
-  if (!u) return ''
-
-  const iframeSrc = extractIframeSrcFromHtml(u)
-  if (iframeSrc) u = iframeSrc
-
-  if (!isHttpUrl(u)) return ''
-
-  // Google Drive file preview
-  const gdid = extractGoogleDriveFileId(u)
-  if (gdid) return `https://drive.google.com/file/d/${gdid}/preview`
-
-  // Dropbox raw image file
-  const dropboxRaw = extractDropboxRawUrl(u)
-  if (dropboxRaw) return dropboxRaw
-
-  return u
-}
-
-/* ── normalize item from backend ── */
-const normalizeCollection = (c = {}) => {
-  const out = { ...c }
-
-  // multilingual content normalization
-  if (!out.ckbContent && out.content?.ckb) out.ckbContent = out.content.ckb
-  if (!out.kmrContent && out.content?.kmr) out.kmrContent = out.content.kmr
-
-  // infer content languages if backend omitted
-  if (!ensureArray(out.contentLanguages).length) {
-    const langs = []
-    if (out.ckbContent?.title || out.ckbContent?.description || out.content?.ckb) langs.push('CKB')
-    if (out.kmrContent?.title || out.kmrContent?.description || out.content?.kmr) langs.push('KMR')
-    out.contentLanguages = langs
-  }
-
-  // tags / keywords normalization
-  out.tags = out.tags || {}
-  out.tags.ckb = ensureArray(out.tags?.ckb || out.tagsCkb)
-  out.tags.kmr = ensureArray(out.tags?.kmr || out.tagsKmr)
-
-  out.keywords = out.keywords || {}
-  out.keywords.ckb = ensureArray(out.keywords?.ckb || out.keywordsCkb)
-  out.keywords.kmr = ensureArray(out.keywords?.kmr || out.keywordsKmr)
-
-  // cover normalization
-  out.coverUrl =
-    out.coverUrl ||
-    out.coverImageUrl ||
-    out.imageUrl ||
-    ''
-
-  // image album normalization (different possible names)
-  const rawAlbum = ensureArray(
-    out.imageAlbum?.length ? out.imageAlbum
-    : out.images?.length ? out.images
-    : out.albumItems?.length ? out.albumItems
-    : out.items?.length ? out.items
+  out.imageAlbum = Array.isArray(d.imageAlbum)
+    ? [...d.imageAlbum].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     : []
-  )
-
-  out.imageAlbum = rawAlbum.map((i = {}) => ({
-    ...i,
-    imageUrl: i.imageUrl || i.url || '',
-    externalUrl: i.externalUrl || i.link || '',
-    embedUrl: i.embedUrl || i.embed || '',
-    captionCkb: i.captionCkb || i.caption?.ckb || '',
-    captionKmr: i.captionKmr || i.caption?.kmr || '',
-    descriptionCkb: i.descriptionCkb || i.description?.ckb || '',
-    descriptionKmr: i.descriptionKmr || i.description?.kmr || '',
-    sortOrder: i.sortOrder ?? 0
-  }))
 
   return out
 }
 
-/* ── client-side filters ── */
+// ── Topics for filter dropdown ────────────────────────────────────────────────
+const availableTopics = computed(() => {
+  const seen = new Set()
+  const result = []
+  items.value.forEach(item => {
+    if (item.topic && !seen.has(item.topic.id)) {
+      seen.add(item.topic.id)
+      result.push(item.topic)
+    }
+  })
+  return result
+})
+
+// ── Filtered list ─────────────────────────────────────────────────────────────
 const filteredItems = computed(() => {
-  let list = ensureArray(items.value)
+  let list = items.value
 
   if (searchQ.value.trim()) {
     const q = searchQ.value.trim().toLowerCase()
-    list = list.filter(c => {
-      const t1 = (c.ckbContent?.title || '').toLowerCase()
-      const t2 = (c.kmrContent?.title || '').toLowerCase()
-      const d1 = (c.ckbContent?.description || '').toLowerCase()
-      const d2 = (c.kmrContent?.description || '').toLowerCase()
-      const tags = [...ensureArray(c.tags?.ckb), ...ensureArray(c.tags?.kmr)].join(' ').toLowerCase()
-      const kws  = [...ensureArray(c.keywords?.ckb), ...ensureArray(c.keywords?.kmr)].join(' ').toLowerCase()
-      return t1.includes(q) || t2.includes(q) || d1.includes(q) || d2.includes(q) || tags.includes(q) || kws.includes(q)
-    })
+    list = list.filter(c =>
+      (c.ckbContent?.title        || '').toLowerCase().includes(q) ||
+      (c.kmrContent?.title        || '').toLowerCase().includes(q) ||
+      (c.ckbContent?.description  || '').toLowerCase().includes(q) ||
+      (c.kmrContent?.description  || '').toLowerCase().includes(q) ||
+      (c.ckbContent?.collectedBy  || '').toLowerCase().includes(q) ||
+      (c.kmrContent?.collectedBy  || '').toLowerCase().includes(q) ||
+      (c.ckbContent?.location     || '').toLowerCase().includes(q) ||
+      (c.kmrContent?.location     || '').toLowerCase().includes(q) ||
+      (c.topic?.nameCkb           || '').toLowerCase().includes(q) ||
+      (c.topic?.nameKmr           || '').toLowerCase().includes(q) ||
+      [...(c.tags?.ckb || []), ...(c.tags?.kmr || [])].some(t => t.toLowerCase().includes(q)) ||
+      [...(c.keywords?.ckb || []), ...(c.keywords?.kmr || [])].some(k => k.toLowerCase().includes(q))
+    )
   }
 
-  if (filterLang.value) {
-    list = list.filter(c => ensureArray(c.contentLanguages).includes(filterLang.value))
-  }
-
-  if (filterType.value) {
-    list = list.filter(c => c.collectionType === filterType.value)
-  }
+  if (filterLang.value) list = list.filter(c => {
+    const langs = c.contentLanguages?.length
+      ? c.contentLanguages
+      : [c.ckbContent ? 'CKB' : null, c.kmrContent ? 'KMR' : null].filter(Boolean)
+    return langs.includes(filterLang.value)
+  })
+  if (filterType.value)  list = list.filter(c => c.collectionType === filterType.value)
+  if (filterTopic.value) list = list.filter(c => c.topic?.id === Number(filterTopic.value))
 
   return list
 })
 
-const toggleAcc = (key) => {
-  const s = new Set(openAccordions.value)
-  s.has(key) ? s.delete(key) : s.add(key)
-  openAccordions.value = s
-}
-
-/* ── album items for detail modal ── */
-const albumItems = computed(() => {
-  if (!detail.value) return []
-
-  const raw = ensureArray(detail.value.imageAlbum)
-    .slice()
-    .sort((a, b) => (a?.sortOrder ?? 0) - (b?.sortOrder ?? 0))
-
-  const list = raw.map(i => {
-    const primary = cleanUrl(i.imageUrl || i.externalUrl || i.embedUrl || '')
-    const displayUrl = toEmbeddableImageUrl(primary)
-
-    return {
-      displayUrl,
-      originalUrl: primary,
-      captionCkb: cleanUrl(i.captionCkb),
-      captionKmr: cleanUrl(i.captionKmr),
-      descriptionCkb: cleanUrl(i.descriptionCkb),
-      descriptionKmr: cleanUrl(i.descriptionKmr),
-    }
-  }).filter(i => i.displayUrl)
-
-  // Fallback to cover if no album images
-  if (!list.length) {
-    const cover = toEmbeddableImageUrl(detail.value.coverUrl)
-    if (cover) {
-      list.push({
-        displayUrl: cover,
-        originalUrl: detail.value.coverUrl || '',
-        captionCkb: '',
-        captionKmr: '',
-        descriptionCkb: '',
-        descriptionKmr: ''
-      })
-    }
-  }
-
-  return list
-})
-
-const currentAlbumItem = computed(() =>
-  albumItems.value[imgIdx.value] || {
-    displayUrl: '',
-    originalUrl: '',
-    captionCkb: '',
-    captionKmr: '',
-    descriptionCkb: '',
-    descriptionKmr: ''
-  }
-)
-
-const currentAlbumCaption = computed(() =>
-  detailLang.value === 'CKB'
-    ? currentAlbumItem.value.captionCkb
-    : currentAlbumItem.value.captionKmr
-)
-
-const currentAlbumDescription = computed(() =>
-  detailLang.value === 'CKB'
-    ? currentAlbumItem.value.descriptionCkb
-    : currentAlbumItem.value.descriptionKmr
-)
-
-watch(detail, async (v) => {
-  imgIdx.value = 0
-
-  if (v) {
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', onGlobalKeydown)
-    await nextTick()
-    detailOverlayEl.value?.focus?.()
-  } else {
-    document.body.style.overflow = ''
-    window.removeEventListener('keydown', onGlobalKeydown)
-  }
-})
-
-/* ── data loading ── */
+// ── Data loading ──────────────────────────────────────────────────────────────
 const load = async () => {
   loading.value = true
   error.value   = ''
   try {
     const { data } = await api.get('/api/v1/image-collections')
-
-    // Response: ApiResponse<List<Response>> OR paginated OR plain array
     const payload = data?.data ?? data ?? []
-
-    if (Array.isArray(payload)) {
-      items.value = payload.map(normalizeCollection)
-    } else if (Array.isArray(payload?.content)) {
-      items.value = payload.content.map(normalizeCollection)
-    } else if (Array.isArray(payload?.data?.content)) {
-      items.value = payload.data.content.map(normalizeCollection)
-    } else {
-      items.value = []
-    }
+    const arr = Array.isArray(payload) ? payload
+              : Array.isArray(payload?.content) ? payload.content : []
+    items.value = arr.map(normalize)
   } catch (e) {
     error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
   } finally {
@@ -617,88 +624,40 @@ const load = async () => {
   }
 }
 
-const onSearch = () => {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    // client-side only, computed handles filtering
-  }, 250)
-}
+// ── Detail modal ──────────────────────────────────────────────────────────────
+const openDetail = (c) => { detailItem.value = normalize(c) }
+const onKeydown  = (e) => { if (e.key === 'Escape' && detailItem.value) detailItem.value = null }
 
-const clearSearch = () => { searchQ.value = '' }
-
-/* ── delete ── */
+// ── Delete ────────────────────────────────────────────────────────────────────
 const confirmDelete = (c) => { delTarget.value = c }
 
 const doDelete = async () => {
   if (!delTarget.value) return
   deleting.value = true
-
-  const deletingId = delTarget.value.id
-
+  const id = delTarget.value.id
   try {
-    await api.delete(`/api/v1/image-collections/${deletingId}`)
+    await api.delete(`/api/v1/image-collections/${id}`)
     showToast('success', 'کۆکراوەکە بە سەرکەوتنی سڕایەوە')
-
-    if (detail.value?.id === deletingId) closeDetail()
-
+    if (detailItem.value?.id === id) detailItem.value = null
     delTarget.value = null
     await load()
   } catch (e) {
     showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
-  } finally {
-    deleting.value = false
-  }
+  } finally { deleting.value = false }
 }
 
-/* ── detail modal ── */
-const openDetail = (c) => {
-  const item = normalizeCollection(c)
-  detail.value     = item
-  detailLang.value = ensureArray(item.contentLanguages).includes('CKB')
-    ? 'CKB'
-    : (ensureArray(item.contentLanguages)[0] || 'CKB')
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const bestTitle = (c) => c?.ckbContent?.title || c?.kmrContent?.title || ''
+const hasTags   = (c) => c?.tags?.ckb?.length || c?.tags?.kmr?.length || c?.keywords?.ckb?.length || c?.keywords?.kmr?.length
 
-  openAccordions.value = new Set(['desc', 'meta', 'imginfo', 'tags', 'kw'])
+const detectedLangs = (c) => {
+  if (!c) return []
+  if (c.contentLanguages?.length) return c.contentLanguages
+  const langs = []
+  if (c.ckbContent && (c.ckbContent.title || c.ckbContent.description)) langs.push('CKB')
+  if (c.kmrContent && (c.kmrContent.title || c.kmrContent.description)) langs.push('KMR')
+  return langs
 }
-
-const closeDetail = () => {
-  detail.value = null
-}
-
-const onGlobalKeydown = (e) => {
-  if (e.key === 'Escape' && detail.value) closeDetail()
-  if (e.key === 'ArrowLeft' && detail.value) prevImg()
-  if (e.key === 'ArrowRight' && detail.value) nextImg()
-}
-
-const prevImg = () => { if (imgIdx.value > 0) imgIdx.value-- }
-const nextImg = () => { if (imgIdx.value < albumItems.value.length - 1) imgIdx.value++ }
-
-/* ── helpers ── */
-const bestTitle  = (c) =>
-  c?.ckbContent?.title || c?.kmrContent?.title || c?.content?.ckb?.title || c?.content?.kmr?.title || ''
-
-const altTitle   = (c) => {
-  const ckb = c?.ckbContent?.title || c?.content?.ckb?.title || ''
-  const kmr = c?.kmrContent?.title || c?.content?.kmr?.title || ''
-  if (ckb && kmr && ckb !== kmr) return detailLang.value === 'CKB' ? kmr : ckb
-  return ''
-}
-
-const activeContent  = (c) =>
-  detailLang.value === 'CKB'
-    ? (c?.ckbContent || c?.content?.ckb || {})
-    : (c?.kmrContent || c?.content?.kmr || {})
-
-const activeTags = (c) =>
-  detailLang.value === 'CKB'
-    ? [...ensureArray(c?.tags?.ckb || c?.tagsCkb)]
-    : [...ensureArray(c?.tags?.kmr || c?.tagsKmr)]
-
-const activeKeywords = (c) =>
-  detailLang.value === 'CKB'
-    ? [...ensureArray(c?.keywords?.ckb || c?.keywordsCkb)]
-    : [...ensureArray(c?.keywords?.kmr || c?.keywordsKmr)]
 
 const typeLabel = (t) => ({
   SINGLE: 'تەنها وێنە',
@@ -712,27 +671,20 @@ const showToast = (type, msg) => {
   toastTimer = setTimeout(() => { toast.value.show = false }, 3500)
 }
 
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('ar-IQ') : '—'
+const fmtDate = (d) => {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('ckb', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+const fmtDateFull = (d) => {
+  if (!d) return '—'
+  const dt = new Date(d)
+  return dt.toLocaleDateString('ckb', { year: 'numeric', month: 'long', day: 'numeric' })
+    + '  ·  '
+    + dt.toLocaleTimeString('ckb', { hour: '2-digit', minute: '2-digit' })
+}
 
-const fmtDatetime = (d) =>
-  d
-    ? new Date(d).toLocaleString('ar-IQ', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    : '—'
-
-onMounted(load)
-
-onBeforeUnmount(() => {
-  clearTimeout(searchTimer)
-  clearTimeout(toastTimer)
-  document.body.style.overflow = ''
-  window.removeEventListener('keydown', onGlobalKeydown)
-})
+onMounted(() => { load(); window.addEventListener('keydown', onKeydown) })
+onBeforeUnmount(() => { clearTimeout(toastTimer); window.removeEventListener('keydown', onKeydown) })
 </script>
 
 <style scoped>
@@ -740,6 +692,7 @@ onBeforeUnmount(() => {
 .icl__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; gap:1rem; flex-wrap:wrap; }
 .icl__title { font-size:1.55rem; font-weight:700; color:var(--text); }
 .icl__sub { color:var(--muted); font-size:.83rem; margin-top:.2rem; }
+
 .btn { display:inline-flex; align-items:center; gap:.45rem; padding:.65rem 1.1rem; border-radius:var(--radius-sm); font-weight:700; font-size:.87rem; cursor:pointer; border:1px solid transparent; transition:var(--transition); text-decoration:none; white-space:nowrap; font-family:inherit; }
 .btn--primary { background:var(--crimson); color:#fff; box-shadow:0 6px 20px rgba(140,21,21,.22); }
 .btn--primary:hover { background:var(--crimson-lt); transform:translateY(-1px); }
@@ -749,6 +702,7 @@ onBeforeUnmount(() => {
 .btn--danger:hover { background:#a93226; }
 .btn--sm { padding:.45rem .85rem; font-size:.82rem; }
 .btn:disabled { opacity:.5; cursor:not-allowed; transform:none!important; }
+
 .icl__bar { display:flex; gap:.75rem; margin-bottom:1.25rem; flex-wrap:wrap; }
 .search { flex:1; min-width:200px; position:relative; display:flex; align-items:center; }
 .search__ico { position:absolute; right:.85rem; color:var(--muted); pointer-events:none; }
@@ -758,15 +712,20 @@ onBeforeUnmount(() => {
 .search__clear:hover { background:var(--crimson); border-color:var(--crimson); color:#fff; }
 .sel { padding:.65rem .9rem; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--white); color:var(--text); font-size:.87rem; outline:none; cursor:pointer; transition:var(--transition); font-family:inherit; }
 .sel:focus { border-color:var(--crimson); }
+
 .toast { display:flex; align-items:center; gap:.65rem; padding:.75rem 1.1rem; border-radius:var(--radius-sm); font-weight:600; font-size:.87rem; margin-bottom:1rem; }
 .toast--success { background:rgba(22,120,70,.09); border:1px solid rgba(22,120,70,.22); color:#166044; }
 .toast--error   { background:rgba(140,21,21,.07); border:1px solid rgba(140,21,21,.18); color:var(--crimson); }
+.toast__ico { font-size:1rem; }
+
 .skeletons { display:flex; flex-direction:column; gap:.55rem; }
 .skel { height:58px; border-radius:var(--radius-sm); background:linear-gradient(90deg,var(--cream-dk) 25%,#eae8e4 50%,var(--cream-dk) 75%); background-size:200% 100%; animation:shimmer 1.4s ease infinite; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
 .state-box { display:flex; flex-direction:column; align-items:center; gap:.85rem; padding:4rem 2rem; color:var(--muted); text-align:center; background:var(--white); border:1px solid var(--border); border-radius:var(--radius-md); font-size:.9rem; }
 .state-box--error { color:var(--crimson); }
 .state-box__ico { width:58px; height:58px; border-radius:50%; background:var(--cream-dk); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; }
+
 .table-meta { font-size:.8rem; color:var(--muted); padding:.6rem .9rem; background:var(--cream-dk); border-bottom:1px solid var(--border); }
 .table-wrap { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; box-shadow:var(--shadow-sm); }
 .tbl { width:100%; border-collapse:collapse; font-size:.87rem; }
@@ -781,34 +740,168 @@ onBeforeUnmount(() => {
 .tbl__name--kmr { font-weight:500; color:var(--muted); }
 .tbl__date { font-size:.82rem; color:var(--muted); white-space:nowrap; }
 .tbl__dash { color:var(--border); }
-.cover-wrap { width:50px; height:38px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
-.cover-img { width:100%; height:100%; object-fit:cover; display:block; }
-.cover-empty { width:50px; height:38px; border-radius:8px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--border); }
 
-/* Collection Type Pills */
+.cover-wrap { width:50px; height:38px; border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative; }
+.cover-img { width:100%; height:100%; object-fit:cover; display:block; position:absolute; inset:0; transition:opacity .2s, transform .2s; }
+.cover-img--base  { opacity:1; transform:scale(1); }
+.cover-img--hover { opacity:0; transform:scale(1.05); }
+.cover-wrap:hover .cover-img--hover { opacity:1; transform:scale(1); }
+.cover-wrap:hover .cover-img--base  { opacity:0; }
+.cover-empty { width:50px; height:38px; border-radius:8px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--border); }
+.cover-hover-badge { position:absolute; bottom:2px; left:2px; width:14px; height:14px; border-radius:3px; background:rgba(124,58,237,.85); color:#fff; font-size:.55rem; font-weight:900; display:flex; align-items:center; justify-content:center; z-index:5; pointer-events:none; }
+
 .type-pill { display:inline-flex; align-items:center; gap:.3rem; padding:.22rem .65rem; border-radius:99px; font-size:.73rem; font-weight:700; white-space:nowrap; }
-.type-pill--single     { background:rgba(40,90,220,.08); color:#1a47a0; border:1px solid rgba(40,90,220,.18); }
-.type-pill--gallery    { background:rgba(140,21,21,.08); color:var(--crimson); border:1px solid rgba(140,21,21,.14); }
-.type-pill--photo_story{ background:rgba(80,40,140,.08); color:#5028a0; border:1px solid rgba(80,40,140,.16); }
+.type-pill--single      { background:rgba(40,90,220,.08); color:#1a47a0; border:1px solid rgba(40,90,220,.18); }
+.type-pill--gallery     { background:rgba(140,21,21,.08); color:var(--crimson); border:1px solid rgba(140,21,21,.14); }
+.type-pill--photo_story { background:rgba(80,40,140,.08); color:#5028a0; border:1px solid rgba(80,40,140,.16); }
+
+.topic-pill { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .6rem; border-radius:99px; background:rgba(140,21,21,.07); color:var(--crimson); border:1px solid rgba(140,21,21,.15); font-size:.75rem; font-weight:700; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 .lang-dot { display:inline-flex; padding:.18rem .5rem; border-radius:6px; font-size:.72rem; font-weight:700; }
 .lang-dot--ckb { background:rgba(254,221,0,.2); color:#806e00; border:1px solid rgba(254,221,0,.4); }
 .lang-dot--kmr { background:rgba(30,90,200,.1); color:#1a47a0; border:1px solid rgba(30,90,200,.2); }
 .lang-row { display:flex; gap:.3rem; flex-wrap:wrap; }
 .img-pill { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem; color:var(--muted); font-weight:600; }
+
 .tbl__acts { display:flex; gap:.35rem; }
 .act { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--cream); color:var(--muted); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; transition:var(--transition); }
 .act--view:hover { background:rgba(30,90,200,.08); border-color:rgba(30,90,200,.28); color:#1a47a0; }
 .act--edit:hover { background:rgba(30,150,80,.08); border-color:rgba(30,150,80,.28); color:#166044; }
 .act--del:hover  { background:rgba(140,21,21,.08); border-color:rgba(140,21,21,.25); color:var(--crimson); }
+
 .overlay { position:fixed; inset:0; z-index:200; background:rgba(20,10,10,.5); display:flex; align-items:center; justify-content:center; padding:1rem; }
 .del-modal { background:var(--white); border-radius:var(--radius-lg); padding:2rem; max-width:400px; width:100%; box-shadow:0 30px 80px rgba(0,0,0,.25); text-align:center; }
 .del-modal__ico { width:62px; height:62px; border-radius:50%; background:rgba(140,21,21,.07); border:1px solid rgba(140,21,21,.14); display:flex; align-items:center; justify-content:center; margin:0 auto .85rem; }
 .del-modal__title { font-size:1.15rem; font-weight:700; margin-bottom:.5rem; }
 .del-modal__body { color:var(--muted); font-size:.9rem; line-height:1.7; margin-bottom:1.5rem; }
 .del-modal__acts { display:flex; gap:.75rem; justify-content:center; }
-.spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; }
+.spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; display:inline-block; }
 @keyframes spin { to { transform:rotate(360deg) } }
+
+/* ── Detail Modal ── */
+.dk-bg { position:fixed; inset:0; z-index:1000; background:rgba(10,8,6,.6); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:1rem; }
+.dk { background:#FDFCFB; border-radius:20px; width:100%; max-width:820px; max-height:92vh; overflow-y:auto; box-shadow:0 32px 80px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.06); position:relative; animation:dk-enter .35s cubic-bezier(.16,1,.3,1) both; }
+@keyframes dk-enter { from{opacity:0;transform:scale(.95) translateY(16px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+.dk__close { position:absolute; top:12px; left:12px; z-index:20; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.08); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.2s; color:#6E6B66; }
+.dk__close:hover { background:#fff; color:#2E2D29; transform:scale(1.08); }
+
+.dk__hero { position:relative; min-height:240px; background:linear-gradient(135deg,#1a0505 0%,#4a1010 40%,#8C1515 100%); background-size:cover; background-position:center; border-radius:20px 20px 0 0; overflow:hidden; }
+.dk__hero-hover { position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity .22s ease; pointer-events:none; }
+.dk__hero:hover .dk__hero-hover { opacity:1; }
+.dk__hero-grain { position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; }
+.dk__hero-gradient { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.3) 40%,transparent 70%); pointer-events:none; }
+.dk__hero-content { position:relative; z-index:5; padding:1.5rem 1.5rem 1.3rem; display:flex; flex-direction:column; justify-content:flex-end; min-height:240px; gap:.55rem; }
+.dk__hero-badges { display:flex; flex-wrap:wrap; gap:.35rem; }
+.dk__badge { display:inline-flex; align-items:center; gap:.25rem; padding:.22rem .6rem; border-radius:99px; font-size:.72rem; font-weight:700; backdrop-filter:blur(8px); }
+.dk__badge--type  { background:rgba(255,255,255,.15); color:rgba(255,255,255,.9); border:1px solid rgba(255,255,255,.18); }
+.dk__badge--topic { background:rgba(140,21,21,.4); color:#fecdd3; border:1px solid rgba(255,255,255,.15); }
+.dk__badge--hover { background:rgba(124,58,237,.35); color:#e9d5ff; border:1px solid rgba(124,58,237,.4); }
+.dk__badge--lang  { background:rgba(255,255,255,.12); color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.2); font-size:.7rem; }
+.dk__hero-title    { color:#fff; font-size:1.45rem; font-weight:900; margin:0; line-height:1.35; letter-spacing:-.01em; }
+.dk__hero-subtitle { color:rgba(255,255,255,.6); font-size:.88rem; margin:0; font-weight:600; }
+.dk__hero-stats { display:flex; gap:.9rem; margin-top:.25rem; flex-wrap:wrap; }
+.dk__stat { display:inline-flex; align-items:center; gap:.3rem; font-size:.76rem; font-weight:700; color:rgba(255,255,255,.7); }
+
+.dk__body { padding:1.4rem 1.5rem; display:flex; flex-direction:column; gap:1.5rem; }
+.dk__sec-head { display:flex; align-items:center; gap:.5rem; font-size:.82rem; font-weight:800; color:#8C1515; text-transform:uppercase; letter-spacing:.06em; padding-bottom:.6rem; border-bottom:2px solid rgba(140,21,21,.1); margin-bottom:.85rem; flex-wrap:wrap; }
+.dk__sec-count { background:rgba(140,21,21,.08); border:1px solid rgba(140,21,21,.15); border-radius:99px; padding:.1rem .5rem; font-size:.72rem; color:#8C1515; }
+
+.dk__covers-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.85rem; }
+@media (max-width:600px) { .dk__covers-grid { grid-template-columns:1fr 1fr; } }
+.dk__cover-item { display:flex; flex-direction:column; gap:.4rem; }
+.dk__cover-item--empty { opacity:.45; }
+.dk__cover-label { display:inline-flex; padding:.18rem .55rem; border-radius:6px; font-size:.7rem; font-weight:800; align-self:flex-start; }
+.dk__cover-label--ckb   { background:rgba(200,168,0,.12); color:#8a7000; border:1px solid rgba(200,168,0,.2); }
+.dk__cover-label--kmr   { background:rgba(74,122,240,.1);  color:#2d5ac0; border:1px solid rgba(74,122,240,.18); }
+.dk__cover-label--hover { background:rgba(124,58,237,.08); color:#6d28d9; border:1px solid rgba(124,58,237,.18); }
+.dk__cover-img-wrap { border-radius:10px; overflow:hidden; border:1px solid #E8E5E0; aspect-ratio:1/1; background:#F0EEEB; display:flex; align-items:center; justify-content:center; }
+.dk__cover-img-wrap--hover { border-style:dashed; border-color:rgba(124,58,237,.3); background:rgba(124,58,237,.04); }
+.dk__cover-img-wrap--empty { flex-direction:column; gap:.35rem; color:#C0BDB8; font-size:.75rem; font-weight:600; }
+.dk__cover-img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+
+.dk__content-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+@media (max-width:600px) { .dk__content-grid { grid-template-columns:1fr; } }
+.dk__content-col { padding:1rem; border-radius:12px; background:#fff; border:1px solid #EEECE8; }
+.dk__lang-tag { display:inline-flex; padding:.18rem .55rem; border-radius:6px; font-size:.7rem; font-weight:800; margin-bottom:.65rem; }
+.dk__lang-tag--ckb { background:rgba(200,168,0,.12); color:#8a7000; border:1px solid rgba(200,168,0,.2); }
+.dk__lang-tag--kmr { background:rgba(74,122,240,.1);  color:#2d5ac0; border:1px solid rgba(74,122,240,.18); }
+.dk__desc { font-size:.88rem; color:#3E3C38; line-height:1.7; margin:0 0 .65rem; }
+.dk__meta-rows { display:flex; flex-direction:column; gap:.4rem; }
+.dk__meta-row { display:flex; align-items:baseline; gap:.65rem; font-size:.85rem; }
+.dk__meta-k { flex:0 0 auto; font-size:.73rem; font-weight:700; color:#B0ADA7; display:inline-flex; align-items:center; gap:.25rem; min-width:55px; }
+.dk__meta-v { color:#2E2D29; font-weight:600; }
+.dk__content-title { font-size:1rem; font-weight:800; color:#2E2D29; margin-bottom:.5rem; line-height:1.4; }
+.dk__content-grid--single { grid-template-columns:1fr; }
+
+.dk__album-grid { display:flex; flex-direction:column; gap:.65rem; }
+.dk__album-item { display:flex; gap:.75rem; padding:.8rem 1rem; background:#fff; border:1px solid #EEECE8; border-radius:12px; transition:.15s; }
+.dk__album-item:hover { border-color:rgba(140,21,21,.2); box-shadow:0 2px 12px rgba(140,21,21,.06); }
+.dk__album-num { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#8C1515,#a31d1d); color:#fff; font-size:.72rem; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.dk__album-img-wrap { width:72px; height:60px; border-radius:8px; overflow:hidden; border:1px solid #E8E5E0; background:#F0EEEB; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.dk__album-img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+.dk__album-img-empty { display:flex; align-items:center; justify-content:center; width:100%; height:100%; color:#C0BDB8; }
+.dk__album-meta { flex:1; min-width:0; display:flex; flex-direction:column; gap:.25rem; }
+.dk__album-caption { font-weight:700; font-size:.88rem; color:#2E2D29; }
+.dk__album-desc { font-size:.82rem; color:#767571; line-height:1.5; }
+.dk__album-links { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.25rem; }
+.dk__ext-link { display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; font-weight:700; color:#4338ca; text-decoration:none; padding:.28rem .6rem; border-radius:7px; background:rgba(67,56,202,.06); border:1px solid rgba(67,56,202,.12); transition:.15s; }
+.dk__ext-link:hover { background:rgba(67,56,202,.12); }
+.dk__ext-link--embed { color:#7c3aed; background:rgba(124,58,237,.06); border-color:rgba(124,58,237,.12); }
+
+.dk__topic-card { display:flex; align-items:center; gap:.75rem; padding:.9rem 1rem; border-radius:12px; background:rgba(140,21,21,.04); border:1.5px solid rgba(140,21,21,.12); }
+.dk__topic-icon { font-size:1.4rem; }
+.dk__topic-info { display:flex; flex-direction:column; gap:.15rem; }
+.dk__topic-name { font-weight:800; font-size:.92rem; color:#8C1515; }
+.dk__topic-name-alt { font-size:.82rem; color:#767571; font-weight:600; }
+.dk__topic-id { font-size:.72rem; color:#B0ADA7; font-weight:600; }
+
+.dk__tags-grid { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
+@media (max-width:600px) { .dk__tags-grid { grid-template-columns:1fr; } }
+.dk__tag-group { display:flex; flex-direction:column; gap:.4rem; }
+.dk__tag-label { font-size:.74rem; font-weight:700; color:#9E9A94; }
+.dk__tag-list { display:flex; flex-wrap:wrap; gap:.3rem; }
+.dk__chip { display:inline-flex; padding:.22rem .6rem; border-radius:8px; font-size:.78rem; font-weight:700; }
+.dk__chip--ckb { background:rgba(140,21,21,.07);  color:#8C1515; border:1px solid rgba(140,21,21,.12); }
+.dk__chip--kmr { background:rgba(67,56,202,.07);  color:#4338ca; border:1px solid rgba(67,56,202,.12); }
+.dk__chip--kw  { background:rgba(15,118,110,.07); color:#0f766e; border:1px solid rgba(15,118,110,.12); }
+
+.dk__lang-cards { display:flex; gap:.75rem; flex-wrap:wrap; }
+.dk__lang-card { display:flex; align-items:center; gap:.75rem; padding:.85rem 1.1rem; border-radius:12px; flex:1; min-width:160px; }
+.dk__lang-card--ckb { background:rgba(200,168,0,.07); border:1.5px solid rgba(200,168,0,.2); }
+.dk__lang-card--kmr { background:rgba(74,122,240,.06); border:1.5px solid rgba(74,122,240,.18); }
+.dk__lang-card-flag { font-size:1.4rem; flex-shrink:0; }
+.dk__lang-card-info { display:flex; flex-direction:column; gap:.1rem; flex:1; }
+.dk__lang-card-code { font-size:.7rem; font-weight:800; letter-spacing:.06em; }
+.dk__lang-card--ckb .dk__lang-card-code { color:#8a7000; }
+.dk__lang-card--kmr .dk__lang-card-code { color:#2d5ac0; }
+.dk__lang-card-name { font-size:.86rem; font-weight:700; color:#2E2D29; }
+.dk__lang-card-check { flex-shrink:0; }
+.dk__lang-card--ckb .dk__lang-card-check { color:#ca8a04; }
+.dk__lang-card--kmr .dk__lang-card-check { color:#3b6fd4; }
+
+.dk__info-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid #EEECE8; border-radius:12px; overflow:hidden; background:#fff; }
+@media (max-width:500px) { .dk__info-grid { grid-template-columns:1fr; } }
+.dk__info-item { display:flex; align-items:flex-start; gap:.65rem; padding:.75rem 1rem; border-bottom:1px solid #F5F3F0; border-left:1px solid #F5F3F0; }
+.dk__info-item:nth-child(odd) { border-left:none; }
+.dk__info-item:last-child,.dk__info-item:nth-last-child(2):nth-child(odd) { border-bottom:none; }
+.dk__info-icon { font-size:1rem; flex-shrink:0; margin-top:.1rem; }
+.dk__info-data { display:flex; flex-direction:column; gap:.1rem; min-width:0; }
+.dk__info-label { font-size:.72rem; font-weight:700; color:#9E9A94; text-transform:uppercase; letter-spacing:.04em; }
+.dk__info-value { font-size:.86rem; font-weight:700; color:#2E2D29; word-break:break-word; }
+.dk__info-value--yes { color:#0f766e; }
+
+.dk__foot { padding:1rem 1.5rem; border-top:1px solid #F0EEEB; display:flex; gap:.6rem; background:#FDFCFB; border-radius:0 0 20px 20px; position:sticky; bottom:0; }
+
+.dk__album-captions,.dk__album-descs { display:flex; flex-direction:column; gap:.18rem; }
+.dk__album-captions { margin-bottom:.1rem; }
+.dk__album-cap-row,.dk__album-desc-row { display:flex; align-items:baseline; gap:.4rem; }
+.dk__album-lang-dot { flex-shrink:0; font-size:.62rem; font-weight:800; padding:.1rem .35rem; border-radius:5px; line-height:1.4; }
+.dk__album-lang-dot--ckb { background:rgba(140,21,21,.08); color:#8C1515; border:1px solid rgba(140,21,21,.12); }
+.dk__album-lang-dot--kmr { background:rgba(67,56,202,.08); color:#4338ca; border:1px solid rgba(67,56,202,.12); }
+.dk__album-cap-row .dk__album-caption { font-weight:700; font-size:.86rem; color:#2E2D29; }
+.dk__album-desc-row .dk__album-desc   { font-size:.8rem; color:#767571; line-height:1.5; }
+
 .fade-enter-active,.fade-leave-active { transition:opacity .15s }
 .fade-enter-from,.fade-leave-to { opacity:0 }
 .slide-down-enter-active,.slide-down-leave-active { transition:.3s ease }
@@ -817,109 +910,5 @@ onBeforeUnmount(() => {
 .modal-enter-from,.modal-leave-to { opacity:0 }
 .modal-enter-active .del-modal,.modal-leave-active .del-modal { transition:.25s ease }
 .modal-enter-from .del-modal,.modal-leave-to .del-modal { transform:scale(.94) translateY(8px) }
-
-/* ════ DETAIL MODAL ════ */
-.pdm-overlay { position:fixed; inset:0; z-index:400; background:rgba(5,2,2,.78); backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:1.5rem; overflow-y:auto; }
-.pdm { position:relative; width:100%; max-width:1080px; max-height:calc(100vh - 3rem); background:#141010; border-radius:20px; overflow:hidden; display:grid; grid-template-columns:1fr 420px; box-shadow:0 0 0 1px rgba(255,255,255,.07),0 40px 120px rgba(0,0,0,.75); }
-@media (max-width:820px) { .pdm { grid-template-columns:1fr; max-height:none; } }
-.pdm-x { position:absolute; top:1rem; left:1rem; z-index:50; width:36px; height:36px; border-radius:50%; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.85); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .22s ease; backdrop-filter:blur(8px); }
-.pdm-x:hover { background:rgba(140,21,21,.8); color:#fff; transform:rotate(90deg) scale(1.08); }
-.pdm-media { display:flex; flex-direction:column; background:#0c0808; position:relative; min-height:480px; }
-.pdm-media__empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.75rem; color:rgba(255,255,255,.25); font-size:.85rem; padding:2rem; position:relative; }
-.pdm-media__empty-icon { width:72px; height:72px; border-radius:50%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; }
-.pdm-media__cover-fallback { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.18; }
-.pdm-stage { flex:1; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:360px; }
-.pdm-stage__image-wrap { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; min-height:360px; }
-.pdm-stage__image { max-width:100%; max-height:500px; object-fit:contain; display:block; animation:pdm-img-in .35s ease; }
-@keyframes pdm-img-in { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
-.pdm-stage__caption { position:absolute; bottom:0; left:0; right:0; padding:.65rem 1rem; background:linear-gradient(transparent,rgba(0,0,0,.82)); color:rgba(255,255,255,.82); font-size:.8rem; font-weight:500; }
-.pdm-arrow { position:absolute; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.85); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s ease; backdrop-filter:blur(6px); z-index:10; }
-.pdm-arrow--prev { right:1rem; }
-.pdm-arrow--next { left:1rem; }
-.pdm-arrow:hover:not(:disabled) { background:rgba(140,21,21,.75); transform:translateY(-50%) scale(1.08); }
-.pdm-arrow:disabled { opacity:.2; cursor:default; }
-.pdm-counter { position:absolute; bottom:1rem; right:1rem; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.65); font-size:.72rem; font-weight:700; padding:.28rem .6rem; border-radius:99px; z-index:10; }
-.pdm-thumbs { flex:0 0 auto; display:flex; gap:.4rem; padding:.65rem .75rem; background:rgba(0,0,0,.4); border-top:1px solid rgba(255,255,255,.06); overflow-x:auto; scrollbar-width:none; }
-.pdm-thumbs::-webkit-scrollbar { display:none }
-.pdm-thumb { flex:0 0 64px; height:48px; border-radius:8px; overflow:hidden; border:2px solid transparent; background:rgba(255,255,255,.07); cursor:pointer; transition:all .2s ease; display:flex; align-items:center; justify-content:center; position:relative; padding:0; }
-.pdm-thumb:hover { border-color:rgba(255,255,255,.3); transform:translateY(-2px); }
-.pdm-thumb--on { border-color:#8c1515!important; box-shadow:0 0 0 1px rgba(140,21,21,.5); }
-.pdm-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-.pdm-thumb__icon { display:flex; align-items:center; justify-content:center; width:100%; height:100%; color:rgba(255,255,255,.4); }
-.pdm-thumb__bar { position:absolute; bottom:0; left:0; right:0; height:2px; background:#8c1515; }
-.pdm-info { display:flex; flex-direction:column; background:#faf8f5; border-right:1px solid rgba(0,0,0,.08); max-height:calc(100vh - 3rem); overflow:hidden; }
-.pdm-info__head { flex:0 0 auto; padding:1.6rem 1.4rem 1.1rem; background:#fff; border-bottom:1px solid #ece7df; }
-.pdm-info__head-meta { display:flex; align-items:center; gap:.5rem; margin-bottom:.7rem; flex-wrap:wrap; }
-.pdm-id-tag { font-size:.72rem; font-weight:700; color:#b0a898; letter-spacing:.06em; }
-.pdm-date-tag { display:inline-flex; align-items:center; gap:.3rem; font-size:.72rem; color:#a09888; font-weight:600; margin-right:auto; }
-.pdm-title { font-size:1.35rem; font-weight:800; color:#1a1410; line-height:1.25; letter-spacing:-.02em; margin:0 0 .3rem; }
-.pdm-subtitle { font-size:.88rem; color:#9a9286; font-weight:500; margin:0 0 .7rem; }
-.pdm-langs { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; margin-bottom:1rem; }
-.pdm-lang { display:inline-flex; padding:.2rem .65rem; border-radius:6px; font-size:.72rem; font-weight:700; }
-.pdm-lang--ckb { background:rgba(254,221,0,.14); color:#7a6200; border:1px solid rgba(254,221,0,.35); }
-.pdm-lang--kmr { background:rgba(40,90,220,.08); color:#2848b0; border:1px solid rgba(40,90,220,.18); }
-.pdm-edit-btn { display:inline-flex; align-items:center; gap:.4rem; padding:.55rem 1.1rem; border-radius:10px; background:#8c1515; color:#fff; border:none; font-size:.82rem; font-weight:700; text-decoration:none; cursor:pointer; transition:all .2s ease; width:100%; justify-content:center; font-family:inherit; box-shadow:0 4px 16px rgba(140,21,21,.28); }
-.pdm-edit-btn:hover { background:#a61c1c; transform:translateY(-1px); }
-.pdm-tabs { flex:0 0 auto; display:flex; background:#f0ece5; border-bottom:1px solid #e4dfd7; }
-.pdm-tab { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; padding:.65rem 1rem; border:none; background:none; color:#9a9286; font-weight:700; font-size:.83rem; cursor:pointer; transition:all .2s; font-family:inherit; border-bottom:2px solid transparent; }
-.pdm-tab--on { color:#8c1515; background:#faf8f5; border-bottom-color:#8c1515; }
-.pdm-tab__pip { width:7px; height:7px; border-radius:50%; }
-.pdm-tab__pip--ckb { background:#c8a800 }
-.pdm-tab__pip--kmr { background:#4a7af0 }
-.pdm-info__body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0; scroll-behavior:smooth; padding-bottom:1.5rem; }
-.pdm-info__body::-webkit-scrollbar { width:3px }
-.pdm-info__body::-webkit-scrollbar-thumb { background:#d4cec6; border-radius:99px }
-.acc { border-bottom:1px solid #ede8e0; }
-.acc:last-child { border-bottom:none }
-.acc__hd { width:100%; display:flex; align-items:center; justify-content:space-between; padding:.95rem 1.3rem; background:none; border:none; cursor:pointer; font-family:inherit; transition:background .18s ease; gap:.5rem; }
-.acc__hd:hover { background:rgba(140,21,21,.03) }
-.acc__hd--system:hover { background:rgba(100,80,50,.04) }
-.acc__hd-left { display:flex; align-items:center; gap:.7rem; flex:1; min-width:0; }
-.acc__ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .2s ease; }
-.acc__hd:hover .acc__ico { transform:scale(1.08) }
-.acc__ico--desc { background:rgba(140,21,21,.09); color:#8c1515; border:1px solid rgba(140,21,21,.16) }
-.acc__ico--meta { background:rgba(22,120,70,.09); color:#166044; border:1px solid rgba(22,120,70,.18) }
-.acc__ico--img  { background:rgba(80,40,140,.09); color:#5028a0; border:1px solid rgba(80,40,140,.16) }
-.acc__ico--tag  { background:rgba(200,168,0,.12); color:#7a6200; border:1px solid rgba(200,168,0,.22) }
-.acc__ico--kw   { background:rgba(40,90,220,.09); color:#2848b0; border:1px solid rgba(40,90,220,.16) }
-.acc__ico--sys  { background:rgba(80,80,80,.08); color:#505050; border:1px solid rgba(80,80,80,.14) }
-.acc__title { font-size:.92rem; font-weight:700; color:#1e1812; letter-spacing:-.01em; }
-.acc__badge { display:inline-flex; padding:.18rem .58rem; border-radius:99px; font-size:.71rem; font-weight:800; letter-spacing:.04em; }
-.acc__badge--tag { background:rgba(200,168,0,.12); color:#7a6200; border:1px solid rgba(200,168,0,.22) }
-.acc__badge--kw  { background:rgba(40,90,220,.09); color:#2848b0; border:1px solid rgba(40,90,220,.16) }
-.acc__chevron { color:#c8c0b4; flex-shrink:0; transition:transform .28s cubic-bezier(.34,1.56,.64,1),color .18s; }
-.acc__chevron--open { transform:rotate(180deg); color:#8c1515 }
-.acc__hd:hover .acc__chevron { color:#8c1515 }
-.acc__body { overflow:hidden; padding:0 1.3rem 1.1rem; }
-.acc__body--flush { padding:0 0 .5rem; }
-.acc-body-enter-active { transition:all .3s cubic-bezier(.22,1,.36,1) }
-.acc-body-leave-active { transition:all .22s ease }
-.acc-body-enter-from,.acc-body-leave-to { opacity:0; transform:translateY(-6px) }
-.acc__text--desc { font-size:.9rem; color:#2e2418; line-height:1.85; white-space:pre-line; margin:0; padding:.2rem 0; max-height:260px; overflow-y:auto; scrollbar-width:thin; }
-.acc__meta-grid { display:flex; flex-direction:column; gap:.5rem; }
-.acc__meta-row { display:flex; align-items:baseline; gap:.75rem; font-size:.88rem; }
-.acc__meta-k { flex:0 0 auto; font-size:.74rem; font-weight:700; color:#b8b0a4; text-transform:uppercase; letter-spacing:.04em; display:inline-flex; align-items:center; gap:.25rem; min-width:80px; }
-.acc__meta-v { color:#2e2418; font-weight:600; line-height:1.4; }
-.acc__chips { display:flex; flex-wrap:wrap; gap:.42rem; }
-.acc__chip { display:inline-flex; align-items:center; gap:.3rem; padding:.32rem .78rem; border-radius:8px; font-size:.82rem; font-weight:600; cursor:default; transition:transform .15s ease; }
-.acc__chip:hover { transform:translateY(-2px) }
-.acc__chip--tag { background:rgba(200,168,0,.11); color:#7a6200; border:1px solid rgba(200,168,0,.22) }
-.acc__chip--kw  { background:rgba(40,90,220,.08); color:#2848b0; border:1px solid rgba(40,90,220,.15) }
-.acc--system { background:#faf7f2 }
-.acc__sys-grid { display:grid; grid-template-columns:1fr 1fr; padding:0 1.3rem .75rem; gap:0 }
-.acc__sys-cell { padding:.72rem .65rem .72rem 0; border-bottom:1px solid #ede8e0; border-left:1px solid #ede8e0 }
-.acc__sys-cell:nth-child(odd) { border-left:none; padding-right:.65rem }
-.acc__sys-cell--full { grid-column:1/-1; border-left:none }
-.acc__sys-cell:last-child,.acc__sys-cell:nth-last-child(2):not(.acc__sys-cell--full) { border-bottom:none }
-.acc__sys-k { font-size:.68rem; font-weight:700; color:#c0b8ac; letter-spacing:.05em; margin-bottom:.25rem; text-transform:uppercase }
-.acc__sys-v { font-size:.84rem; color:#2e2418; font-weight:600; line-height:1.4 }
-.acc__sys-v--mono { font-family:'Courier New',monospace; font-size:.78rem; letter-spacing:.04em }
-.acc__sys-v--link { color:#8c1515; font-size:.73rem; font-weight:500; word-break:break-all; text-decoration:none; display:block }
-.acc__sys-v--link:hover { text-decoration:underline }
-.pdm-fade-enter-active,.pdm-fade-leave-active { transition:opacity .3s ease }
-.pdm-fade-enter-from,.pdm-fade-leave-to { opacity:0 }
-.pdm-rise-enter-active { transition:opacity .38s ease,transform .38s cubic-bezier(.22,1,.36,1) }
-.pdm-rise-leave-active { transition:opacity .22s ease,transform .22s ease }
-.pdm-rise-enter-from { opacity:0; transform:scale(.94) translateY(20px) }
-.pdm-rise-leave-to   { opacity:0; transform:scale(.97) translateY(10px) }
+.modal-enter-from .dk,.modal-leave-to .dk { transform:scale(.96) translateY(12px) }
 </style>

@@ -78,6 +78,7 @@ const labelMap = {
   'image-collections': 'کۆمەڵە وێنەکان',
   soundtracks:         'دەنگەکان',
   writings:            'نووسراوەکان',
+  about:               'دەربارەکان',
 }
 
 const resourceLabel = computed(() => labelMap[resource.value] || resource.value || 'بەش')
@@ -90,6 +91,7 @@ const customListRouteNames = {
   'image-collections': 'AdminImageCollectionList',
   soundtracks:         'AdminSoundTrackList',
   writings:            'AdminWritingList',
+  about:               'AdminAboutList',
 }
 
 watch(

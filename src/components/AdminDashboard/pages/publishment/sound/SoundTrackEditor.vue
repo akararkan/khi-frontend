@@ -457,7 +457,7 @@
           <!-- Danger zone -->
           <section v-if="isEdit" class="card card--danger">
             <div class="card__hd card__hd--danger"><span class="card__hd-ico">⚠️</span> ناوچەی مەترسیدار</div>
-            <p class="danger-text">سڕینەوەی دەنگ ناگەڕێتەوە.</p>
+            <p class="danger-text">سڕینەوەی دەنگ ناگەرێتەوە.</p>
             <button type="button" class="btn btn--danger btn--full" @click="doDelete">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
               سڕینەوەی ئەم دەنگە
@@ -522,6 +522,7 @@ const topicsLoading = ref(false)
 const topicMode     = ref('none')
 let _keyCounter     = 0
 
+// ── Image file refs ──────────────────────────────────────────────────────────
 const ckbCoverFile    = ref(null)
 const kmrCoverFile    = ref(null)
 const hoverFile       = ref(null)
@@ -534,9 +535,10 @@ const form = reactive({
   trackState: 'SINGLE',
   albumOfMemories: false,
   contentLanguages: ['CKB'],
+  // cover URLs (shown when no file is picked — loaded from existing record on edit)
   coverUrlCkb: '',
   coverUrlKmr: '',
-  hoverUrl: '',
+  hoverUrl:    '',
   ckbContent: { title: '', description: '', reading: '' },
   kmrContent: { title: '', description: '', reading: '' },
   director: '',
@@ -556,6 +558,7 @@ const currentTopicName = computed(() => {
   return found ? (found.nameCkb || found.nameKmr || `#${found.id}`) : `#${form.topicId}`
 })
 
+// ── Topics fetch ─────────────────────────────────────────────────────────────
 const fetchTopics = async () => {
   topicsLoading.value = true
   try {
@@ -566,6 +569,7 @@ const fetchTopics = async () => {
   finally { topicsLoading.value = false }
 }
 
+// ── File count helpers ────────────────────────────────────────────────────────
 const fileCount    = computed(() => form.files.length)
 const fileReqLabel = computed(() => {
   const count = form.files.length
@@ -584,16 +588,20 @@ const makeFileItem = (useUrl = false) => ({
   fileType: 'OTHER', durationSeconds: 0, sizeBytes: 0, readerName: '',
 })
 
-const addFile    = (useUrl = false) => { if (form.trackState === 'SINGLE' && form.files.length >= 1) return; form.files.push(makeFileItem(useUrl)) }
+const addFile    = (useUrl = false) => {
+  if (form.trackState === 'SINGLE' && form.files.length >= 1) return
+  form.files.push(makeFileItem(useUrl))
+}
 const removeFile = (idx) => { form.files.splice(idx, 1) }
-const moveUp     = (idx) => { if (idx <= 0) return; const t = form.files[idx - 1]; form.files[idx - 1] = form.files[idx]; form.files[idx] = t }
-const moveDown   = (idx) => { if (idx >= form.files.length - 1) return; const t = form.files[idx + 1]; form.files[idx + 1] = form.files[idx]; form.files[idx] = t }
+const moveUp     = (idx) => { if (idx <= 0) return; [form.files[idx - 1], form.files[idx]] = [form.files[idx], form.files[idx - 1]] }
+const moveDown   = (idx) => { if (idx >= form.files.length - 1) return; [form.files[idx + 1], form.files[idx]] = [form.files[idx], form.files[idx + 1]] }
 
 const onAudioFile = (e, idx) => {
   const f = e.target.files?.[0]; if (!f) return
-  form.files[idx].file = f; form.files[idx].sizeBytes = f.size || 0
+  form.files[idx].file = f
+  form.files[idx].sizeBytes = f.size || 0
   const name = (f.name || '').toLowerCase()
-  if (name.endsWith('.mp3')) form.files[idx].fileType = 'MP3'
+  if      (name.endsWith('.mp3'))  form.files[idx].fileType = 'MP3'
   else if (name.endsWith('.wav'))  form.files[idx].fileType = 'WAV'
   else if (name.endsWith('.ogg'))  form.files[idx].fileType = 'OGG'
   else if (name.endsWith('.aac'))  form.files[idx].fileType = 'AAC'
@@ -602,66 +610,94 @@ const onAudioFile = (e, idx) => {
 }
 const previewUrl = (item) => item?.useUrl ? (item.fileUrl || '') : ''
 
+// ── Image pickers ─────────────────────────────────────────────────────────────
 const setPreview = (refPreview, file) => {
   if (refPreview.value) URL.revokeObjectURL(refPreview.value)
   refPreview.value = file ? URL.createObjectURL(file) : ''
 }
-const onCkbCoverFile = (e) => { const f = e.target.files?.[0]; if (!f) return; ckbCoverFile.value = f; setPreview(ckbCoverPreview, f); form.coverUrlCkb = '' }
-const removeCkbCover = () => { setPreview(ckbCoverPreview, null); ckbCoverFile.value = null; form.coverUrlCkb = '' }
-const onKmrCoverFile = (e) => { const f = e.target.files?.[0]; if (!f) return; kmrCoverFile.value = f; setPreview(kmrCoverPreview, f); form.coverUrlKmr = '' }
-const removeKmrCover = () => { setPreview(kmrCoverPreview, null); kmrCoverFile.value = null; form.coverUrlKmr = '' }
-const onHoverFile    = (e) => { const f = e.target.files?.[0]; if (!f) return; hoverFile.value = f; setPreview(hoverPreview, f); form.hoverUrl = '' }
-const removeHover    = () => { setPreview(hoverPreview, null); hoverFile.value = null; form.hoverUrl = '' }
+const onCkbCoverFile = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  ckbCoverFile.value = f; setPreview(ckbCoverPreview, f); form.coverUrlCkb = ''
+}
+const removeCkbCover = () => {
+  setPreview(ckbCoverPreview, null); ckbCoverFile.value = null; form.coverUrlCkb = ''
+}
+const onKmrCoverFile = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  kmrCoverFile.value = f; setPreview(kmrCoverPreview, f); form.coverUrlKmr = ''
+}
+const removeKmrCover = () => {
+  setPreview(kmrCoverPreview, null); kmrCoverFile.value = null; form.coverUrlKmr = ''
+}
+const onHoverFile = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  hoverFile.value = f; setPreview(hoverPreview, f); form.hoverUrl = ''
+}
+const removeHover = () => {
+  setPreview(hoverPreview, null); hoverFile.value = null; form.hoverUrl = ''
+}
 
-/* ✅ FIXED: applyTrack now reads correct backend field names */
+// ── Populate form from existing record ────────────────────────────────────────
+// ✅ FIXED: reads correct Response DTO field names:
+//    ckbCoverUrl / kmrCoverUrl / hoverCoverUrl  (not coverUrlCkb / hoverUrl)
 const applyTrack = (t) => {
-  form.soundType  = t.soundType  || ''
-  form.trackState = t.trackState || 'SINGLE'
+  form.soundType       = t.soundType  || ''
+  form.trackState      = t.trackState || 'SINGLE'
   form.albumOfMemories = !!(t.albumOfMemories ?? false)
 
-  const langs = t.contentLanguages
-    ? (Array.isArray(t.contentLanguages) ? t.contentLanguages : [...t.contentLanguages])
-    : ['CKB']
-  form.contentLanguages = [...langs]
-  activeLang.value = form.contentLanguages[0] || 'CKB'
+  const langs = Array.isArray(t.contentLanguages) ? [...t.contentLanguages] : ['CKB']
+  form.contentLanguages = langs
+  activeLang.value = langs[0] || 'CKB'
 
-  // ✅ FIXED: backend Response DTO fields are ckbCoverUrl / kmrCoverUrl / hoverCoverUrl
-  form.coverUrlCkb = t.ckbCoverUrl   || ''   // was t.coverUrlCkb  ← BUG FIXED
-  form.coverUrlKmr = t.kmrCoverUrl   || ''   // was t.coverUrlKmr  ← BUG FIXED
-  form.hoverUrl    = t.hoverCoverUrl || ''   // was t.hoverUrl     ← BUG FIXED
+  // ✅ FIXED: backend sends ckbCoverUrl / kmrCoverUrl / hoverCoverUrl
+  form.coverUrlCkb = t.ckbCoverUrl   || ''
+  form.coverUrlKmr = t.kmrCoverUrl   || ''
+  form.hoverUrl    = t.hoverCoverUrl || ''
 
-  form.director = t.director || ''
+  // Reset any locally-picked files (we're loading a saved record)
+  setPreview(ckbCoverPreview, null); ckbCoverFile.value = null
+  setPreview(kmrCoverPreview, null); kmrCoverFile.value = null
+  setPreview(hoverPreview,    null); hoverFile.value    = null
+
+  form.director              = t.director || ''
   form.thisProjectOfInstitute = !!(t.thisProjectOfInstitute ?? false)
-  form.locations = Array.isArray(t.locations) ? [...t.locations] : [...(t.locations || [])]
+  form.locations             = Array.isArray(t.locations) ? [...t.locations] : []
 
   if (t.ckbContent) {
-    form.ckbContent.title       = t.ckbContent.title || ''
+    form.ckbContent.title       = t.ckbContent.title       || ''
     form.ckbContent.description = t.ckbContent.description || ''
-    form.ckbContent.reading     = t.ckbContent.reading || ''
+    form.ckbContent.reading     = t.ckbContent.reading     || ''
   }
   if (t.kmrContent) {
-    form.kmrContent.title       = t.kmrContent.title || ''
+    form.kmrContent.title       = t.kmrContent.title       || ''
     form.kmrContent.description = t.kmrContent.description || ''
-    form.kmrContent.reading     = t.kmrContent.reading || ''
+    form.kmrContent.reading     = t.kmrContent.reading     || ''
   }
 
-  form.tagsCkb     = Array.isArray(t.tags?.ckb) ? [...t.tags.ckb] : []
-  form.tagsKmr     = Array.isArray(t.tags?.kmr) ? [...t.tags.kmr] : []
+  form.tagsCkb     = Array.isArray(t.tags?.ckb)     ? [...t.tags.ckb]     : []
+  form.tagsKmr     = Array.isArray(t.tags?.kmr)     ? [...t.tags.kmr]     : []
   form.keywordsCkb = Array.isArray(t.keywords?.ckb) ? [...t.keywords.ckb] : []
   form.keywordsKmr = Array.isArray(t.keywords?.kmr) ? [...t.keywords.kmr] : []
 
-  if (t.topicId) { form.topicId = t.topicId; topicMode.value = 'existing' }
-  else { form.topicId = null; topicMode.value = 'none' }
+  if (t.topicId) {
+    form.topicId     = t.topicId
+    topicMode.value  = 'existing'
+  } else {
+    form.topicId    = null
+    topicMode.value = 'none'
+  }
   form.clearTopic = false
-  form.newTopic = { nameCkb: '', nameKmr: '' }
+  form.newTopic   = { nameCkb: '', nameKmr: '' }
 
   form.files = (t.files || []).map(f => ({
     _key: ++_keyCounter, useUrl: true, file: null,
-    fileUrl: f.fileUrl || '', externalUrl: f.externalUrl || '', embedUrl: f.embedUrl || '',
-    fileType: f.fileType || 'OTHER',
+    fileUrl:         f.fileUrl         || '',
+    externalUrl:     f.externalUrl     || '',
+    embedUrl:        f.embedUrl        || '',
+    fileType:        f.fileType        || 'OTHER',
     durationSeconds: Number(f.durationSeconds || 0),
-    sizeBytes: Number(f.sizeBytes || 0),
-    readerName: f.readerName || '',
+    sizeBytes:       Number(f.sizeBytes       || 0),
+    readerName:      f.readerName      || '',
   }))
 }
 
@@ -679,11 +715,12 @@ const loadTrack = async () => {
   } finally { fetching.value = false }
 }
 
+// ── Validation ────────────────────────────────────────────────────────────────
 const validate = () => {
   const e = {}
-  if (!String(form.soundType || '').trim()) e.soundType = 'جۆری دەنگ پێویستە'
-  if (!form.trackState)                     e.trackState = 'TrackState پێویستە'
-  if (!form.contentLanguages.length)        e.contentLanguages = 'کەمی یەک زمانیکی هەڵبژێرە'
+  if (!String(form.soundType || '').trim())  e.soundType = 'جۆری دەنگ پێویستە'
+  if (!form.trackState)                      e.trackState = 'TrackState پێویستە'
+  if (!form.contentLanguages.length)         e.contentLanguages = 'کەمی یەک زمانیکی هەڵبژێرە'
   if (form.contentLanguages.includes('CKB') && !form.ckbContent.title.trim())
     e.titles = 'ناونیشانی سۆرانی پێویستە'
   if (form.contentLanguages.includes('KMR') && !form.kmrContent.title.trim())
@@ -707,30 +744,39 @@ const validate = () => {
   return !Object.keys(e).length
 }
 
+// ── Submit ────────────────────────────────────────────────────────────────────
 const submit = async () => {
-  if (!validate()) { window.scrollTo({ top: 0, behavior: 'smooth' }); showToast('error', 'تکایە هەموو خانە پێویستەکان پڕ بکەوە'); return }
+  if (!validate()) {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    showToast('error', 'تکایە هەموو خانە پێویستەکان پڕ بکەوە')
+    return
+  }
   saving.value = true
   try {
     const uploadItems = form.files.filter(f => !f.useUrl && f.file)
-    const urlItems    = form.files.filter(f => f.useUrl)
+    const urlItems    = form.files.filter(f =>  f.useUrl)
 
     const dto = {
-      soundType: form.soundType,
-      trackState: form.trackState,
+      soundType:    form.soundType,
+      trackState:   form.trackState,
       albumOfMemories: form.trackState === 'MULTI' ? form.albumOfMemories : false,
       contentLanguages: form.contentLanguages,
       ckbContent: form.contentLanguages.includes('CKB') ? {
-        title: form.ckbContent.title || null, description: form.ckbContent.description || null, reading: form.ckbContent.reading || null,
+        title:       form.ckbContent.title       || null,
+        description: form.ckbContent.description || null,
+        reading:     form.ckbContent.reading     || null,
       } : null,
       kmrContent: form.contentLanguages.includes('KMR') ? {
-        title: form.kmrContent.title || null, description: form.kmrContent.description || null, reading: form.kmrContent.reading || null,
+        title:       form.kmrContent.title       || null,
+        description: form.kmrContent.description || null,
+        reading:     form.kmrContent.reading     || null,
       } : null,
       locations: form.locations,
-      director: form.director || null,
+      director:  form.director || null,
       thisProjectOfInstitute: !!form.thisProjectOfInstitute,
       tags: {
-        ckb: form.contentLanguages.includes('CKB') ? form.tagsCkb : [],
-        kmr: form.contentLanguages.includes('KMR') ? form.tagsKmr : [],
+        ckb: form.contentLanguages.includes('CKB') ? form.tagsCkb     : [],
+        kmr: form.contentLanguages.includes('KMR') ? form.tagsKmr     : [],
       },
       keywords: {
         ckb: form.contentLanguages.includes('CKB') ? form.keywordsCkb : [],
@@ -738,10 +784,13 @@ const submit = async () => {
       },
       readerNames: uploadItems.map(x => x.readerName || null),
       files: urlItems.map(x => ({
-        fileUrl: x.fileUrl || null, externalUrl: x.externalUrl || null, embedUrl: x.embedUrl || null,
-        fileType: x.fileType || 'OTHER',
-        durationSeconds: Number(x.durationSeconds || 0), sizeBytes: Number(x.sizeBytes || 0),
-        readerName: x.readerName || null,
+        fileUrl:         x.fileUrl         || null,
+        externalUrl:     x.externalUrl     || null,
+        embedUrl:        x.embedUrl        || null,
+        fileType:        x.fileType        || 'OTHER',
+        durationSeconds: Number(x.durationSeconds || 0),
+        sizeBytes:       Number(x.sizeBytes       || 0),
+        readerName:      x.readerName      || null,
       })),
       topicId:  topicMode.value === 'existing' ? (form.topicId || null) : null,
       newTopic: topicMode.value === 'new'
@@ -753,10 +802,11 @@ const submit = async () => {
     const fd = new FormData()
     fd.append('data', new Blob([JSON.stringify(dto)], { type: 'application/json' }))
 
-    // Image parts — names match Spring controller params
-    if (ckbCoverFile.value) fd.append('ckbCoverImage', ckbCoverFile.value)
-    if (kmrCoverFile.value) fd.append('kmrCoverImage', kmrCoverFile.value)
-    if (hoverFile.value)    fd.append('hoverImage', hoverFile.value)
+    // ✅ FIXED: names must match Spring @RequestPart param names exactly
+    if (ckbCoverFile.value) fd.append('ckbCoverImage',  ckbCoverFile.value)  // was 'ckbCoverImage' ← ok
+    if (kmrCoverFile.value) fd.append('kmrCoverImage',  kmrCoverFile.value)  // was 'kmrCoverImage' ← ok
+    if (hoverFile.value)    fd.append('hoverCoverImage', hoverFile.value)    // was 'hoverImage' ← BUG FIXED
+
     uploadItems.forEach(x => fd.append('audioFiles', x.file))
 
     const cfg = { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -775,6 +825,7 @@ const submit = async () => {
   } finally { saving.value = false }
 }
 
+// ── Delete ────────────────────────────────────────────────────────────────────
 const doDelete = async () => {
   if (!confirm(`دڵنیای لە سڕینەوەی دەنگ #${route.params.id}؟`)) return
   try {
@@ -784,15 +835,20 @@ const doDelete = async () => {
   } catch (e) { showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت') }
 }
 
+// ── Toast ─────────────────────────────────────────────────────────────────────
 const showToast = (type, msg) => {
   toast.value = { show: true, type, msg }
   setTimeout(() => { toast.value.show = false }, 4000)
 }
 
+// ── Watchers ──────────────────────────────────────────────────────────────────
 watch(() => form.trackState, (v) => {
   if (v === 'SINGLE') {
     form.albumOfMemories = false
-    if (form.files.length > 1) { form.files.splice(1); showToast('error', 'SINGLE تەنها ١ فایل دەهێڵێت — زیادەکان سڕانەوە') }
+    if (form.files.length > 1) {
+      form.files.splice(1)
+      showToast('error', 'SINGLE تەنها ١ فایل دەهێڵێت — زیادەکان سڕانەوە')
+    }
   }
 })
 
@@ -801,6 +857,7 @@ watch(() => form.contentLanguages.slice(), (langs) => {
   if (!langs.includes(activeLang.value)) activeLang.value = langs[0]
 }, { deep: true })
 
+// ── Mount ─────────────────────────────────────────────────────────────────────
 onMounted(() => {
   if (!isEdit.value && !form.files.length) addFile(false)
   fetchTopics()
@@ -939,7 +996,6 @@ onMounted(() => {
 .album-empty { display:flex; flex-direction:column; align-items:center; gap:.65rem; padding:2.5rem 1rem; color:var(--muted); font-size:.87rem; text-align:center; border:2px dashed var(--border); border-radius:var(--radius-sm); margin-bottom:1rem; }
 .album-actions { display:flex; gap:.6rem; flex-wrap:wrap; padding-top:.25rem; }
 
-/* ✅ Cover preview with hover badge */
 .cover-preview { position:relative; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border); margin-bottom:.75rem; }
 .cover-preview img { width:100%; max-height:200px; object-fit:cover; display:block; }
 .cover-preview__remove { position:absolute; top:.5rem; left:.5rem; width:28px; height:28px; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; border:none; cursor:pointer; font-size:.85rem; display:flex; align-items:center; justify-content:center; }

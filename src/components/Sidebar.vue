@@ -144,6 +144,26 @@
         </RouterLink>
       </template>
 
+      <!-- Section divider -->
+      <div class="nav-divider">
+        <Transition name="label">
+          <span v-if="!slim" class="nav-divider__text">ڕێکخستن</span>
+        </Transition>
+        <span v-if="slim" class="nav-divider__line"></span>
+      </div>
+
+      <!-- About -->
+      <RouterLink
+        class="nav-item"
+        :to="{ name: 'AdminAboutList' }"
+        :class="{ 'nav-item--active': isActive('about') }"
+        title="دەربارەکان"
+      >
+        <span class="nav-item__ico" v-html="SVGs.about"></span>
+        <Transition name="label"><span v-if="!slim" class="nav-item__label">دەربارەکان</span></Transition>
+        <Transition name="label"><span v-if="!slim" class="nav-item__arrow"><ArrowIcon /></span></Transition>
+      </RouterLink>
+
     </nav>
 
     <!-- ═══ FOOTER ════════════════════════════════════════ -->
@@ -202,6 +222,7 @@ const SVGs = {
   videos:   `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="15" height="10" rx="1.5"/><path d="M17 9l4-2v10l-4-2V9z"/></svg>`,
   sounds:   `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
   writings: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>`,
+  about:    `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
 }
 
 const publicationItems = [
@@ -221,12 +242,17 @@ const isActive = (key) => {
     soundtracks:         { names: ['AdminSoundTrackList','AdminSoundTrackCreate','AdminSoundTrackEdit'],      prefix: '/admin/soundtracks' },
     videos:              { names: ['AdminVideoList','AdminVideoCreate','AdminVideoEdit'],                     prefix: '/admin/videos' },
     writings:            { names: ['AdminWritingList','AdminWritingCreate','AdminWritingEdit'],               prefix: '/admin/writings' },
+    about:               { names: ['AdminAboutList','AdminAboutCreate','AdminAboutEdit'],                    prefix: '/admin/about' },
   }
   const m = routeMap[key]
   return m ? m.names.includes(route.name || '') || (route.path || '').startsWith(m.prefix) : false
 }
 
-const doLogout = () => { auth.logout(); router.push('/login') }
+const doLogout = async () => {
+  await auth.logout()
+  // ✅ FIX: Use window.location for a full page reload — kills all in-memory state
+  window.location.href = '/login?logout=1'
+}
 </script>
 
 <style scoped>

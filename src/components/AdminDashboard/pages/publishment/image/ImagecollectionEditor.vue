@@ -35,7 +35,7 @@
             <div class="type-picks">
               <label v-for="t in collectionTypes" :key="t.value"
                 class="type-pick"
-                :class="{ 'type-pick--on': form.collectionType === t.value, [`type-pick--${t.value.toLowerCase()}`]: true }">
+                :class="{ 'type-pick--on': form.collectionType === t.value }">
                 <input type="radio" :value="t.value" v-model="form.collectionType" />
                 <span class="type-pick__icon" v-html="t.icon"></span>
                 <span class="type-pick__label">{{ t.label }}</span>
@@ -45,9 +45,84 @@
             <div v-if="errors.collectionType" class="err">{{ errors.collectionType }}</div>
           </section>
 
+          <!-- Topic -->
+          <section class="card">
+            <div class="card__hd"><span class="card__hd-ico">🏷</span> موضوع (Topic)</div>
+            <div class="state-picks">
+              <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'none' }">
+                <input type="radio" value="none" v-model="topicMode" />بێ موضوع
+              </label>
+              <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'existing' }">
+                <input type="radio" value="existing" v-model="topicMode" />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                موضوعی هەبوو
+              </label>
+              <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'new' }">
+                <input type="radio" value="new" v-model="topicMode" />
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                موضوعی نوێ دروستبکە
+              </label>
+            </div>
+
+            <div v-if="topicMode === 'existing'" class="field" style="margin-top:.9rem">
+              <label class="lbl lbl--req">موضوع هەڵبژێرە</label>
+              <div v-if="topicsLoading" class="topics-loading">
+                <div class="spinner spinner--dark"></div><span>موضوعەکان بارکردن…</span>
+              </div>
+              <select v-else v-model="form.topicId" class="inp">
+                <option :value="null">— هیچ —</option>
+                <option v-for="tp in topics" :key="tp.id" :value="tp.id">
+                  {{ tp.nameCkb || tp.nameKmr || `#${tp.id}` }}
+                  <template v-if="tp.nameCkb && tp.nameKmr"> — {{ tp.nameKmr }}</template>
+                </option>
+              </select>
+              <div v-if="!topics.length && !topicsLoading" class="topics-empty">هیچ موضوعێک نییە — دەتوانیت نوێ دروستبکەیت</div>
+              <div v-if="errors.topicId" class="err">{{ errors.topicId }}</div>
+            </div>
+
+            <div v-if="topicMode === 'new'" style="margin-top:.9rem">
+              <div class="two-grid">
+                <div class="field">
+                  <label class="lbl">ناوی موضوع (سۆرانی)</label>
+                  <input v-model.trim="form.newTopic.nameCkb" class="inp" placeholder="ناوی موضوع بە سۆرانی…" />
+                </div>
+                <div class="field">
+                  <label class="lbl">ناوی موضوع (کورمانجی)</label>
+                  <input v-model.trim="form.newTopic.nameKmr" class="inp" placeholder="Navê mijarê bi Kurmancî…" />
+                </div>
+              </div>
+              <div class="topic-hint">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                موضوعی نوێ دروست دەکرێت و بە ئەم کۆکراوەیەوە دابمەزرێت
+              </div>
+              <div v-if="errors.newTopic" class="err">{{ errors.newTopic }}</div>
+            </div>
+
+            <div v-if="isEdit && topicMode === 'existing'" style="margin-top:.75rem">
+              <label class="lang-pick" :class="{ 'lang-pick--on': form.clearTopic }">
+                <input type="checkbox" v-model="form.clearTopic" />
+                <span>سڕینەوەی موضوعی ئێستا</span>
+              </label>
+            </div>
+          </section>
+
+          <!-- Current topic preview (edit only) -->
+          <section class="card" v-if="isEdit && currentTopicName">
+            <div class="card__hd"><span class="card__hd-ico">🏷</span> موضوعی ئێستا</div>
+            <div class="topic-current">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              {{ currentTopicName }}
+            </div>
+          </section>
+
           <!-- Languages -->
           <section class="card">
-            <div class="card__hd"><span class="card__hd-ico">🌐</span> زمانەکانی ناوەڕۆک</div>
+            <div class="card__hd">
+              <span class="card__hd-ico">🌐</span>
+              زمانەکانی ناوەڕۆک
+              <span class="card__hd-optional">ئارەزوویانە</span>
+            </div>
+            <p class="card__hint">ئەگەر تەنها بە کورمانجی یان تەنها بە سۆرانی دەنووسیت — تەنها هەمان زمانی هەڵبژێرە.</p>
             <div class="lang-picks">
               <label class="lang-pick" :class="{ 'lang-pick--on': form.contentLanguages.includes('CKB') }">
                 <input type="checkbox" value="CKB" v-model="form.contentLanguages" />
@@ -58,21 +133,37 @@
                 <span class="lang-pick__flag">🔵</span> کورمانجی <span class="lang-pick__code">KMR</span>
               </label>
             </div>
-            <div v-if="errors.contentLanguages" class="err">{{ errors.contentLanguages }}</div>
           </section>
 
           <!-- Bilingual Content -->
-          <section class="card" v-if="form.contentLanguages.length">
+          <section class="card">
+            <div class="card__hd">
+              <span class="card__hd-ico">📝</span>
+              ناوەڕۆک
+              <span class="card__hd-optional">تایبەتیی هەر زمانێک جیاوازە</span>
+            </div>
             <div class="tabs">
-              <button v-for="lang in form.contentLanguages" :key="lang" type="button"
-                class="tab" :class="{ 'tab--on': activeLang === lang }" @click="activeLang = lang">
+              <button
+                v-for="lang in ['CKB', 'KMR']" :key="lang" type="button"
+                class="tab"
+                :class="{
+                  'tab--on': activeLang === lang,
+                  'tab--has': lang === 'CKB' ? form.ckbContent.title || form.ckbContent.description : form.kmrContent.title || form.kmrContent.description,
+                  'tab--active-lang': form.contentLanguages.includes(lang)
+                }"
+                @click="activeLang = lang">
                 <span class="tab__pip" :class="`tab__pip--${lang.toLowerCase()}`"></span>
                 {{ lang === 'CKB' ? 'سۆرانی (CKB)' : 'کورمانجی (KMR)' }}
+                <span v-if="form.contentLanguages.includes(lang)" class="tab__active-dot" title="ئەم زمانە هەڵبژێردراوە"></span>
               </button>
             </div>
 
             <!-- CKB -->
             <div v-show="activeLang === 'CKB'" class="tab-panel">
+              <div v-if="!form.contentLanguages.includes('CKB')" class="lang-inactive-notice">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                زمانی سۆرانی هەڵنەبژێردراوە — ئەگەر ناوەڕۆک بنووسیت، پێویستە سۆرانی هەڵبژێریت
+              </div>
               <div class="field">
                 <label class="lbl">ناونیشان (سۆرانی)</label>
                 <input v-model="form.ckbContent.title" class="inp" placeholder="ناونیشانی کۆکراوە بە سۆرانی…" />
@@ -83,17 +174,13 @@
               </div>
               <div class="two-grid">
                 <div class="field">
-                  <label class="lbl">بابەت (سۆرانی)</label>
-                  <input v-model="form.ckbContent.topic" class="inp" placeholder="بابەتی سەرەکی…" />
-                </div>
-                <div class="field">
                   <label class="lbl">شوێن (سۆرانی)</label>
                   <input v-model="form.ckbContent.location" class="inp" placeholder="شوێن یان ناوچە…" />
                 </div>
-              </div>
-              <div class="field">
-                <label class="lbl">کۆکەر (سۆرانی)</label>
-                <input v-model="form.ckbContent.collectedBy" class="inp" placeholder="ناوی کۆکەر یان وێنەکێش…" />
+                <div class="field">
+                  <label class="lbl">کۆکەر (سۆرانی)</label>
+                  <input v-model="form.ckbContent.collectedBy" class="inp" placeholder="ناوی کۆکەر یان وێنەکێش…" />
+                </div>
               </div>
               <div class="field">
                 <label class="lbl">تاگەکان (CKB)</label>
@@ -107,35 +194,35 @@
 
             <!-- KMR -->
             <div v-show="activeLang === 'KMR'" class="tab-panel">
-              <div class="field">
-                <label class="lbl">ناونیشان (کورمانجی)</label>
-                <input v-model="form.kmrContent.title" class="inp" placeholder="ناونیشانی کۆکراوە بە کورمانجی…" />
+              <div v-if="!form.contentLanguages.includes('KMR')" class="lang-inactive-notice">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                زمانی کورمانجی هەڵنەبژێردراوە — ئەگەر ناوەڕۆک بنووسیت، پێویستە کورمانجی هەڵبژێریت
               </div>
               <div class="field">
-                <label class="lbl">وەسف (کورمانجی)</label>
-                <textarea v-model="form.kmrContent.description" class="inp ta" placeholder="وەسفی کۆکراوە بە کورمانجی…"></textarea>
+                <label class="lbl">Sernavê (KMR)</label>
+                <input v-model="form.kmrContent.title" class="inp" placeholder="Sernavê koleksiyonê bi Kurmancî…" />
+              </div>
+              <div class="field">
+                <label class="lbl">Danasîn (KMR)</label>
+                <textarea v-model="form.kmrContent.description" class="inp ta" placeholder="Danasîn bi Kurmancî…"></textarea>
               </div>
               <div class="two-grid">
                 <div class="field">
-                  <label class="lbl">بابەت (کورمانجی)</label>
-                  <input v-model="form.kmrContent.topic" class="inp" placeholder="بابەتی سەرەکی…" />
+                  <label class="lbl">Cih (KMR)</label>
+                  <input v-model="form.kmrContent.location" class="inp" placeholder="Cih yan herêm…" />
                 </div>
                 <div class="field">
-                  <label class="lbl">شوێن (کورمانجی)</label>
-                  <input v-model="form.kmrContent.location" class="inp" placeholder="شوێن یان ناوچە…" />
+                  <label class="lbl">Berhevkar (KMR)</label>
+                  <input v-model="form.kmrContent.collectedBy" class="inp" placeholder="Navê berhevkar…" />
                 </div>
               </div>
               <div class="field">
-                <label class="lbl">کۆکەر (کورمانجی)</label>
-                <input v-model="form.kmrContent.collectedBy" class="inp" placeholder="ناوی کۆکەر یان وێنەکێش…" />
+                <label class="lbl">Tagan (KMR)</label>
+                <TagInput v-model="form.tagsKmr" placeholder="Tagê nû" color="gold" />
               </div>
               <div class="field">
-                <label class="lbl">تاگەکان (KMR)</label>
-                <TagInput v-model="form.tagsKmr" placeholder="تاگی نوێ زیاد بکە" color="gold" />
-              </div>
-              <div class="field">
-                <label class="lbl">کیووەردەکان (KMR)</label>
-                <TagInput v-model="form.keywordsKmr" placeholder="کیووەردی نوێ" color="blue" />
+                <label class="lbl">Peyvên kilîtê (KMR)</label>
+                <TagInput v-model="form.keywordsKmr" placeholder="Keyword" color="blue" />
               </div>
             </div>
           </section>
@@ -146,22 +233,17 @@
               <span class="card__hd-ico">🖼️</span>
               ئەلبووم
               <span class="card__hd-badge">{{ form.album.length }}</span>
-              <!-- Type requirement hint -->
               <span class="album-req" :class="albumReqClass">{{ albumReqLabel }}</span>
             </div>
 
-            <!-- Error -->
             <div v-if="errors.album" class="err err--album">{{ errors.album }}</div>
 
-            <!-- Album items -->
             <div class="album-list" v-if="form.album.length">
               <div class="album-item" v-for="(item, idx) in form.album" :key="item._key">
 
-                <!-- Item header -->
                 <div class="album-item__head">
                   <span class="album-item__num">{{ idx + 1 }}</span>
 
-                  <!-- Source toggle -->
                   <div class="src-toggle">
                     <button type="button" class="src-btn" :class="{ 'src-btn--on': !item.useUrl }" @click="item.useUrl = false">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -173,8 +255,9 @@
                     </button>
                   </div>
 
+                  <button type="button" class="mini-btn" @click="moveAlbumUp(idx)"   :disabled="idx === 0" title="سەرەوە">↑</button>
+                  <button type="button" class="mini-btn" @click="moveAlbumDown(idx)" :disabled="idx === form.album.length - 1" title="خوارەوە">↓</button>
                   <input v-model.number="item.sortOrder" type="number" class="inp inp--xs" title="ڕیزبەندی" :placeholder="String(idx)" />
-
                   <button type="button" class="album-item__del" @click="removeAlbumItem(idx)" title="سڕینەوە">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
@@ -195,11 +278,19 @@
                 <!-- URL mode -->
                 <div v-else class="album-item__body">
                   <div class="album-url-fields">
-                    <input v-model="item.imageUrl" class="inp inp--sm" placeholder="imageUrl — لینکی S3 یان سەرەکی" />
-                    <input v-model="item.externalUrl" class="inp inp--sm" placeholder="externalUrl — لینکی دەرەکی (ئارەزوویانە)" />
-                    <input v-model="item.embedUrl" class="inp inp--sm" placeholder="embedUrl — YouTube یان Embed (ئارەزوویانە)" />
+                    <div class="field">
+                      <label class="lbl lbl--sm">imageUrl</label>
+                      <input v-model="item.imageUrl" class="inp inp--sm" placeholder="S3/CDN direct url…" />
+                    </div>
+                    <div class="field">
+                      <label class="lbl lbl--sm">externalUrl</label>
+                      <input v-model="item.externalUrl" class="inp inp--sm" placeholder="لینکی دەرەکی (ئارەزوویانە)" />
+                    </div>
+                    <div class="field">
+                      <label class="lbl lbl--sm">embedUrl</label>
+                      <input v-model="item.embedUrl" class="inp inp--sm" placeholder="YouTube یان Embed (ئارەزوویانە)" />
+                    </div>
                   </div>
-                  <!-- URL preview -->
                   <div class="url-preview" v-if="item.imageUrl || item.externalUrl">
                     <img :src="item.imageUrl || item.externalUrl" class="url-preview__img" @error="e => e.target.style.display='none'" />
                   </div>
@@ -207,24 +298,24 @@
 
                 <!-- Bilingual captions + descriptions -->
                 <div class="album-item__meta">
-                  <div class="two-grid two-grid--sm">
-                    <div class="field">
+                  <div :class="form.contentLanguages.length === 2 ? 'two-grid two-grid--sm' : 'one-grid'">
+                    <div class="field" v-if="!form.contentLanguages.length || form.contentLanguages.includes('CKB')">
                       <label class="lbl lbl--sm">کاپشن سۆرانی</label>
                       <input v-model="item.captionCkb" class="inp inp--sm" placeholder="کاپشنی کورتی وێنە…" />
                     </div>
-                    <div class="field">
+                    <div class="field" v-if="!form.contentLanguages.length || form.contentLanguages.includes('KMR')">
                       <label class="lbl lbl--sm">کاپشن کورمانجی</label>
-                      <input v-model="item.captionKmr" class="inp inp--sm" placeholder="کاپشنی کورتی وێنە…" />
+                      <input v-model="item.captionKmr" class="inp inp--sm" placeholder="Sernavê kurt…" />
                     </div>
                   </div>
-                  <div class="two-grid two-grid--sm" style="margin-top:.4rem;">
-                    <div class="field">
+                  <div :class="form.contentLanguages.length === 2 ? 'two-grid two-grid--sm' : 'one-grid'" style="margin-top:.4rem;">
+                    <div class="field" v-if="!form.contentLanguages.length || form.contentLanguages.includes('CKB')">
                       <label class="lbl lbl--sm">وەسف سۆرانی</label>
                       <textarea v-model="item.descriptionCkb" class="inp inp--sm ta ta--sm" placeholder="وەسفی وێنە بە سۆرانی…"></textarea>
                     </div>
-                    <div class="field">
+                    <div class="field" v-if="!form.contentLanguages.length || form.contentLanguages.includes('KMR')">
                       <label class="lbl lbl--sm">وەسف کورمانجی</label>
-                      <textarea v-model="item.descriptionKmr" class="inp inp--sm ta ta--sm" placeholder="وەسفی وێنە بە کورمانجی…"></textarea>
+                      <textarea v-model="item.descriptionKmr" class="inp inp--sm ta ta--sm" placeholder="Danasîna wêneyê…"></textarea>
                     </div>
                   </div>
                 </div>
@@ -232,13 +323,11 @@
               </div>
             </div>
 
-            <!-- Empty state -->
             <div class="album-empty" v-else>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
               <span>هیچ وێنەیەک نییە — وێنەت زیاد بکە</span>
             </div>
 
-            <!-- Add item button (disabled for SINGLE when already 1 item) -->
             <div class="album-actions">
               <button type="button" class="btn btn--outline btn--sm"
                 :disabled="form.collectionType === 'SINGLE' && form.album.length >= 1"
@@ -260,25 +349,79 @@
         <!-- ═══════════════ SIDE COLUMN ═══════════════ -->
         <aside class="col-side">
 
-          <!-- Cover image -->
+          <!-- ── 3 Cover Slots ── -->
           <section class="card">
-            <div class="card__hd"><span class="card__hd-ico">🖼</span> کڤەر</div>
-            <div class="cover-preview" v-if="coverPreview || form.coverUrl">
-              <img :src="coverPreview || form.coverUrl" alt="cover preview" />
-              <button type="button" class="cover-preview__remove" @click="removeCover">✕</button>
-            </div>
-            <label class="upload-zone upload-zone--sm" v-else>
-              <input type="file" accept="image/*" @change="onCoverFile" style="display:none;" />
-              <div class="upload-zone__inner">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span>هەڵبژاردنی وێنەی کڤەر</span>
+            <div class="card__hd"><span class="card__hd-ico">🖼</span> وێنەی کڤەر</div>
+
+            <!-- CKB Cover -->
+            <div class="img-block">
+              <div class="img-block__title">کڤەری سۆرانی (CKB)</div>
+              <div class="cover-preview" v-if="ckbCoverPreview || form.ckbCoverUrl">
+                <img :src="ckbCoverPreview || form.ckbCoverUrl" alt="ckb cover preview" />
+                <button type="button" class="cover-preview__remove" @click="removeCkbCover">✕</button>
               </div>
-            </label>
-            <div class="field" style="margin-top:.75rem;">
-              <label class="lbl">یان URL یی کڤەر بنووسە</label>
-              <input v-model="form.coverUrl" class="inp" placeholder="https://…" :disabled="!!coverFile" />
+              <label class="upload-zone upload-zone--sm" v-else>
+                <input type="file" accept="image/*" @change="onCkbCoverFile" style="display:none;" />
+                <div class="upload-zone__inner">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>هەڵبژاردنی کڤەری سۆرانی</span>
+                </div>
+              </label>
+              <div class="field" style="margin-top:.75rem;">
+                <label class="lbl">یان URL بنووسە</label>
+                <input v-model="form.ckbCoverUrl" class="inp" placeholder="https://…" :disabled="!!ckbCoverFile" />
+              </div>
             </div>
-            <div v-if="errors.cover" class="err">{{ errors.cover }}</div>
+
+            <div class="img-sep"></div>
+
+            <!-- KMR Cover -->
+            <div class="img-block">
+              <div class="img-block__title">کڤەری کورمانجی (KMR)</div>
+              <div class="cover-preview" v-if="kmrCoverPreview || form.kmrCoverUrl">
+                <img :src="kmrCoverPreview || form.kmrCoverUrl" alt="kmr cover preview" />
+                <button type="button" class="cover-preview__remove" @click="removeKmrCover">✕</button>
+              </div>
+              <label class="upload-zone upload-zone--sm" v-else>
+                <input type="file" accept="image/*" @change="onKmrCoverFile" style="display:none;" />
+                <div class="upload-zone__inner">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>هەڵبژاردنی کڤەری کورمانجی</span>
+                </div>
+              </label>
+              <div class="field" style="margin-top:.75rem;">
+                <label class="lbl">یان URL بنووسە</label>
+                <input v-model="form.kmrCoverUrl" class="inp" placeholder="https://…" :disabled="!!kmrCoverFile" />
+              </div>
+            </div>
+
+            <div class="img-sep"></div>
+
+            <!-- Hover Cover -->
+            <div class="img-block">
+              <div class="img-block__title">
+                Hover Image
+                <span class="img-block__hint">دەرکەوتە لە سەر hover</span>
+              </div>
+              <div class="cover-preview cover-preview--hover" v-if="hoverPreview || form.hoverCoverUrl">
+                <img :src="hoverPreview || form.hoverCoverUrl" alt="hover preview" />
+                <button type="button" class="cover-preview__remove" @click="removeHover">✕</button>
+                <div class="cover-preview__hover-badge">H</div>
+              </div>
+              <label class="upload-zone upload-zone--sm upload-zone--hover" v-else>
+                <input type="file" accept="image/*" @change="onHoverFile" style="display:none;" />
+                <div class="upload-zone__inner">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>هەڵبژاردنی وێنەی Hover</span>
+                </div>
+              </label>
+              <div class="field" style="margin-top:.75rem;">
+                <label class="lbl">یان URL بنووسە</label>
+                <input v-model="form.hoverCoverUrl" class="inp" placeholder="https://…" :disabled="!!hoverFile" />
+              </div>
+            </div>
+
+            <div v-if="errors.cover" class="err" style="margin-top:.5rem;">{{ errors.cover }}</div>
           </section>
 
           <!-- Publish date -->
@@ -307,7 +450,6 @@
               سڕینەوەی ئەم کۆکراوەیە
             </button>
           </section>
-
         </aside>
       </div>
     </form>
@@ -315,7 +457,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, defineComponent, h } from 'vue'
+import { ref, reactive, computed, onMounted, defineComponent, h, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api.js'
 
@@ -357,15 +499,24 @@ const TagInput = defineComponent({
 const route  = useRoute()
 const router = useRouter()
 
-const isEdit       = computed(() => !!route.params.id)
-const activeLang   = ref('CKB')
-const fetching     = ref(false)
-const saving       = ref(false)
-const coverFile    = ref(null)
-const coverPreview = ref('')
-const toast        = ref({ show: false, type: 'success', msg: '' })
-const errors       = ref({})
-let   _keyCounter  = 0
+const isEdit        = computed(() => !!route.params.id)
+const activeLang    = ref('CKB')
+const fetching      = ref(false)
+const saving        = ref(false)
+const toast         = ref({ show: false, type: 'success', msg: '' })
+const errors        = ref({})
+const topics        = ref([])
+const topicsLoading = ref(false)
+const topicMode     = ref('none')
+let   _keyCounter   = 0
+
+// ── Cover file refs ────────────────────────────────────────────────────────────
+const ckbCoverFile    = ref(null)
+const kmrCoverFile    = ref(null)
+const hoverFile       = ref(null)
+const ckbCoverPreview = ref('')
+const kmrCoverPreview = ref('')
+const hoverPreview    = ref('')
 
 const collectionTypes = [
   {
@@ -388,24 +539,47 @@ const collectionTypes = [
   },
 ]
 
+// ── Form state — ImageContent fields: title, description, location, collectedBy ──
 const form = reactive({
   collectionType:   '',
-  contentLanguages: ['CKB'],
-  coverUrl:         '',
+  contentLanguages: [],
+  ckbCoverUrl:      '',
+  kmrCoverUrl:      '',
+  hoverCoverUrl:    '',
   publishmentDate:  '',
-  ckbContent: { title: '', description: '', topic: '', location: '', collectedBy: '' },
-  kmrContent: { title: '', description: '', topic: '', location: '', collectedBy: '' },
+  ckbContent: { title: '', description: '', location: '', collectedBy: '' },
+  kmrContent: { title: '', description: '', location: '', collectedBy: '' },
   tagsCkb: [], tagsKmr: [],
   keywordsCkb: [], keywordsKmr: [],
-  album: [],   // array of album items
+  album: [],
+  topicId:    null,
+  newTopic:   { nameCkb: '', nameKmr: '' },
+  clearTopic: false,
 })
 
-/* ── Album requirement label ── */
+// ── Topic helpers ──────────────────────────────────────────────────────────────
+const currentTopicName = computed(() => {
+  if (!form.topicId) return ''
+  const found = topics.value.find(t => t.id === form.topicId)
+  return found ? (found.nameCkb || found.nameKmr || `#${found.id}`) : `#${form.topicId}`
+})
+
+const fetchTopics = async () => {
+  topicsLoading.value = true
+  try {
+    const { data } = await api.get('/api/v1/image-collections/topics')
+    const arr = data?.data ?? data ?? []
+    topics.value = Array.isArray(arr) ? arr : []
+  } catch { /* non-fatal */ }
+  finally { topicsLoading.value = false }
+}
+
+// ── Album requirement indicators ───────────────────────────────────────────────
 const albumReqLabel = computed(() => {
   if (!form.collectionType) return ''
   const count = form.album.length
-  if (form.collectionType === 'SINGLE') return count === 1 ? '✓ ١ وێنە' : `${count}/١`
-  if (form.collectionType === 'GALLERY') return count >= 1 ? `✓ ${count} وێنە` : '١ یان زیاتر'
+  if (form.collectionType === 'SINGLE')      return count === 1 ? '✓ ١ وێنە' : `${count}/١`
+  if (form.collectionType === 'GALLERY')     return count >= 1 ? `✓ ${count} وێنە` : '١ یان زیاتر'
   if (form.collectionType === 'PHOTO_STORY') return count >= 2 ? `✓ ${count} وێنە` : `${count}/٢+`
   return ''
 })
@@ -413,63 +587,71 @@ const albumReqClass = computed(() => {
   if (!form.collectionType) return ''
   const count = form.album.length
   const ok = (form.collectionType === 'SINGLE' && count === 1) ||
-              (form.collectionType === 'GALLERY' && count >= 1) ||
-              (form.collectionType === 'PHOTO_STORY' && count >= 2)
+             (form.collectionType === 'GALLERY' && count >= 1) ||
+             (form.collectionType === 'PHOTO_STORY' && count >= 2)
   return ok ? 'album-req--ok' : 'album-req--warn'
 })
 
-/* ── Album item management ── */
+// ── Album item management ──────────────────────────────────────────────────────
 const makeItem = (useUrl = false) => ({
-  _key:           ++_keyCounter,
-  useUrl,
-  file:           null,
-  preview:        '',
-  imageUrl:       '',
-  externalUrl:    '',
-  embedUrl:       '',
-  captionCkb:     '',
-  captionKmr:     '',
-  descriptionCkb: '',
-  descriptionKmr: '',
-  sortOrder:      form.album.length,
+  _key: ++_keyCounter, useUrl,
+  file: null, preview: '',
+  imageUrl: '', externalUrl: '', embedUrl: '',
+  captionCkb: '', captionKmr: '',
+  descriptionCkb: '', descriptionKmr: '',
+  sortOrder: form.album.length,
 })
 
-const addAlbumItem  = (useUrl = false) => { form.album.push(makeItem(useUrl)) }
+const addAlbumItem    = (useUrl = false) => { form.album.push(makeItem(useUrl)) }
 const removeAlbumItem = (idx) => {
   if (form.album[idx]?.preview) URL.revokeObjectURL(form.album[idx].preview)
   form.album.splice(idx, 1)
 }
+const moveAlbumUp   = (idx) => { if (idx <= 0) return; [form.album[idx - 1], form.album[idx]] = [form.album[idx], form.album[idx - 1]] }
+const moveAlbumDown = (idx) => { if (idx >= form.album.length - 1) return; [form.album[idx + 1], form.album[idx]] = [form.album[idx], form.album[idx + 1]] }
 
 const onAlbumFile = (e, idx) => {
-  const f = e.target.files?.[0]
-  if (!f) return
+  const f = e.target.files?.[0]; if (!f) return
   if (form.album[idx].preview) URL.revokeObjectURL(form.album[idx].preview)
   form.album[idx].file    = f
   form.album[idx].preview = URL.createObjectURL(f)
 }
 
-/* ── Cover ── */
-const onCoverFile = (e) => {
-  const f = e.target.files?.[0]
-  if (!f) return
-  coverFile.value    = f
-  coverPreview.value = URL.createObjectURL(f)
-  form.coverUrl      = ''
-}
-const removeCover = () => {
-  if (coverPreview.value) URL.revokeObjectURL(coverPreview.value)
-  coverFile.value    = null
-  coverPreview.value = ''
-  form.coverUrl      = ''
+// ── Cover image handlers (3 slots) ────────────────────────────────────────────
+const setPreview = (refPreview, file) => {
+  if (refPreview.value) URL.revokeObjectURL(refPreview.value)
+  refPreview.value = file ? URL.createObjectURL(file) : ''
 }
 
-/* ── Load existing ── */
+const onCkbCoverFile = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  ckbCoverFile.value = f; setPreview(ckbCoverPreview, f); form.ckbCoverUrl = ''
+}
+const removeCkbCover = () => {
+  setPreview(ckbCoverPreview, null); ckbCoverFile.value = null; form.ckbCoverUrl = ''
+}
+const onKmrCoverFile = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  kmrCoverFile.value = f; setPreview(kmrCoverPreview, f); form.kmrCoverUrl = ''
+}
+const removeKmrCover = () => {
+  setPreview(kmrCoverPreview, null); kmrCoverFile.value = null; form.kmrCoverUrl = ''
+}
+const onHoverFile = (e) => {
+  const f = e.target.files?.[0]; if (!f) return
+  hoverFile.value = f; setPreview(hoverPreview, f); form.hoverCoverUrl = ''
+}
+const removeHover = () => {
+  setPreview(hoverPreview, null); hoverFile.value = null; form.hoverCoverUrl = ''
+}
+
+// ── Load existing record ───────────────────────────────────────────────────────
 const loadCollection = async () => {
   if (!isEdit.value) return
   fetching.value = true
   try {
     const { data } = await api.get('/api/v1/image-collections')
-    const all   = Array.isArray(data?.data) ? data.data : []
+    const all   = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
     const found = all.find(c => String(c.id) === String(route.params.id))
     if (found) applyCollection(found)
     else showToast('error', 'کۆکراوەکە نەدۆزرایەوە')
@@ -482,19 +664,30 @@ const loadCollection = async () => {
 
 const applyCollection = (c) => {
   form.collectionType   = c.collectionType || ''
-  form.contentLanguages = [...(c.contentLanguages || ['CKB'])]
+  form.contentLanguages = [...(c.contentLanguages || [])]
   activeLang.value      = form.contentLanguages[0] || 'CKB'
-  form.coverUrl         = c.coverUrl || ''
-  form.publishmentDate  = c.publishmentDate || ''
 
+  form.ckbCoverUrl   = c.ckbCoverUrl   || ''
+  form.kmrCoverUrl   = c.kmrCoverUrl   || ''
+  form.hoverCoverUrl = c.hoverCoverUrl || ''
+
+  setPreview(ckbCoverPreview, null); ckbCoverFile.value = null
+  setPreview(kmrCoverPreview, null); kmrCoverFile.value = null
+  setPreview(hoverPreview,    null); hoverFile.value    = null
+
+  form.publishmentDate = c.publishmentDate || ''
+
+  // ImageContent fields: title, description, location, collectedBy (no topic)
   if (c.ckbContent) Object.assign(form.ckbContent, {
-    title: c.ckbContent.title || '', description: c.ckbContent.description || '',
-    topic: c.ckbContent.topic || '', location: c.ckbContent.location || '',
+    title:       c.ckbContent.title       || '',
+    description: c.ckbContent.description || '',
+    location:    c.ckbContent.location    || '',
     collectedBy: c.ckbContent.collectedBy || '',
   })
   if (c.kmrContent) Object.assign(form.kmrContent, {
-    title: c.kmrContent.title || '', description: c.kmrContent.description || '',
-    topic: c.kmrContent.topic || '', location: c.kmrContent.location || '',
+    title:       c.kmrContent.title       || '',
+    description: c.kmrContent.description || '',
+    location:    c.kmrContent.location    || '',
     collectedBy: c.kmrContent.collectedBy || '',
   })
 
@@ -503,7 +696,16 @@ const applyCollection = (c) => {
   form.keywordsCkb = [...(c.keywords?.ckb || [])]
   form.keywordsKmr = [...(c.keywords?.kmr || [])]
 
-  // Restore album items as URL items (existing data always comes back as URLs)
+  if (c.topicId) {
+    form.topicId    = c.topicId
+    topicMode.value = 'existing'
+  } else {
+    form.topicId    = null
+    topicMode.value = 'none'
+  }
+  form.clearTopic = false
+  form.newTopic   = { nameCkb: '', nameKmr: '' }
+
   form.album = (c.imageAlbum || [])
     .slice()
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
@@ -512,56 +714,60 @@ const applyCollection = (c) => {
       useUrl:         true,
       file:           null,
       preview:        '',
-      imageUrl:       i.imageUrl     || '',
-      externalUrl:    i.externalUrl  || '',
-      embedUrl:       i.embedUrl     || '',
-      captionCkb:     i.captionCkb   || '',
-      captionKmr:     i.captionKmr   || '',
+      imageUrl:       i.imageUrl       || '',
+      externalUrl:    i.externalUrl    || '',
+      embedUrl:       i.embedUrl       || '',
+      captionCkb:     i.captionCkb     || '',
+      captionKmr:     i.captionKmr     || '',
       descriptionCkb: i.descriptionCkb || '',
       descriptionKmr: i.descriptionKmr || '',
       sortOrder:      i.sortOrder ?? 0,
     }))
 }
 
-/* ── Validation ── */
+// ── Validation ─────────────────────────────────────────────────────────────────
 const validate = () => {
   const e = {}
 
   if (!form.collectionType) e.collectionType = 'جۆری کۆکراوە پێویستە'
-  if (!form.contentLanguages.length) e.contentLanguages = 'کەمی یەک زمانیکی هەڵبژێرە'
-  if (!coverFile.value && !form.coverUrl.trim()) e.cover = 'کڤەر پێویستە — فایل بار بکە یان URL بنووسە'
+
+  if (!isEdit.value) {
+    const hasCoverFile = ckbCoverFile.value || kmrCoverFile.value || hoverFile.value
+    const hasCoverUrl  = form.ckbCoverUrl.trim() || form.kmrCoverUrl.trim() || form.hoverCoverUrl.trim()
+    if (!hasCoverFile && !hasCoverUrl) {
+      e.cover = 'کەمی یەک کڤەر پێویستە — فایل بار بکە یان URL بنووسە'
+    }
+  }
+
+  if (topicMode.value === 'existing' && !form.topicId)
+    e.topicId = 'موضوعێک هەڵبژێرە یان حالەتی "بێ موضوع" هەڵبژێرە'
+  if (topicMode.value === 'new' && !form.newTopic.nameCkb.trim() && !form.newTopic.nameKmr.trim())
+    e.newTopic = 'کەمی یەک ناوی موضوع (CKB یان KMR) پێویستە'
 
   const count = form.album.length
-  if (form.collectionType === 'SINGLE' && count !== 1) e.album = 'جۆری SINGLE پێویستی بە تەنها ١ وێنەیە'
-  if (form.collectionType === 'GALLERY' && count < 1) e.album = 'جۆری GALLERY پێویستی بە کەمی ١ وێنەیە'
-  if (form.collectionType === 'PHOTO_STORY' && count < 2) e.album = 'جۆری PHOTO_STORY پێویستی بە کەمی ٢ وێنەیە'
+  if (form.collectionType === 'SINGLE'      && count !== 1) e.album = 'جۆری SINGLE پێویستی بە تەنها ١ وێنەیە'
+  if (form.collectionType === 'GALLERY'     && count < 1)   e.album = 'جۆری GALLERY پێویستی بە کەمی ١ وێنەیە'
+  if (form.collectionType === 'PHOTO_STORY' && count < 2)   e.album = 'جۆری PHOTO_STORY پێویستی بە کەمی ٢ وێنەیە'
 
-  // Each URL item must have at least one url
   form.album.forEach((item, i) => {
-    if (item.useUrl && !item.imageUrl.trim() && !item.externalUrl.trim() && !item.embedUrl.trim()) {
-      e.album = `وێنەی #${i + 1}: پێویستە URL بنووسیت یان فایل بارکەیت`
-    }
-    if (!item.useUrl && !item.file) {
+    if (item.useUrl && !item.imageUrl.trim() && !item.externalUrl.trim() && !item.embedUrl.trim())
+      e.album = `وێنەی #${i + 1}: پێویستە imageUrl یان externalUrl یان embedUrl بنووسیت`
+    if (!item.useUrl && !item.file)
       e.album = `وێنەی #${i + 1}: فایلێک هەڵبژێرە`
-    }
   })
 
   errors.value = e
   return !Object.keys(e).length
 }
 
-/* ── Submit ── */
+// ── Submit ─────────────────────────────────────────────────────────────────────
 const submit = async () => {
-  if (!validate()) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
+  if (!validate()) { window.scrollTo({ top: 0, behavior: 'smooth' }); showToast('error', 'تکایە هەموو خانە پێویستەکان پڕ بکەوە'); return }
   saving.value = true
 
   try {
-    /*
-     * File-backed items MUST come first in imageAlbum array so their
-     * indices align with the `images` multipart file array the backend zips them against.
-     */
     const fileItems = form.album.filter(i => !i.useUrl && i.file)
-    const urlItems  = form.album.filter(i => i.useUrl)
+    const urlItems  = form.album.filter(i =>  i.useUrl)
 
     const buildItemDto = (item) => ({
       captionCkb:     item.captionCkb     || null,
@@ -569,47 +775,49 @@ const submit = async () => {
       descriptionCkb: item.descriptionCkb || null,
       descriptionKmr: item.descriptionKmr || null,
       sortOrder:      item.sortOrder ?? 0,
-      // for file items backend uses the uploaded file; keep imageUrl null
-      imageUrl:    item.useUrl ? (item.imageUrl    || null) : null,
-      externalUrl: item.useUrl ? (item.externalUrl || null) : null,
-      embedUrl:    item.useUrl ? (item.embedUrl     || null) : null,
+      imageUrl:       item.useUrl ? (item.imageUrl    || null) : null,
+      externalUrl:    item.useUrl ? (item.externalUrl || null) : null,
+      embedUrl:       item.useUrl ? (item.embedUrl    || null) : null,
+    })
+
+    // ImageContent DTO — matches embeddable fields exactly (no topic field)
+    const buildContentDto = (content) => ({
+      title:       content.title       || null,
+      description: content.description || null,
+      location:    content.location    || null,
+      collectedBy: content.collectedBy || null,
     })
 
     const dto = {
       collectionType:   form.collectionType,
       contentLanguages: form.contentLanguages,
-      coverUrl:         form.coverUrl || null,
-      publishmentDate:  form.publishmentDate || null,
+      ckbCoverUrl:   !ckbCoverFile.value ? (form.ckbCoverUrl   || null) : null,
+      kmrCoverUrl:   !kmrCoverFile.value ? (form.kmrCoverUrl   || null) : null,
+      hoverCoverUrl: !hoverFile.value    ? (form.hoverCoverUrl || null) : null,
+      publishmentDate: form.publishmentDate || null,
 
-      ckbContent: form.contentLanguages.includes('CKB') ? {
-        title:       form.ckbContent.title       || null,
-        description: form.ckbContent.description || null,
-        topic:       form.ckbContent.topic       || null,
-        location:    form.ckbContent.location     || null,
-        collectedBy: form.ckbContent.collectedBy || null,
-      } : null,
-
-      kmrContent: form.contentLanguages.includes('KMR') ? {
-        title:       form.kmrContent.title       || null,
-        description: form.kmrContent.description || null,
-        topic:       form.kmrContent.topic       || null,
-        location:    form.kmrContent.location     || null,
-        collectedBy: form.kmrContent.collectedBy || null,
-      } : null,
+      ckbContent: form.contentLanguages.includes('CKB') ? buildContentDto(form.ckbContent) : null,
+      kmrContent: form.contentLanguages.includes('KMR') ? buildContentDto(form.kmrContent) : null,
 
       tags:     { ckb: form.tagsCkb,     kmr: form.tagsKmr },
       keywords: { ckb: form.keywordsCkb, kmr: form.keywordsKmr },
 
-      // file items first, then url items — matches the images[] file order below
+      topicId:  topicMode.value === 'existing' ? (form.topicId || null) : null,
+      newTopic: topicMode.value === 'new'
+        ? { nameCkb: form.newTopic.nameCkb || null, nameKmr: form.newTopic.nameKmr || null }
+        : null,
+      ...(isEdit.value ? { clearTopic: form.clearTopic } : {}),
+
       imageAlbum: [...fileItems, ...urlItems].map(buildItemDto),
     }
 
     const fd = new FormData()
     fd.append('data', new Blob([JSON.stringify(dto)], { type: 'application/json' }))
 
-    if (coverFile.value) fd.append('cover', coverFile.value)
+    if (ckbCoverFile.value) fd.append('ckbCoverImage',   ckbCoverFile.value)
+    if (kmrCoverFile.value) fd.append('kmrCoverImage',   kmrCoverFile.value)
+    if (hoverFile.value)    fd.append('hoverCoverImage', hoverFile.value)
 
-    // Append files in the SAME order as fileItems in the dto
     fileItems.forEach(i => fd.append('images', i.file))
 
     const cfg = { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -630,23 +838,41 @@ const submit = async () => {
   }
 }
 
+// ── Delete ─────────────────────────────────────────────────────────────────────
 const doDelete = async () => {
   if (!confirm(`دڵنیای لە سڕینەوەی کۆکراوە #${route.params.id}؟`)) return
   try {
     await api.delete(`/api/v1/image-collections/${route.params.id}`)
     showToast('success', 'کۆکراوەکە سڕایەوە')
     setTimeout(() => router.push('/admin/image-collections'), 800)
-  } catch (e) {
-    showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
-  }
+  } catch (e) { showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت') }
 }
 
+// ── Toast ──────────────────────────────────────────────────────────────────────
 const showToast = (type, msg) => {
   toast.value = { show: true, type, msg }
   setTimeout(() => { toast.value.show = false }, 4000)
 }
 
-onMounted(loadCollection)
+// ── Watchers ───────────────────────────────────────────────────────────────────
+watch(() => form.collectionType, (v) => {
+  if (v === 'SINGLE' && form.album.length > 1) {
+    form.album.splice(1)
+    showToast('error', 'SINGLE تەنها ١ وێنە دەهێڵێت — زیادەکان سڕانەوە')
+  }
+})
+
+watch(() => form.contentLanguages.slice(), (langs) => {
+  if (langs.length && !langs.includes(activeLang.value)) {
+    activeLang.value = langs[0]
+  }
+}, { deep: true })
+
+// ── Mount ──────────────────────────────────────────────────────────────────────
+onMounted(() => {
+  fetchTopics()
+  loadCollection()
+})
 </script>
 
 <style scoped>
@@ -656,29 +882,50 @@ onMounted(loadCollection)
 .ice__back:hover { color:var(--crimson); border-color:var(--crimson); }
 .ice__title { font-size:1.4rem; font-weight:700; color:var(--text); }
 .ice__sub { font-size:.8rem; color:var(--muted); margin-top:.1rem; }
+
 .toast { display:flex; align-items:center; gap:.65rem; padding:.8rem 1.1rem; border-radius:var(--radius-sm); font-weight:600; font-size:.88rem; margin-bottom:1rem; }
 .toast__ico { font-size:1rem; }
 .toast--success { background:rgba(25,130,80,.1); border:1px solid rgba(25,130,80,.25); color:#186048; }
 .toast--error   { background:rgba(180,40,40,.08); border:1px solid rgba(180,40,40,.2); color:var(--crimson); }
 .toast-enter-active,.toast-leave-active { transition:.3s ease; }
 .toast-enter-from,.toast-leave-to { opacity:0; transform:translateY(-6px); }
+
 .loading-bar { height:3px; border-radius:2px; margin-bottom:.75rem; background:linear-gradient(90deg,var(--crimson),var(--gold),var(--crimson)); background-size:200% 100%; animation:shimmer 1.2s linear infinite; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
 .ice__layout { display:grid; grid-template-columns:1fr 320px; gap:1.25rem; align-items:start; }
 @media (max-width:900px) { .ice__layout { grid-template-columns:1fr; } }
+
 .card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-md); padding:1.35rem; box-shadow:var(--shadow-sm); margin-bottom:1.25rem; }
 .card--danger { border-color:rgba(140,21,21,.18); }
 .card--album  { padding-bottom:.9rem; }
 .card__hd { display:flex; align-items:center; gap:.6rem; font-weight:700; font-size:.95rem; color:var(--text); margin-bottom:1.1rem; padding-bottom:.75rem; border-bottom:1px solid var(--cream-dk); flex-wrap:wrap; }
 .card__hd--danger { color:var(--crimson); border-bottom-color:rgba(140,21,21,.1); }
 .card__hd-ico { font-size:1rem; }
-.card__hd-badge { margin-right:auto; background:var(--cream-dk); border:1px solid var(--border); border-radius:99px; padding:.1rem .6rem; font-size:.78rem; color:var(--muted); }
+.card__hd-optional { margin-right:auto; background:rgba(22,120,70,.08); border:1px solid rgba(22,120,70,.18); color:#166044; border-radius:99px; padding:.1rem .6rem; font-size:.72rem; font-weight:700; }
+.card__hint { font-size:.8rem; color:var(--muted); background:var(--cream); border:1px solid var(--border); border-radius:var(--radius-sm); padding:.55rem .75rem; margin-bottom:1rem; line-height:1.6; }
+.tab--active-lang { color:var(--text); }
+.tab--active-lang.tab--on { color:var(--crimson); }
+.tab__active-dot { width:6px; height:6px; border-radius:50%; background:var(--crimson); display:inline-block; margin-right:.2rem; }
+.lang-inactive-notice { display:flex; align-items:center; gap:.5rem; padding:.6rem .85rem; background:rgba(243,156,18,.07); border:1px solid rgba(243,156,18,.25); border-radius:var(--radius-sm); font-size:.8rem; color:#8c5f00; margin-bottom:.9rem; }
+.one-grid { display:flex; flex-direction:column; gap:.5rem; }
+.card__hd-badge { background:var(--cream-dk); border:1px solid var(--border); border-radius:99px; padding:.1rem .6rem; font-size:.78rem; color:var(--muted); }
 .danger-text { font-size:.84rem; color:var(--muted); margin-bottom:.85rem; line-height:1.65; }
 
-/* Album requirement indicator */
 .album-req { display:inline-flex; padding:.15rem .55rem; border-radius:99px; font-size:.72rem; font-weight:700; }
 .album-req--ok   { background:rgba(39,174,96,.1); color:#186040; border:1px solid rgba(39,174,96,.25); }
 .album-req--warn { background:rgba(243,156,18,.1); color:#8c5f00; border:1px solid rgba(243,156,18,.28); }
+
+/* Topic */
+.state-picks { display:flex; gap:.75rem; flex-wrap:wrap; }
+.state-pick { display:inline-flex; align-items:center; gap:.5rem; padding:.65rem 1rem; border-radius:var(--radius-sm); border:1.5px solid var(--border); cursor:pointer; transition:var(--transition); font-weight:700; user-select:none; }
+.state-pick input { display:none; }
+.state-pick:hover { border-color:var(--crimson); }
+.state-pick--on { background:rgba(140,21,21,.06); border-color:var(--crimson); color:var(--crimson); }
+.topics-loading { display:flex; align-items:center; gap:.6rem; padding:.7rem; color:var(--muted); font-size:.87rem; }
+.topics-empty { font-size:.82rem; color:var(--muted); padding:.5rem 0; }
+.topic-hint { display:flex; align-items:center; gap:.4rem; font-size:.78rem; color:var(--muted); background:var(--cream); border:1px solid var(--border); border-radius:var(--radius-sm); padding:.55rem .75rem; margin-top:.5rem; }
+.topic-current { display:inline-flex; align-items:center; gap:.5rem; padding:.55rem .85rem; border-radius:var(--radius-sm); background:rgba(140,21,21,.06); border:1px solid rgba(140,21,21,.18); color:var(--crimson); font-size:.88rem; font-weight:700; }
 
 /* Collection type picker */
 .type-picks { display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; }
@@ -698,6 +945,7 @@ onMounted(loadCollection)
 .lang-pick input { display:none; }
 .lang-pick:hover { border-color:var(--crimson); }
 .lang-pick--on { background:rgba(140,21,21,.06); border-color:var(--crimson); color:var(--crimson); }
+.lang-pick__flag { font-size:.85rem; }
 .lang-pick__code { font-size:.75rem; font-weight:700; opacity:.6; }
 
 /* Tabs */
@@ -708,6 +956,7 @@ onMounted(loadCollection)
 .tab__pip--ckb { background:#c8a800; }
 .tab__pip--kmr { background:#4a7af0; }
 .tab-panel { padding-top:.25rem; }
+
 .field { display:flex; flex-direction:column; gap:.4rem; margin-bottom:.95rem; }
 .lbl { font-weight:700; font-size:.83rem; color:var(--text); }
 .lbl--sm { font-size:.77rem; }
@@ -724,24 +973,24 @@ onMounted(loadCollection)
 .err { font-size:.78rem; color:#c0392b; font-weight:600; }
 .err--album { margin-bottom:.85rem; padding:.6rem .85rem; background:rgba(192,57,43,.06); border:1px solid rgba(192,57,43,.2); border-radius:var(--radius-sm); }
 
-/* ── ALBUM BUILDER ── */
+/* Album builder */
 .album-list { display:flex; flex-direction:column; gap:.85rem; margin-bottom:1rem; }
 .album-item { border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--cream); overflow:hidden; transition:border-color .2s ease; }
 .album-item:hover { border-color:rgba(140,21,21,.3); }
-.album-item__head { display:flex; align-items:center; gap:.5rem; padding:.6rem .85rem; background:var(--cream-dk); border-bottom:1px solid var(--border); }
+.album-item__head { display:flex; align-items:center; gap:.5rem; padding:.6rem .85rem; background:var(--cream-dk); border-bottom:1px solid var(--border); flex-wrap:wrap; }
 .album-item__num { width:24px; height:24px; border-radius:50%; background:var(--crimson); color:#fff; font-size:.72rem; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .album-item__del { margin-right:auto; width:26px; height:26px; border-radius:6px; background:none; border:1px solid var(--border); color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:var(--transition); flex-shrink:0; }
 .album-item__del:hover { background:rgba(140,21,21,.08); border-color:var(--crimson); color:var(--crimson); }
 .album-item__body { padding:.75rem .85rem; border-bottom:1px solid var(--border); }
 .album-item__meta { padding:.75rem .85rem; }
-
-/* Source toggle */
+.mini-btn { width:26px; height:26px; border-radius:8px; border:1px solid var(--border); background:var(--white); color:var(--muted); cursor:pointer; font-weight:900; transition:var(--transition); }
+.mini-btn:hover:not(:disabled) { border-color:var(--crimson); color:var(--crimson); }
+.mini-btn:disabled { opacity:.35; cursor:default; }
 .src-toggle { display:flex; border-radius:8px; overflow:hidden; border:1px solid var(--border); flex-shrink:0; }
 .src-btn { display:inline-flex; align-items:center; gap:.35rem; padding:.35rem .65rem; background:none; border:none; color:var(--muted); font-size:.76rem; font-weight:700; cursor:pointer; font-family:inherit; transition:var(--transition); white-space:nowrap; }
 .src-btn + .src-btn { border-right:1px solid var(--border); }
 .src-btn--on { background:var(--crimson); color:#fff; }
 
-/* File upload zone inside album item */
 .album-file-zone { position:relative; min-height:100px; border:2px dashed var(--border); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; transition:var(--transition); cursor:pointer; overflow:hidden; }
 .album-file-zone--has { border-color:rgba(140,21,21,.3); min-height:140px; }
 .album-file-zone__preview { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#0a0a0a; }
@@ -749,21 +998,27 @@ onMounted(loadCollection)
 .album-file-zone__label--overlay { position:absolute; inset:0; background:rgba(0,0,0,.55); color:rgba(255,255,255,.85); justify-content:center; border-radius:var(--radius-sm); opacity:0; transition:opacity .2s; }
 .album-file-zone:hover .album-file-zone__label--overlay { opacity:1; }
 
-/* URL fields inside album item */
-.album-url-fields { display:flex; flex-direction:column; gap:.45rem; }
+.album-url-fields { display:flex; flex-direction:column; gap:.5rem; }
 .url-preview { margin-top:.6rem; border-radius:6px; overflow:hidden; border:1px solid var(--border); max-height:120px; display:flex; align-items:center; justify-content:center; background:#0a0a0a; }
 .url-preview__img { max-width:100%; max-height:120px; object-fit:contain; display:block; }
 
-/* Album empty + actions */
 .album-empty { display:flex; flex-direction:column; align-items:center; gap:.65rem; padding:2.5rem 1rem; color:var(--muted); font-size:.87rem; text-align:center; border:2px dashed var(--border); border-radius:var(--radius-sm); margin-bottom:1rem; }
 .album-actions { display:flex; gap:.6rem; flex-wrap:wrap; padding-top:.25rem; }
 
-/* Cover preview */
+/* Cover slots */
+.img-block { margin-bottom:.1rem; }
+.img-block__title { font-weight:800; font-size:.84rem; color:var(--text); margin-bottom:.55rem; display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.img-block__hint { font-size:.72rem; color:var(--muted); font-weight:600; }
+.img-sep { height:1px; background:var(--cream-dk); margin:1rem 0; }
 .cover-preview { position:relative; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border); margin-bottom:.75rem; }
 .cover-preview img { width:100%; max-height:200px; object-fit:cover; display:block; }
 .cover-preview__remove { position:absolute; top:.5rem; left:.5rem; width:28px; height:28px; border-radius:50%; background:rgba(0,0,0,.55); color:#fff; border:none; cursor:pointer; font-size:.85rem; display:flex; align-items:center; justify-content:center; }
+.cover-preview--hover { border-color:rgba(124,58,237,.3); border-style:dashed; }
+.cover-preview__hover-badge { position:absolute; top:.5rem; right:.5rem; width:22px; height:22px; border-radius:5px; background:rgba(124,58,237,.85); color:#fff; font-size:.65rem; font-weight:900; display:flex; align-items:center; justify-content:center; }
 .upload-zone { border:2px dashed var(--border); border-radius:var(--radius-sm); cursor:pointer; transition:var(--transition); display:block; margin-bottom:.75rem; }
 .upload-zone:hover { border-color:var(--crimson); background:rgba(140,21,21,.03); }
+.upload-zone--hover { border-color:rgba(124,58,237,.3); }
+.upload-zone--hover:hover { border-color:rgba(124,58,237,.6); background:rgba(124,58,237,.03); }
 .upload-zone--sm .upload-zone__inner { padding:1.25rem; }
 .upload-zone__inner { display:flex; flex-direction:column; align-items:center; gap:.5rem; padding:1.75rem 1rem; color:var(--muted); font-size:.87rem; text-align:center; cursor:pointer; }
 
@@ -782,15 +1037,15 @@ onMounted(loadCollection)
 .btn:disabled { opacity:.55; cursor:not-allowed; transform:none!important; }
 .side-actions { display:flex; flex-direction:column; gap:.6rem; }
 .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+.spinner--dark { border-color:rgba(0,0,0,.15); border-top-color:var(--crimson); }
 @keyframes spin { to { transform:rotate(360deg) } }
 </style>
 
-<!-- TagInput global styles -->
 <style>
 .tag-input { display:flex; flex-direction:column; gap:.4rem; }
 .tag-input__tags { display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:.45rem .65rem; background:var(--cream); min-height:42px; transition:border-color .2s; }
 .tag-input__tags:focus-within { border-color:var(--crimson); background:var(--white); box-shadow:0 0 0 3px rgba(140,21,21,.1); }
-.tag-input__tag { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .55rem; border-radius:6px; font-size:.8rem; font-weight:600; }
+.tag-input__tag { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .55rem; border-radius:6px; font-size:.8rem; font-weight:700; }
 .tag-input__tag--default { background:var(--cream-dk); border:1px solid var(--border); color:var(--text); }
 .tag-input__tag--gold { background:rgba(254,221,0,.2); border:1px solid rgba(254,221,0,.4); color:#807000; }
 .tag-input__tag--blue { background:rgba(30,80,200,.1); border:1px solid rgba(30,80,200,.2); color:#1840a0; }

@@ -230,7 +230,7 @@
           <div class="total-card" v-if="!loading">
             <div class="total-card__label">کۆی گشتی تۆمارەکان</div>
             <div class="total-card__val">{{ totalContent }}</div>
-            <div class="total-card__sub">لە ٦ بەش</div>
+            <div class="total-card__sub">لە ٧ بەش</div>
           </div>
         </div>
 
@@ -302,6 +302,11 @@ const endpoints = [
     url: '/api/v1/writings',
     extract: d => Array.isArray(d) ? d.length : Array.isArray(d?.data) ? d.data.length : (d?.data?.totalElements ?? d?.totalElements ?? null)
   },
+  {
+    key: 'about',
+    url: '/api/v1/about',
+    extract: d => Array.isArray(d) ? d.length : Array.isArray(d?.data) ? d.data.length : (d?.data?.totalElements ?? d?.totalElements ?? null)
+  },
 ]
 
 const fetchCounts = async () => {
@@ -336,6 +341,7 @@ const palette = {
   writings:            { color: '#4338ca', soft: 'rgba(67,56,202,.08)',   to: '/admin/writings' },
   'image-collections': { color: '#6d28d9', soft: 'rgba(109,40,217,.08)', to: '/admin/image-collections' },
   soundtracks:         { color: '#be185d', soft: 'rgba(190,24,93,.08)',   to: '/admin/soundtracks' },
+  about:               { color: '#0369a1', soft: 'rgba(3,105,161,.08)',   to: '/admin/about' },
 }
 
 // ── Icon factory ────────────────────────────────────────────────
@@ -349,6 +355,7 @@ const icons = {
   writings:            svg('writings', 'M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z'),
   'image-collections': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${palette['image-collections'].color}" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
   soundtracks:         `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${palette.soundtracks.color}" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+  about:               `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${palette.about.color}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
 }
 
 // ── Data arrays ─────────────────────────────────────────────────
@@ -359,6 +366,7 @@ const statsDef = [
   { key: 'writings',          label: 'نووسراوەکان',  to: '/admin/writings' },
   { key: 'image-collections', label: 'وێنەکان',      to: '/admin/image-collections' },
   { key: 'soundtracks',       label: 'دەنگەکان',     to: '/admin/soundtracks' },
+  { key: 'about',             label: 'دەربارەکان',   to: '/admin/about' },
 ]
 const stats = statsDef.map(s => ({
   ...s, ...palette[s.key], icon: icons[s.key],
@@ -372,6 +380,7 @@ const qaIcons = {
   writings:            `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>`,
   images:              `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
   sounds:              `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+  about:               `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
 }
 
 const quickActions = [
@@ -381,6 +390,7 @@ const quickActions = [
   { label: 'نووسراوەی نوێ',  to: '/admin/writings/new',          icon: qaIcons.writings },
   { label: 'وێنەی نوێ',      to: '/admin/image-collections/new', icon: qaIcons.images },
   { label: 'دەنگی نوێ',      to: '/admin/soundtracks/new',       icon: qaIcons.sounds },
+  { label: 'دەربارەی نوێ',   to: '/admin/about/new',             icon: qaIcons.about },
 ]
 
 const shortcuts = [
@@ -390,6 +400,7 @@ const shortcuts = [
   { key: 'image-collections', label: 'کۆمەڵە وێنەکان', hint: 'گالەری و ئەرشیفی وێنەکان',            to: '/admin/image-collections', toNew: '/admin/image-collections/new', ...palette['image-collections'],icon: icons['image-collections'] },
   { key: 'soundtracks',       label: 'دەنگەکان',        hint: 'ئەرشیفی مووسیقا و دەنگ',              to: '/admin/soundtracks',       toNew: '/admin/soundtracks/new',       ...palette.soundtracks,         icon: icons.soundtracks },
   { key: 'writings',          label: 'نووسراوەکان',     hint: 'کتێب و نووسراوەی دیجیتاڵ',            to: '/admin/writings',          toNew: '/admin/writings/new',          ...palette.writings,            icon: icons.writings },
+  { key: 'about',             label: 'دەربارەکان',      hint: 'پەڕەکانی دەربارە و زانیاری',          to: '/admin/about',             toNew: '/admin/about/new',             ...palette.about,               icon: icons.about },
 ]
 
 const breakdownStats = [
@@ -399,6 +410,7 @@ const breakdownStats = [
   { key: 'image-collections', label: 'وێنەکان',      sub: 'کۆمەڵە و گالەری',       to: '/admin/image-collections', ...palette['image-collections'],icon: icons['image-collections'] },
   { key: 'soundtracks',       label: 'دەنگەکان',     sub: 'مووسیقا و تۆمار',       to: '/admin/soundtracks',       ...palette.soundtracks,         icon: icons.soundtracks },
   { key: 'writings',          label: 'نووسراوەکان',  sub: 'کتێب و نووسراوە',       to: '/admin/writings',          ...palette.writings,            icon: icons.writings },
+  { key: 'about',             label: 'دەربارەکان',   sub: 'پەڕەی دەربارە',         to: '/admin/about',             ...palette.about,               icon: icons.about },
 ]
 
 // ── Donut ────────────────────────────────────────────────────────
@@ -406,8 +418,8 @@ const donutSegments = computed(() => {
   const total = Math.max(1, totalRaw.value)
   const circ  = 2 * Math.PI * 60
   let cum = 0
-  const keys   = ['projects','news','videos','writings','image-collections','soundtracks']
-  const labels = { projects:'پڕۆژەکان', news:'هەواڵەکان', videos:'ڤیدیۆکان', writings:'نووسراوەکان', 'image-collections':'وێنەکان', soundtracks:'دەنگەکان' }
+  const keys   = ['projects','news','videos','writings','image-collections','soundtracks','about']
+  const labels = { projects:'پڕۆژەکان', news:'هەواڵەکان', videos:'ڤیدیۆکان', writings:'نووسراوەکان', 'image-collections':'وێنەکان', soundtracks:'دەنگەکان', about:'دەربارەکان' }
   return keys
     .map(key => {
       const count = counts.value[key] ?? 0

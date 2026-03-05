@@ -34,8 +34,17 @@
           <!-- Logged in: user menu -->
           <div v-if="authStore.isAuthenticated" class="user-menu" ref="userMenuRef">
             <button class="user-menu__trigger" @click="toggleUserMenu" :aria-expanded="userMenuOpen">
+              <!-- Avatar: reactive profileImage from store, fallback to initials -->
               <div class="user-menu__avatar">
-                {{ authStore.username?.charAt(0)?.toUpperCase() || 'K' }}
+                <img
+                  v-if="authStore.profileImage && !avatarError"
+                  :src="authStore.profileImage"
+                  :key="authStore.profileImage"
+                  :alt="authStore.username"
+                  class="user-menu__avatar-img"
+                  @error="avatarError = true"
+                />
+                <span v-else>{{ authStore.username?.charAt(0)?.toUpperCase() || 'K' }}</span>
               </div>
               <span class="user-menu__name">{{ authStore.username }}</span>
               <svg class="user-menu__chevron" :class="{ 'is-rotated': userMenuOpen }"
@@ -43,26 +52,67 @@
                 <path d="m6 9 6 6 6-6" />
               </svg>
             </button>
+
             <Transition name="dropdown">
               <div class="user-dropdown" v-show="userMenuOpen">
+                <!-- User info header -->
                 <div class="user-dropdown__info">
-                  <span class="user-dropdown__username">{{ authStore.username }}</span>
-                  <span class="user-dropdown__role">{{ authStore.role }}</span>
+                  <div class="user-dropdown__avatar-lg">
+                    <img
+                      v-if="authStore.profileImage && !avatarError"
+                      :src="authStore.profileImage"
+                      :key="authStore.profileImage"
+                      :alt="authStore.username"
+                      class="user-dropdown__avatar-img"
+                      @error="avatarError = true"
+                    />
+                    <span v-else>{{ authStore.username?.charAt(0)?.toUpperCase() || 'K' }}</span>
+                  </div>
+                  <div class="user-dropdown__info-text">
+                    <span class="user-dropdown__username">{{ authStore.username }}</span>
+                    <span class="user-dropdown__role">{{ getRoleLabel(authStore.role) }}</span>
+                  </div>
                 </div>
-                <router-link to="/admin" class="user-dropdown__item" @click="userMenuOpen = false">
+
+                <div class="user-dropdown__divider"></div>
+
+                <!-- Profile link -->
+                <router-link
+                  to="/profile"
+                  class="user-dropdown__item"
+                  @click="userMenuOpen = false"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <span>پرۆفایل</span>
+                  <span class="user-dropdown__item-badge">دەستکاری</span>
+                </router-link>
+
+                <!-- Dashboard link - only for ADMIN users -->
+                <router-link
+                  v-if="authStore.hasAdminAccess"
+                  to="/admin"
+                  class="user-dropdown__item"
+                  @click="userMenuOpen = false"
+                >
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
                     <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
                   </svg>
-                  {{ lang.t('nav.dashboard') }}
+                  <span>{{ lang.t('nav.dashboard') }}</span>
                 </router-link>
+
+                <div class="user-dropdown__divider"></div>
+
                 <button class="user-dropdown__item user-dropdown__item--danger" @click="handleLogout">
                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
                   </svg>
-                  {{ lang.t('nav.logout') }}
+                  <span>{{ lang.t('nav.logout') }}</span>
                 </button>
               </div>
             </Transition>
@@ -81,7 +131,6 @@
           <!-- ── Language Switcher ── -->
           <div class="lang-switcher" ref="langSwitcherRef">
             <button class="lang-switcher__trigger" @click="toggleLangMenu" :aria-expanded="langMenuOpen">
-              <!-- Kurdistan Flag -->
               <div class="lang-switcher__flag">
                 <svg viewBox="0 0 36 24" xmlns="http://www.w3.org/2000/svg">
                   <rect width="36" height="8" fill="#ED2939"/>
@@ -209,14 +258,40 @@
           <div class="mobile-menu__auth">
             <template v-if="authStore.isAuthenticated">
               <div class="mobile-menu__user-info">
-                <div class="mobile-menu__user-avatar">{{ authStore.username?.charAt(0)?.toUpperCase() || 'K' }}</div>
+                <div class="mobile-menu__user-avatar">
+                  <img
+                    v-if="authStore.profileImage && !avatarError"
+                    :src="authStore.profileImage"
+                    :key="authStore.profileImage"
+                    :alt="authStore.username"
+                    class="mobile-menu__user-avatar-img"
+                    @error="avatarError = true"
+                  />
+                  <span v-else>{{ authStore.username?.charAt(0)?.toUpperCase() || 'K' }}</span>
+                </div>
                 <div>
                   <p class="mobile-menu__user-name">{{ authStore.username }}</p>
-                  <p class="mobile-menu__user-role">{{ authStore.role }}</p>
+                  <p class="mobile-menu__user-role">{{ getRoleLabel(authStore.role) }}</p>
                 </div>
               </div>
               <div class="mobile-menu__auth-btns">
-                <router-link to="/admin" class="mobile-menu__auth-btn mobile-menu__auth-btn--secondary" @click="closeMobileMenu">
+                <router-link
+                  to="/profile"
+                  class="mobile-menu__auth-btn mobile-menu__auth-btn--profile"
+                  @click="closeMobileMenu"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  پرۆفایل
+                </router-link>
+                <router-link
+                  v-if="authStore.hasAdminAccess"
+                  to="/admin"
+                  class="mobile-menu__auth-btn mobile-menu__auth-btn--secondary"
+                  @click="closeMobileMenu"
+                >
                   {{ lang.t('nav.dashboard') }}
                 </router-link>
                 <button class="mobile-menu__auth-btn mobile-menu__auth-btn--danger" @click="handleLogout">
@@ -272,33 +347,41 @@ const authStore = useAuthStore()
 const lang      = useLanguageStore()
 
 // ── State ──────────────────────────────────────────────────────────
-const searchQuery    = ref('')
-const searchOpen     = ref(false)
-const searchInputRef = ref(null)
-const langMenuOpen   = ref(false)
+const searchQuery     = ref('')
+const searchOpen      = ref(false)
+const searchInputRef  = ref(null)
+const langMenuOpen    = ref(false)
 const langSwitcherRef = ref(null)
-const mobileMenuOpen = ref(false)
-const isScrolled     = ref(false)
-const userMenuOpen   = ref(false)
-const userMenuRef    = ref(null)
+const mobileMenuOpen  = ref(false)
+const isScrolled      = ref(false)
+const userMenuOpen    = ref(false)
+const userMenuRef     = ref(null)
 
-// ── Dialect list (CKB + KMR only, no English) ─────────────────────
+/**
+ * avatarError is reset whenever authStore.profileImage changes so that
+ * a freshly-uploaded image is always retried after a previous error.
+ */
+const avatarError = ref(false)
+watch(() => authStore.profileImage, () => { avatarError.value = false })
+
+// ── Role display label ────────────────────────────────────────────
+function getRoleLabel(role) {
+  const map = {
+    GUEST:       'میوان',
+    EMPLOYEE:    'فەرمانبەر',
+    ADMIN:       'بەرپرس',
+    SUPER_ADMIN: 'بەرپڕسی باڵا',
+  }
+  return map[role] || role || ''
+}
+
+// ── Dialect list ──────────────────────────────────────────────────
 const dialects = [
-  {
-    code: 'CKB',
-    name: 'کوردی (سۆرانی)',
-    shortName: 'کوردی',
-    description: 'کوردی ناوەندی',
-  },
-  {
-    code: 'KMR',
-    name: 'Kurdî (Kurmancî)',
-    shortName: 'Kurdî',
-    description: 'Kurdiya Bakur',
-  },
+  { code: 'CKB', name: 'کوردی (سۆرانی)', shortName: 'کوردی', description: 'کوردی ناوەندی' },
+  { code: 'KMR', name: 'Kurdî (Kurmancî)', shortName: 'Kurdî', description: 'Kurdiya Bakur' },
 ]
 
-// ── Menu items — reactive to language store ────────────────────────
+// ── Menu items ────────────────────────────────────────────────────
 const menuItems = computed(() => [
   { path: '/',             label: lang.t('nav.home') },
   { path: '/projects',     label: lang.t('nav.projects') },
@@ -310,25 +393,21 @@ const menuItems = computed(() => [
   { path: '/contact',      label: lang.t('nav.contact') },
 ])
 
-// ── Language switching ─────────────────────────────────────────────
-function selectDialect(code) {
-  lang.setLanguage(code)
-  langMenuOpen.value = false
-}
+// ── Language ──────────────────────────────────────────────────────
+function selectDialect(code) { lang.setLanguage(code); langMenuOpen.value = false }
+function toggleLangMenu()    { langMenuOpen.value = !langMenuOpen.value }
 
-// ── Auth ───────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────
 function toggleUserMenu() { userMenuOpen.value = !userMenuOpen.value }
 async function handleLogout() {
   userMenuOpen.value = false
   closeMobileMenu()
   await authStore.logout()
-  router.push('/')
+  // ✅ FIX: Full page reload to kill ALL in-memory Pinia/component state
+  window.location.href = '/login?logout=1'
 }
 
-// ── Language toggle ────────────────────────────────────────────────
-function toggleLangMenu() { langMenuOpen.value = !langMenuOpen.value }
-
-// ── Search ─────────────────────────────────────────────────────────
+// ── Search ────────────────────────────────────────────────────────
 function openSearch() {
   searchOpen.value = true
   document.body.style.overflow = 'hidden'
@@ -347,7 +426,7 @@ function performSearch() {
   }
 }
 
-// ── Mobile ─────────────────────────────────────────────────────────
+// ── Mobile ────────────────────────────────────────────────────────
 function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value
   document.body.style.overflow = mobileMenuOpen.value ? 'hidden' : ''
@@ -357,38 +436,36 @@ function closeMobileMenu() {
   document.body.style.overflow = ''
 }
 
-// ── Scroll ─────────────────────────────────────────────────────────
+// ── Scroll ────────────────────────────────────────────────────────
 function handleScroll() { isScrolled.value = window.scrollY > 10 }
 
-// ── Click outside ──────────────────────────────────────────────────
+// ── Click outside ─────────────────────────────────────────────────
 function handleClickOutside(e) {
   if (langSwitcherRef.value && !langSwitcherRef.value.contains(e.target)) langMenuOpen.value = false
   if (userMenuRef.value    && !userMenuRef.value.contains(e.target))    userMenuOpen.value = false
 }
 
-// ── Keyboard ───────────────────────────────────────────────────────
+// ── Keyboard ──────────────────────────────────────────────────────
 function handleKeydown(e) {
   if (e.key === 'Escape') {
-    if (searchOpen.value)   closeSearch()
+    if (searchOpen.value)     closeSearch()
     if (mobileMenuOpen.value) closeMobileMenu()
-    langMenuOpen.value  = false
-    userMenuOpen.value  = false
+    langMenuOpen.value = false
+    userMenuOpen.value = false
   }
 }
 
-// ── Lifecycle ──────────────────────────────────────────────────────
+// ── Lifecycle ─────────────────────────────────────────────────────
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   document.addEventListener('click', handleClickOutside)
   document.addEventListener('keydown', handleKeydown)
 })
-
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleKeydown)
 })
-
 watch(() => router.currentRoute.value, () => {
   closeMobileMenu()
   userMenuOpen.value = false
@@ -396,10 +473,7 @@ watch(() => router.currentRoute.value, () => {
 </script>
 
 <style scoped>
-/* ─── all the styles are unchanged from the original ─── */
-/* ============================================
-   CSS CUSTOM PROPERTIES
-   ============================================ */
+/* ─── CSS CUSTOM PROPERTIES ─────────────────────────────────────── */
 .site-header {
   --brand-primary: #8C1515;
   --brand-primary-light: #B83A4B;
@@ -540,8 +614,10 @@ watch(() => router.currentRoute.value, () => {
 .login-btn:active { transform: translateY(0); }
 @media (max-width: 1023px) { .login-btn__text { display: none; } }
 
+/* ── User Menu ── */
 .user-menu { display: none; position: relative; }
 @media (min-width: 768px) { .user-menu { display: block; } }
+
 .user-menu__trigger {
   display: flex; align-items: center; gap: .5rem;
   padding: .375rem .75rem .375rem .5rem;
@@ -550,12 +626,16 @@ watch(() => router.currentRoute.value, () => {
   transition: all var(--transition-fast);
 }
 .user-menu__trigger:hover { border-color: var(--brand-primary); background: var(--white); }
+
 .user-menu__avatar {
   width: 30px; height: 30px; border-radius: 50%;
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
   color: var(--white); font-size: .8125rem; font-weight: 700;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  overflow: hidden;
 }
+.user-menu__avatar-img { width: 100%; height: 100%; object-fit: cover; }
+
 .user-menu__name {
   font-family: var(--font-sans); font-size: .8125rem; font-weight: 600;
   color: var(--grey-900); max-width: 100px; overflow: hidden;
@@ -565,30 +645,63 @@ watch(() => router.currentRoute.value, () => {
 .user-menu__chevron { color: var(--grey-500); transition: transform var(--transition-fast); flex-shrink: 0; }
 .user-menu__chevron.is-rotated { transform: rotate(180deg); }
 
+/* ── User Dropdown ── */
 .user-dropdown {
   position: absolute; top: calc(100% + 8px);
-  inset-inline-end: 0; width: 200px;
+  inset-inline-end: 0; width: 230px;
   background: var(--white); border: 1.5px solid var(--grey-200);
   border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
   overflow: hidden; z-index: 200;
 }
+
 .user-dropdown__info {
-  padding: .875rem 1rem; background: var(--grey-50);
-  border-bottom: 1px solid var(--grey-100);
-  display: flex; flex-direction: column; gap: .125rem;
+  padding: 1rem; background: var(--grey-50);
+  display: flex; align-items: center; gap: .75rem;
 }
-.user-dropdown__username { font-size: .875rem; font-weight: 700; color: var(--grey-900); }
-.user-dropdown__role { font-size: .7rem; color: var(--grey-500); text-transform: uppercase; letter-spacing: .06em; }
+
+.user-dropdown__avatar-lg {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
+  color: var(--white); font-size: 1.125rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(140,21,21,.25);
+}
+.user-dropdown__avatar-img { width: 100%; height: 100%; object-fit: cover; }
+
+.user-dropdown__info-text { display: flex; flex-direction: column; gap: .125rem; min-width: 0; }
+.user-dropdown__username {
+  font-size: .9rem; font-weight: 700; color: var(--grey-900);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.user-dropdown__role {
+  font-size: .675rem; color: var(--brand-primary);
+  font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+}
+
+.user-dropdown__divider {
+  height: 1px; background: var(--grey-100); margin: .25rem 0;
+}
+
 .user-dropdown__item {
   display: flex; align-items: center; gap: .625rem; width: 100%;
-  padding: .75rem 1rem; background: none; border: none;
+  padding: .7rem 1rem; background: none; border: none;
   font-family: var(--font-sans); font-size: .875rem; color: var(--grey-900);
   text-decoration: none; cursor: pointer; text-align: start;
-  transition: all var(--transition-fast);
+  transition: all var(--transition-fast); position: relative;
 }
 .user-dropdown__item:hover { background: var(--grey-50); color: var(--brand-primary); }
 .user-dropdown__item--danger { color: #CC2936; }
 .user-dropdown__item--danger:hover { background: #FFF0F0; color: #CC2936; }
+
+/* Profile "دەستکاری" badge */
+.user-dropdown__item-badge {
+  margin-inline-start: auto;
+  font-size: .6rem; font-weight: 800;
+  color: var(--brand-primary);
+  background: rgba(140,21,21,.08);
+  padding: .15rem .4rem; border-radius: 4px;
+  letter-spacing: .03em;
+}
 
 /* ── Language Switcher ── */
 .lang-switcher { position: relative; }
@@ -769,18 +882,23 @@ watch(() => router.currentRoute.value, () => {
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
   color: var(--white); font-size: 1rem; font-weight: 700;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  overflow: hidden;
 }
+.mobile-menu__user-avatar-img { width: 100%; height: 100%; object-fit: cover; }
 .mobile-menu__user-name { font-size: .9375rem; font-weight: 700; color: var(--grey-900); margin: 0; }
 .mobile-menu__user-role { font-size: .7rem; color: var(--grey-500); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
-.mobile-menu__auth-btns { display: flex; gap: .625rem; }
+.mobile-menu__auth-btns { display: flex; flex-wrap: wrap; gap: .625rem; }
 .mobile-menu__auth-btn {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: .5rem;
+  flex: 1; min-width: calc(50% - .3125rem);
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
   padding: .75rem; border-radius: var(--radius-md); font-family: var(--font-sans);
   font-size: .875rem; font-weight: 600; cursor: pointer; text-decoration: none;
   border: none; text-align: center; transition: all var(--transition-fast);
 }
-.mobile-menu__auth-btn--primary { background-color: var(--brand-primary); color: var(--white); box-shadow: 0 2px 8px rgba(140,21,21,.25); }
+.mobile-menu__auth-btn--primary  { background-color: var(--brand-primary); color: var(--white); box-shadow: 0 2px 8px rgba(140,21,21,.25); }
 .mobile-menu__auth-btn--primary:hover { background-color: var(--brand-primary-dark); }
+.mobile-menu__auth-btn--profile  { background: rgba(140,21,21,.08); color: var(--brand-primary); border: 1.5px solid rgba(140,21,21,.2); }
+.mobile-menu__auth-btn--profile:hover { background: rgba(140,21,21,.14); }
 .mobile-menu__auth-btn--secondary { background-color: var(--grey-50); color: var(--grey-900); border: 1px solid var(--grey-200); }
 .mobile-menu__auth-btn--secondary:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
 .mobile-menu__auth-btn--danger { background-color: #FFF0F0; color: #CC2936; border: 1px solid #F5C6C8; }
