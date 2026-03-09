@@ -20,7 +20,7 @@
         <input
           v-model="searchQ"
           class="search__input"
-          placeholder="گەڕان بە ناونیشان، تاگ یا کیووەرد…"
+          placeholder="گەڕان بە ناونیشان، تاگ یا کیوۆرد"
           @input="onSearch"
         />
         <Transition name="fade">
@@ -92,7 +92,7 @@
             <th style="width:66px">کڤەر</th>
             <th>ناونیشانی سۆرانی</th>
             <th>ناونیشانی کورمانجی</th>
-            <th style="width:180px">کاتێگۆری</th>
+            <th style="width:180px">پۆل</th>
             <th style="width:100px">دۆخ</th>
             <th style="width:112px">بەروار</th>
             <th style="width:88px">زمان</th>

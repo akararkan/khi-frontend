@@ -47,27 +47,27 @@
 
           <!-- Topic -->
           <section class="card">
-            <div class="card__hd"><span class="card__hd-ico">🏷</span> موضوع (Topic)</div>
+            <div class="card__hd"><span class="card__hd-ico">🏷</span> بابەت (Topic)</div>
             <div class="state-picks">
               <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'none' }">
-                <input type="radio" value="none" v-model="topicMode" />بێ موضوع
+                <input type="radio" value="none" v-model="topicMode" />بێ بابەت
               </label>
               <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'existing' }">
                 <input type="radio" value="existing" v-model="topicMode" />
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                موضوعی هەبوو
+                بابەتی هەبوو
               </label>
               <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'new' }">
                 <input type="radio" value="new" v-model="topicMode" />
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                موضوعی نوێ دروستبکە
+                بابەتی نوێ دروستبکە
               </label>
             </div>
 
             <div v-if="topicMode === 'existing'" class="field" style="margin-top:.9rem">
-              <label class="lbl lbl--req">موضوع هەڵبژێرە</label>
+              <label class="lbl lbl--req">بابەت هەڵبژێرە</label>
               <div v-if="topicsLoading" class="topics-loading">
-                <div class="spinner spinner--dark"></div><span>موضوعەکان بارکردن…</span>
+                <div class="spinner spinner--dark"></div><span>بابەتەکان بارکردن…</span>
               </div>
               <select v-else v-model="form.topicId" class="inp">
                 <option :value="null">— هیچ —</option>
@@ -76,24 +76,24 @@
                   <template v-if="tp.nameCkb && tp.nameKmr"> — {{ tp.nameKmr }}</template>
                 </option>
               </select>
-              <div v-if="!topics.length && !topicsLoading" class="topics-empty">هیچ موضوعێک نییە — دەتوانیت نوێ دروستبکەیت</div>
+              <div v-if="!topics.length && !topicsLoading" class="topics-empty">هیچ بابەتێک نییە — دەتوانیت نوێ دروستبکەیت</div>
               <div v-if="errors.topicId" class="err">{{ errors.topicId }}</div>
             </div>
 
             <div v-if="topicMode === 'new'" style="margin-top:.9rem">
               <div class="two-grid">
                 <div class="field">
-                  <label class="lbl">ناوی موضوع (سۆرانی)</label>
-                  <input v-model.trim="form.newTopic.nameCkb" class="inp" placeholder="ناوی موضوع بە سۆرانی…" />
+                  <label class="lbl">ناوی بابەت (سۆرانی)</label>
+                  <input v-model.trim="form.newTopic.nameCkb" class="inp" placeholder="ناوی بابەت بە سۆرانی…" />
                 </div>
                 <div class="field">
-                  <label class="lbl">ناوی موضوع (کورمانجی)</label>
+                  <label class="lbl">ناوی بابەت (کورمانجی)</label>
                   <input v-model.trim="form.newTopic.nameKmr" class="inp" placeholder="Navê mijarê bi Kurmancî…" />
                 </div>
               </div>
               <div class="topic-hint">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                موضوعی نوێ دروست دەکرێت و بە ئەم کۆکراوەیەوە دابمەزرێت
+                بابەتی نوێ دروست دەکرێت و بە ئەم کۆکراوەیەوە دابمەزرێت
               </div>
               <div v-if="errors.newTopic" class="err">{{ errors.newTopic }}</div>
             </div>
@@ -101,14 +101,14 @@
             <div v-if="isEdit && topicMode === 'existing'" style="margin-top:.75rem">
               <label class="lang-pick" :class="{ 'lang-pick--on': form.clearTopic }">
                 <input type="checkbox" v-model="form.clearTopic" />
-                <span>سڕینەوەی موضوعی ئێستا</span>
+                <span>سڕینەوەی بابەتی ئێستا</span>
               </label>
             </div>
           </section>
 
           <!-- Current topic preview (edit only) -->
           <section class="card" v-if="isEdit && currentTopicName">
-            <div class="card__hd"><span class="card__hd-ico">🏷</span> موضوعی ئێستا</div>
+            <div class="card__hd"><span class="card__hd-ico">🏷</span> بابەتی ئێستا</div>
             <div class="topic-current">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
               {{ currentTopicName }}
@@ -126,11 +126,11 @@
             <div class="lang-picks">
               <label class="lang-pick" :class="{ 'lang-pick--on': form.contentLanguages.includes('CKB') }">
                 <input type="checkbox" value="CKB" v-model="form.contentLanguages" />
-                <span class="lang-pick__flag">🟡</span> سۆرانی <span class="lang-pick__code">CKB</span>
+                <span class="lang-pick__flag">🟡</span> سۆرانی <span class="lang-pick__code">سۆرانی</span>
               </label>
               <label class="lang-pick" :class="{ 'lang-pick--on': form.contentLanguages.includes('KMR') }">
                 <input type="checkbox" value="KMR" v-model="form.contentLanguages" />
-                <span class="lang-pick__flag">🔵</span> کورمانجی <span class="lang-pick__code">KMR</span>
+                <span class="lang-pick__flag">🔵</span> کورمانجی <span class="lang-pick__code">کورمانجی</span>
               </label>
             </div>
           </section>
@@ -153,7 +153,7 @@
                 }"
                 @click="activeLang = lang">
                 <span class="tab__pip" :class="`tab__pip--${lang.toLowerCase()}`"></span>
-                {{ lang === 'CKB' ? 'سۆرانی (CKB)' : 'کورمانجی (KMR)' }}
+                {{ lang === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
                 <span v-if="form.contentLanguages.includes(lang)" class="tab__active-dot" title="ئەم زمانە هەڵبژێردراوە"></span>
               </button>
             </div>
@@ -183,12 +183,12 @@
                 </div>
               </div>
               <div class="field">
-                <label class="lbl">تاگەکان (CKB)</label>
-                <TagInput v-model="form.tagsCkb" placeholder="تاگی نوێ زیاد بکە" color="gold" />
+                <label class="lbl">نیشانەکان (سۆرانی)</label>
+                <TagInput v-model="form.tagsCkb" placeholder="نیشانەی نوێ زیاد بکە" color="gold" />
               </div>
               <div class="field">
-                <label class="lbl">کیووەردەکان (CKB)</label>
-                <TagInput v-model="form.keywordsCkb" placeholder="کیووەردی نوێ" color="blue" />
+                <label class="lbl">کلیلەوشەکان (سۆرانی)</label>
+                <TagInput v-model="form.keywordsCkb" placeholder="کلیلەوشەی نوێ" color="blue" />
               </div>
             </div>
 
@@ -199,30 +199,30 @@
                 زمانی کورمانجی هەڵنەبژێردراوە — ئەگەر ناوەڕۆک بنووسیت، پێویستە کورمانجی هەڵبژێریت
               </div>
               <div class="field">
-                <label class="lbl">Sernavê (KMR)</label>
+                <label class="lbl">Sernavê (کورمانجی)</label>
                 <input v-model="form.kmrContent.title" class="inp" placeholder="Sernavê koleksiyonê bi Kurmancî…" />
               </div>
               <div class="field">
-                <label class="lbl">Danasîn (KMR)</label>
+                <label class="lbl">Danasîn (کورمانجی)</label>
                 <textarea v-model="form.kmrContent.description" class="inp ta" placeholder="Danasîn bi Kurmancî…"></textarea>
               </div>
               <div class="two-grid">
                 <div class="field">
-                  <label class="lbl">Cih (KMR)</label>
+                  <label class="lbl">Cih (کورمانجی)</label>
                   <input v-model="form.kmrContent.location" class="inp" placeholder="Cih yan herêm…" />
                 </div>
                 <div class="field">
-                  <label class="lbl">Berhevkar (KMR)</label>
+                  <label class="lbl">Berhevkar (کورمانجی)</label>
                   <input v-model="form.kmrContent.collectedBy" class="inp" placeholder="Navê berhevkar…" />
                 </div>
               </div>
               <div class="field">
-                <label class="lbl">Tagan (KMR)</label>
-                <TagInput v-model="form.tagsKmr" placeholder="Tagê nû" color="gold" />
+                <label class="lbl">نیشانەکان (کورمانجی)</label>
+                <TagInput v-model="form.tagsKmr" placeholder="نیشانەی نوێ" color="gold" />
               </div>
               <div class="field">
-                <label class="lbl">Peyvên kilîtê (KMR)</label>
-                <TagInput v-model="form.keywordsKmr" placeholder="Keyword" color="blue" />
+                <label class="lbl">کلیلەوشەکان (کورمانجی)</label>
+                <TagInput v-model="form.keywordsKmr" placeholder="کلیلەوشەی نوێ" color="blue" />
               </div>
             </div>
           </section>
@@ -251,7 +251,7 @@
                     </button>
                     <button type="button" class="src-btn" :class="{ 'src-btn--on': item.useUrl }" @click="item.useUrl = true">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                      لینک URL
+                      لینکی URL
                     </button>
                   </div>
 
@@ -279,15 +279,15 @@
                 <div v-else class="album-item__body">
                   <div class="album-url-fields">
                     <div class="field">
-                      <label class="lbl lbl--sm">imageUrl</label>
+                      <label class="lbl lbl--sm">لینکی وێنە</label>
                       <input v-model="item.imageUrl" class="inp inp--sm" placeholder="S3/CDN direct url…" />
                     </div>
                     <div class="field">
-                      <label class="lbl lbl--sm">externalUrl</label>
+                      <label class="lbl lbl--sm">لینکی دەرەکی</label>
                       <input v-model="item.externalUrl" class="inp inp--sm" placeholder="لینکی دەرەکی (ئارەزوویانە)" />
                     </div>
                     <div class="field">
-                      <label class="lbl lbl--sm">embedUrl</label>
+                      <label class="lbl lbl--sm">لینکی Embed</label>
                       <input v-model="item.embedUrl" class="inp inp--sm" placeholder="YouTube یان Embed (ئارەزوویانە)" />
                     </div>
                   </div>
@@ -300,21 +300,21 @@
                 <div class="album-item__meta">
                   <div :class="form.contentLanguages.length === 2 ? 'two-grid two-grid--sm' : 'one-grid'">
                     <div class="field" v-if="!form.contentLanguages.length || form.contentLanguages.includes('CKB')">
-                      <label class="lbl lbl--sm">کاپشن سۆرانی</label>
-                      <input v-model="item.captionCkb" class="inp inp--sm" placeholder="کاپشنی کورتی وێنە…" />
+                      <label class="lbl lbl--sm">ناونیشانی وێنە (سۆرانی)</label>
+                      <input v-model="item.captionCkb" class="inp inp--sm" placeholder="ناونیشانی کورتی وێنە…" />
                     </div>
                     <div class="field" v-if="!form.contentLanguages.length || form.contentLanguages.includes('KMR')">
-                      <label class="lbl lbl--sm">کاپشن کورمانجی</label>
+                      <label class="lbl lbl--sm">ناونیشانی وێنە (کورمانجی)</label>
                       <input v-model="item.captionKmr" class="inp inp--sm" placeholder="Sernavê kurt…" />
                     </div>
                   </div>
                   <div :class="form.contentLanguages.length === 2 ? 'two-grid two-grid--sm' : 'one-grid'" style="margin-top:.4rem;">
                     <div class="field" v-if="!form.contentLanguages.length || form.contentLanguages.includes('CKB')">
-                      <label class="lbl lbl--sm">وەسف سۆرانی</label>
+                      <label class="lbl lbl--sm">وەسف (سۆرانی)</label>
                       <textarea v-model="item.descriptionCkb" class="inp inp--sm ta ta--sm" placeholder="وەسفی وێنە بە سۆرانی…"></textarea>
                     </div>
                     <div class="field" v-if="!form.contentLanguages.length || form.contentLanguages.includes('KMR')">
-                      <label class="lbl lbl--sm">وەسف کورمانجی</label>
+                      <label class="lbl lbl--sm">وەسف (کورمانجی)</label>
                       <textarea v-model="item.descriptionKmr" class="inp inp--sm ta ta--sm" placeholder="Danasîna wêneyê…"></textarea>
                     </div>
                   </div>
@@ -339,7 +339,7 @@
                 :disabled="form.collectionType === 'SINGLE' && form.album.length >= 1"
                 @click="addAlbumItem(true)">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                وێنەی نوێ (URL)
+                وێنەی نوێ (لینکی URL)
               </button>
             </div>
           </section>
@@ -351,11 +351,11 @@
 
           <!-- ── 3 Cover Slots ── -->
           <section class="card">
-            <div class="card__hd"><span class="card__hd-ico">🖼</span> وێنەی کڤەر</div>
+            <div class="card__hd"><span class="card__hd-ico">🖼</span> وێنەی ڕووکار</div>
 
             <!-- CKB Cover -->
             <div class="img-block">
-              <div class="img-block__title">کڤەری سۆرانی (CKB)</div>
+              <div class="img-block__title">وێنەی ڕووکاری سۆرانی</div>
               <div class="cover-preview" v-if="ckbCoverPreview || form.ckbCoverUrl">
                 <img :src="ckbCoverPreview || form.ckbCoverUrl" alt="ckb cover preview" />
                 <button type="button" class="cover-preview__remove" @click="removeCkbCover">✕</button>
@@ -364,7 +364,7 @@
                 <input type="file" accept="image/*" @change="onCkbCoverFile" style="display:none;" />
                 <div class="upload-zone__inner">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  <span>هەڵبژاردنی کڤەری سۆرانی</span>
+                  <span>هەڵبژاردنی وێنەی ڕووکاری سۆرانی</span>
                 </div>
               </label>
               <div class="field" style="margin-top:.75rem;">
@@ -377,7 +377,7 @@
 
             <!-- KMR Cover -->
             <div class="img-block">
-              <div class="img-block__title">کڤەری کورمانجی (KMR)</div>
+              <div class="img-block__title">وێنەی ڕووکاری کورمانجی</div>
               <div class="cover-preview" v-if="kmrCoverPreview || form.kmrCoverUrl">
                 <img :src="kmrCoverPreview || form.kmrCoverUrl" alt="kmr cover preview" />
                 <button type="button" class="cover-preview__remove" @click="removeKmrCover">✕</button>
@@ -386,7 +386,7 @@
                 <input type="file" accept="image/*" @change="onKmrCoverFile" style="display:none;" />
                 <div class="upload-zone__inner">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  <span>هەڵبژاردنی کڤەری کورمانجی</span>
+                  <span>هەڵبژاردنی وێنەی ڕووکاری کورمانجی</span>
                 </div>
               </label>
               <div class="field" style="margin-top:.75rem;">
@@ -400,7 +400,7 @@
             <!-- Hover Cover -->
             <div class="img-block">
               <div class="img-block__title">
-                Hover Image
+                وێنەی ماووس (Hover)
                 <span class="img-block__hint">دەرکەوتە لە سەر hover</span>
               </div>
               <div class="cover-preview cover-preview--hover" v-if="hoverPreview || form.hoverCoverUrl">
@@ -412,7 +412,7 @@
                 <input type="file" accept="image/*" @change="onHoverFile" style="display:none;" />
                 <div class="upload-zone__inner">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  <span>هەڵبژاردنی وێنەی Hover</span>
+                  <span>هەڵبژاردنی وێنەی ماووس</span>
                 </div>
               </label>
               <div class="field" style="margin-top:.75rem;">

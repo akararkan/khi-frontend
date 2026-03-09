@@ -675,7 +675,7 @@ const filtered = computed(() => {
 const fetchAll = async (page = 0) => {
   loading.value = true
   try {
-    const { data } = await api.get('/api/publishments/videos', { params: { page, size: pageSize } })
+    const { data } = await api.get('/api/v1/videos', { params: { page, size: pageSize } })
     if (Array.isArray(data)) {
       items.value = data.map(normalize)
       totalPages.value = 1
@@ -699,7 +699,7 @@ const doDelete = async () => {
   if (!deleteTarget.value) return
   deleting.value = true
   try {
-    await api.delete(`/api/publishments/videos/${deleteTarget.value.id}`)
+    await api.delete(`/api/v1/videos/${deleteTarget.value.id}`)
     items.value = items.value.filter(x => x.id !== deleteTarget.value.id)
     deleteTarget.value = null
   } catch (e) {

@@ -33,7 +33,7 @@
 
           <!-- Video Type -->
           <section class="card">
-            <div class="card__hd"><span class="card__hd-ico">🎬</span> جۆری ڤیدیۆ (Video Type)</div>
+            <div class="card__hd"><span class="card__hd-ico">🎬</span> جۆری ڤیدیۆ</div>
             <div class="state-picks">
               <label class="state-pick" :class="{ 'state-pick--on': form.videoType === 'FILM' }">
                 <input type="radio" value="FILM" v-model="form.videoType" />
@@ -68,31 +68,31 @@
 
           <!-- Topic -->
           <section class="card">
-            <div class="card__hd"><span class="card__hd-ico">🏷</span> موضوع (Topic)</div>
+            <div class="card__hd"><span class="card__hd-ico">🏷</span> بابەت (Topic)</div>
             <div class="state-picks">
               <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'none' }">
-                <input type="radio" value="none" v-model="topicMode" /> بێ موضوع
+                <input type="radio" value="none" v-model="topicMode" /> بێ بابەت
               </label>
               <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'existing' }">
                 <input type="radio" value="existing" v-model="topicMode" />
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
                 </svg>
-                موضوعی هەبوو
+                بابەتی هەبوو
               </label>
               <label class="state-pick" :class="{ 'state-pick--on': topicMode === 'new' }">
                 <input type="radio" value="new" v-model="topicMode" />
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
-                موضوعی نوێ
+                بابەتی نوێ
               </label>
             </div>
 
             <div v-if="topicMode === 'existing'" class="field" style="margin-top:.9rem">
-              <label class="lbl lbl--req">موضوع هەڵبژێرە</label>
+              <label class="lbl lbl--req">بابەت هەڵبژێرە</label>
               <div v-if="topicsLoading" class="topics-loading">
-                <div class="spinner spinner--dark"></div><span>موضوعەکان بارکردن…</span>
+                <div class="spinner spinner--dark"></div><span>بابەتەکان بارکردن…</span>
               </div>
               <select v-else v-model="form.topicId" class="inp">
                 <option :value="null">— هیچ —</option>
@@ -107,11 +107,11 @@
             <div v-if="topicMode === 'new'" style="margin-top:.9rem">
               <div class="two-grid">
                 <div class="field">
-                  <label class="lbl">ناوی موضوع (سۆرانی)</label>
-                  <input v-model.trim="form.newTopic.nameCkb" class="inp" placeholder="ناوی موضوع بە سۆرانی…" />
+                  <label class="lbl">ناوی بابەت (سۆرانی)</label>
+                  <input v-model.trim="form.newTopic.nameCkb" class="inp" placeholder="ناوی بابەت بە سۆرانی…" />
                 </div>
                 <div class="field">
-                  <label class="lbl">ناوی موضوع (کورمانجی)</label>
+                  <label class="lbl">ناوی بابەت (کورمانجی)</label>
                   <input v-model.trim="form.newTopic.nameKmr" class="inp" placeholder="Navê mijarê bi Kurmancî…" />
                 </div>
               </div>
@@ -119,7 +119,7 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
-                موضوعی نوێ دروست دەکرێت و بە ئەم ڤیدیۆیەوە دابمەزرێت
+                بابەتی نوێ دروست دەکرێت و بە ئەم ڤیدیۆیەوە دابمەزرێت
               </div>
               <div v-if="errors.newTopic" class="err">{{ errors.newTopic }}</div>
             </div>
@@ -127,7 +127,7 @@
             <div v-if="isEdit && topicMode === 'existing'" style="margin-top:.75rem">
               <label class="lang-pick" :class="{ 'lang-pick--on': form.clearTopic }">
                 <input type="checkbox" v-model="form.clearTopic" />
-                <span>سڕینەوەی موضوعی ئێستا</span>
+                <span>سڕینەوەی بابەتی ئێستا</span>
               </label>
             </div>
           </section>
@@ -138,11 +138,11 @@
             <div class="lang-picks">
               <label class="lang-pick" :class="{ 'lang-pick--on': form.contentLanguages.includes('CKB') }">
                 <input type="checkbox" value="CKB" v-model="form.contentLanguages" />
-                <span class="lang-pick__flag">🟡</span> سۆرانی <span class="lang-pick__code">CKB</span>
+                <span class="lang-pick__flag">🟡</span> سۆرانی <span class="lang-pick__code">سۆرانی</span>
               </label>
               <label class="lang-pick" :class="{ 'lang-pick--on': form.contentLanguages.includes('KMR') }">
                 <input type="checkbox" value="KMR" v-model="form.contentLanguages" />
-                <span class="lang-pick__flag">🔵</span> کورمانجی <span class="lang-pick__code">KMR</span>
+                <span class="lang-pick__flag">🔵</span> کورمانجی <span class="lang-pick__code">کورمانجی</span>
               </label>
             </div>
             <div v-if="errors.contentLanguages" class="err">{{ errors.contentLanguages }}</div>
@@ -160,7 +160,7 @@
                 @click="activeLang = lang"
               >
                 <span class="tab__pip" :class="`tab__pip--${lang.toLowerCase()}`"></span>
-                {{ lang === 'CKB' ? 'سۆرانی (CKB)' : 'کورمانجی (KMR)' }}
+                {{ lang === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
               </button>
             </div>
 
@@ -189,12 +189,12 @@
                 <input v-model="form.ckbContent.location" class="inp" placeholder="شوێنی تۆمارکردن…" />
               </div>
               <div class="field">
-                <label class="lbl">تاگەکان (CKB)</label>
-                <TagInput v-model="form.tagsCkb" placeholder="تاگی نوێ زیاد بکە" color="gold" />
+                <label class="lbl">نیشانەکان (سۆرانی)</label>
+                <TagInput v-model="form.tagsCkb" placeholder="نیشانەی نوێ زیاد بکە" color="gold" />
               </div>
               <div class="field">
-                <label class="lbl">کیووەردەکان (CKB)</label>
-                <TagInput v-model="form.keywordsCkb" placeholder="کیووەردی نوێ" color="blue" />
+                <label class="lbl">کلیلەوشەکان (سۆرانی)</label>
+                <TagInput v-model="form.keywordsCkb" placeholder="کلیلەوشەی نوێ" color="blue" />
               </div>
             </div>
 
@@ -223,12 +223,12 @@
                 <input v-model="form.kmrContent.location" class="inp" placeholder="Cihê tomarkirinê…" />
               </div>
               <div class="field">
-                <label class="lbl">تاگەکان (KMR)</label>
-                <TagInput v-model="form.tagsKmr" placeholder="Tagê nû" color="gold" />
+                <label class="lbl">نیشانەکان (کورمانجی)</label>
+                <TagInput v-model="form.tagsKmr" placeholder="نیشانەی نوێ" color="gold" />
               </div>
               <div class="field">
-                <label class="lbl">کیووەردەکان (KMR)</label>
-                <TagInput v-model="form.keywordsKmr" placeholder="Keyword" color="blue" />
+                <label class="lbl">کلیلەوشەکان (کورمانجی)</label>
+                <TagInput v-model="form.keywordsKmr" placeholder="کلیلەوشەی نوێ" color="blue" />
               </div>
             </div>
 
@@ -281,7 +281,7 @@
 
           <!-- FILM Source -->
           <section class="card" v-if="form.videoType === 'FILM'">
-            <div class="card__hd"><span class="card__hd-ico">🎥</span> سەرچاوەی ڤیدیۆ (FILM)</div>
+            <div class="card__hd"><span class="card__hd-ico">🎥</span> سەرچاوەی ڤیدیۆ (فیلم)</div>
 
             <div class="field">
               <label class="lbl">فایلی ڤیدیۆ بارکردن</label>
@@ -297,15 +297,15 @@
             </div>
 
             <div class="field">
-              <label class="lbl">یان sourceUrl</label>
+              <label class="lbl">یان لینکی سەرەکی</label>
               <input v-model="form.sourceUrl" class="inp" placeholder="S3/CDN direct url…" :disabled="!!videoFile" />
             </div>
             <div class="field">
-              <label class="lbl">sourceExternalUrl</label>
+              <label class="lbl">لینکی دەرەکی</label>
               <input v-model="form.sourceExternalUrl" class="inp" placeholder="YouTube watch URL…" />
             </div>
             <div class="field">
-              <label class="lbl">sourceEmbedUrl</label>
+              <label class="lbl">لینکی Embed</label>
               <input v-model="form.sourceEmbedUrl" class="inp" placeholder="YouTube embed URL…" />
             </div>
           </section>
@@ -343,33 +343,33 @@
                     <div class="field"><label class="lbl lbl--sm">وەسف (کورمانجی)</label><textarea v-model="clip.descriptionKmr" class="inp inp--sm ta ta--sm" placeholder="Danasîn…"></textarea></div>
                   </div>
 
-                  <div class="field"><label class="lbl lbl--sm">url (فایل)</label><input v-model="clip.url" class="inp inp--sm" placeholder="S3/CDN url…" /></div>
-                  <div class="field"><label class="lbl lbl--sm">externalUrl</label><input v-model="clip.externalUrl" class="inp inp--sm" placeholder="YouTube watch…" /></div>
-                  <div class="field"><label class="lbl lbl--sm">embedUrl</label><input v-model="clip.embedUrl" class="inp inp--sm" placeholder="YouTube embed…" /></div>
+                  <div class="field"><label class="lbl lbl--sm">لینکی فایل</label><input v-model="clip.url" class="inp inp--sm" placeholder="S3/CDN url…" /></div>
+                  <div class="field"><label class="lbl lbl--sm">لینکی دەرەکی</label><input v-model="clip.externalUrl" class="inp inp--sm" placeholder="YouTube watch…" /></div>
+                  <div class="field"><label class="lbl lbl--sm">لینکی Embed</label><input v-model="clip.embedUrl" class="inp inp--sm" placeholder="YouTube embed…" /></div>
                 </div>
 
                 <div class="file-item__meta">
                   <div class="two-grid two-grid--sm">
-                    <div class="field"><label class="lbl lbl--sm">clipNumber</label><input v-model.number="clip.clipNumber" type="number" class="inp inp--sm" :placeholder="String(idx+1)" min="1" /></div>
-                    <div class="field"><label class="lbl lbl--sm">durationSeconds</label><input v-model.number="clip.durationSeconds" type="number" class="inp inp--sm" placeholder="0" min="0" /></div>
+                    <div class="field"><label class="lbl lbl--sm">ژمارەی کلیپ</label><input v-model.number="clip.clipNumber" type="number" class="inp inp--sm" :placeholder="String(idx+1)" min="1" /></div>
+                    <div class="field"><label class="lbl lbl--sm">ماوە (چرکە)</label><input v-model.number="clip.durationSeconds" type="number" class="inp inp--sm" placeholder="0" min="0" /></div>
                   </div>
                   <div class="two-grid two-grid--sm" style="margin-top:.45rem">
                     <div class="field">
-                      <label class="lbl lbl--sm">resolution</label>
+                      <label class="lbl lbl--sm">ڕیزۆلیوشن</label>
                       <select v-model="clip.resolution" class="inp inp--sm">
                         <option value="">—</option><option value="360p">360p</option><option value="480p">480p</option>
                         <option value="720p">720p</option><option value="1080p">1080p</option><option value="2160p">4K</option>
                       </select>
                     </div>
                     <div class="field">
-                      <label class="lbl lbl--sm">fileFormat</label>
+                      <label class="lbl lbl--sm">فۆرمات</label>
                       <select v-model="clip.fileFormat" class="inp inp--sm">
                         <option value="">—</option><option value="mp4">MP4</option><option value="webm">WEBM</option><option value="mkv">MKV</option>
                       </select>
                     </div>
                   </div>
                   <div class="field" style="margin-top:.45rem">
-                    <label class="lbl lbl--sm">fileSizeMb</label>
+                    <label class="lbl lbl--sm">قەبارە (MB)</label>
                     <input v-model.number="clip.fileSizeMb" type="number" class="inp inp--sm" placeholder="0" min="0" step="0.1" />
                   </div>
                 </div>
@@ -388,7 +388,7 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
-                کلیپی نوێ
+                کلیپی نوێ زیاد بکە
               </button>
             </div>
           </section>
@@ -397,13 +397,13 @@
         <!-- ═══ SIDE COLUMN ═══ -->
         <aside class="col-side">
 
-          <!-- ✅ Covers (CKB / KMR / Hover) -->
+          <!-- Covers (CKB / KMR / Hover) -->
           <section class="card">
-            <div class="card__hd"><span class="card__hd-ico">🖼</span> وێنەکان (Covers)</div>
+            <div class="card__hd"><span class="card__hd-ico">🖼</span> وێنەی ڕووکار</div>
 
             <!-- CKB -->
             <div class="img-block">
-              <div class="img-block__title">کڤەری سۆرانی (CKB)</div>
+              <div class="img-block__title">وێنەی ڕووکاری سۆرانی</div>
 
               <div class="cover-preview" v-if="ckbCoverPreview || form.ckbCoverUrl">
                 <img :src="ckbCoverPreview || form.ckbCoverUrl" alt="ckb cover preview" />
@@ -416,7 +416,7 @@
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
                   </svg>
-                  <span>هەڵبژاردنی کڤەری CKB</span>
+                  <span>هەڵبژاردنی وێنەی ڕووکاری سۆرانی</span>
                 </div>
               </label>
 
@@ -432,7 +432,7 @@
 
             <!-- KMR -->
             <div class="img-block">
-              <div class="img-block__title">کڤەری کورمانجی (KMR)</div>
+              <div class="img-block__title">وێنەی ڕووکاری کورمانجی</div>
 
               <div class="cover-preview" v-if="kmrCoverPreview || form.kmrCoverUrl">
                 <img :src="kmrCoverPreview || form.kmrCoverUrl" alt="kmr cover preview" />
@@ -445,7 +445,7 @@
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
                   </svg>
-                  <span>هەڵبژاردنی کڤەری KMR</span>
+                  <span>هەڵبژاردنی وێنەی ڕووکاری کورمانجی</span>
                 </div>
               </label>
 
@@ -462,7 +462,7 @@
             <!-- Hover -->
             <div class="img-block">
               <div class="img-block__title">
-                Hover Image
+                وێنەی ماووس (Hover)
                 <span class="img-block__hint">دەرکەوتە لە سەر hover</span>
               </div>
 
@@ -478,7 +478,7 @@
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
                   </svg>
-                  <span>هەڵبژاردنی Hover</span>
+                  <span>هەڵبژاردنی وێنەی ماووس</span>
                 </div>
               </label>
 
@@ -493,7 +493,7 @@
 
           <!-- Current topic preview -->
           <section class="card" v-if="isEdit && currentTopicName">
-            <div class="card__hd"><span class="card__hd-ico">🏷</span> موضوعی ئێستا</div>
+            <div class="card__hd"><span class="card__hd-ico">🏷</span> بابەتی ئێستا</div>
             <div class="topic-current">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
@@ -540,7 +540,6 @@
     </form>
   </div>
 </template>
-
 <script setup>
 import { ref, reactive, computed, onMounted, defineComponent, h, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -651,7 +650,7 @@ const currentTopicName = computed(() => {
 const fetchTopics = async () => {
   topicsLoading.value = true
   try {
-    const { data } = await api.get('/api/publishments/videos/topics')
+    const { data } = await api.get('/api/v1/videos/topics')
     const arr = data?.data ?? data ?? []
     topics.value = Array.isArray(arr) ? arr : []
   } catch { /* non-fatal */ }
@@ -696,7 +695,7 @@ const loadVideo = async () => {
   if (!isEdit.value) return
   fetching.value = true
   try {
-    const { data } = await api.get(`/api/publishments/videos/${route.params.id}`)
+    const { data } = await api.get(`/api/v1/videos/${route.params.id}`)
     if (data) applyVideo(data)
     else showToast('error', 'ڤیدیۆکە نەدۆزرایەوە')
   } catch (e) {
@@ -894,8 +893,8 @@ const submit = async () => {
     if (videoFile.value) fd.append('videoFile', videoFile.value)
 
     const cfg = { headers: { 'Content-Type': 'multipart/form-data' } }
-    if (isEdit.value) await api.put(`/api/publishments/videos/${route.params.id}`, fd, cfg)
-    else await api.post('/api/publishments/videos', fd, cfg)
+    if (isEdit.value) await api.put(`/api/v1/videos/${route.params.id}`, fd, cfg)
+    else await api.post('/api/v1/videos', fd, cfg)
 
     showToast('success', isEdit.value ? 'ڤیدیۆکە نوێکرایەوە ✓' : 'ڤیدیۆکە دروستکرا ✓')
     setTimeout(() => router.push('/admin/videos'), 1200)
@@ -909,7 +908,7 @@ const submit = async () => {
 const doDelete = async () => {
   if (!confirm(`دڵنیای لە سڕینەوەی ڤیدیۆ #${route.params.id}؟`)) return
   try {
-    await api.delete(`/api/publishments/videos/${route.params.id}`)
+    await api.delete(`/api/v1/videos/${route.params.id}`)
     showToast('success', 'ڤیدیۆکە سڕایەوە')
     setTimeout(() => router.push('/admin/videos'), 800)
   } catch (e) {

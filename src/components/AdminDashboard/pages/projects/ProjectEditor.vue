@@ -43,13 +43,13 @@
                 <input type="checkbox" value="CKB" v-model="form.contentLanguages" />
                 <span class="lang-pick__flag">🟡</span>
                 سۆرانی
-                <span class="lang-pick__code">CKB</span>
+                <span class="lang-pick__code">سۆرانی</span>
               </label>
               <label class="lang-pick" :class="{ 'lang-pick--on': form.contentLanguages.includes('KMR') }">
                 <input type="checkbox" value="KMR" v-model="form.contentLanguages" />
                 <span class="lang-pick__flag">🔵</span>
                 کورمانجی
-                <span class="lang-pick__code">KMR</span>
+                <span class="lang-pick__code">کورمانجی</span>
               </label>
             </div>
             <div v-if="errors.contentLanguages" class="err">{{ errors.contentLanguages }}</div>
@@ -65,7 +65,7 @@
                 @click="activeLang = lang"
               >
                 <span class="tab__pip" :class="`tab__pip--${lang.toLowerCase()}`"></span>
-                {{ lang === 'CKB' ? 'سۆرانی (CKB)' : 'کورمانجی (KMR)' }}
+                {{ lang === 'CKB' ? 'سۆرانی' : 'کورمانجی' }}
               </button>
             </div>
 
@@ -90,16 +90,16 @@
                 <div v-if="errors.projectTypeCkb" class="err">{{ errors.projectTypeCkb }}</div>
               </div>
               <div class="field">
-                <label class="lbl">ناوەڕۆکەکان (CKB)</label>
+                <label class="lbl">ناوەڕۆکەکان (سۆرانی)</label>
                 <TagInput v-model="form.contentsCkb" placeholder="ناوەڕۆکی نوێ زیاد بکە — ئینتەر پشار بدە" />
               </div>
               <div class="field">
-                <label class="lbl">تاگەکان (CKB)</label>
-                <TagInput v-model="form.tagsCkb" placeholder="تاگی نوێ زیاد بکە" color="gold" />
+                <label class="lbl">نیشانەکان (سۆرانی)</label>
+                <TagInput v-model="form.tagsCkb" placeholder="نیشانەی نوێ زیاد بکە" color="gold" />
               </div>
               <div class="field">
-                <label class="lbl">کیووەردەکان (CKB)</label>
-                <TagInput v-model="form.keywordsCkb" placeholder="کیووەردی نوێ" color="blue" />
+                <label class="lbl">کلیلەوشەکان (سۆرانی)</label>
+                <TagInput v-model="form.keywordsCkb" placeholder="کلیلەوشەی نوێ" color="blue" />
               </div>
             </div>
 
@@ -124,16 +124,16 @@
                 <div v-if="errors.projectTypeKmr" class="err">{{ errors.projectTypeKmr }}</div>
               </div>
               <div class="field">
-                <label class="lbl">ناوەڕۆکەکان (KMR)</label>
+                <label class="lbl">ناوەڕۆکەکان (کورمانجی)</label>
                 <TagInput v-model="form.contentsKmr" placeholder="ناوەڕۆکی نوێ زیاد بکە" />
               </div>
               <div class="field">
-                <label class="lbl">تاگەکان (KMR)</label>
-                <TagInput v-model="form.tagsKmr" placeholder="تاگی نوێ زیاد بکە" color="gold" />
+                <label class="lbl">نیشانەکان (کورمانجی)</label>
+                <TagInput v-model="form.tagsKmr" placeholder="نیشانەی نوێ زیاد بکە" color="gold" />
               </div>
               <div class="field">
-                <label class="lbl">کیووەردەکان (KMR)</label>
-                <TagInput v-model="form.keywordsKmr" placeholder="کیووەردی نوێ" color="blue" />
+                <label class="lbl">کلیلەوشەکان (کورمانجی)</label>
+                <TagInput v-model="form.keywordsKmr" placeholder="کلیلەوشەی نوێ" color="blue" />
               </div>
             </div>
           </section>
@@ -163,9 +163,9 @@
                 </div>
                 <div class="media-item__fields">
                   <input v-model="m.url" class="inp inp--sm" placeholder="لینکی فایل (URL)" />
-                  <input v-model="m.externalUrl" class="inp inp--sm" placeholder="لینکی دەرەکی (External URL)" />
+                  <input v-model="m.externalUrl" class="inp inp--sm" placeholder="لینکی دەرەکی" />
                   <input v-model="m.embedUrl" class="inp inp--sm" placeholder="لینکی Embed" />
-                  <input v-model="m.caption" class="inp inp--sm" placeholder="کاپشن / وەسف" />
+                  <input v-model="m.caption" class="inp inp--sm" placeholder="ناونیشانی وێنە / وەسف" />
                 </div>
               </div>
             </div>
@@ -189,7 +189,7 @@
 
             <button type="button" class="btn btn--outline btn--sm" @click="addMediaItem">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              میدیای دستی زیاد بکە (URL)
+              لینکی میدیا زیاد بکە
             </button>
           </section>
 
@@ -200,7 +200,7 @@
 
           <!-- Cover image -->
           <section class="card">
-            <div class="card__hd"><span class="card__hd-ico">🖼</span> کڤەر</div>
+            <div class="card__hd"><span class="card__hd-ico">🖼</span> وێنەی ڕووکار</div>
 
             <div class="cover-preview" v-if="coverPreview || form.coverUrl">
               <img :src="coverPreview || form.coverUrl" alt="Cover preview" />
@@ -211,12 +211,12 @@
               <input type="file" accept="image/*" @change="onCoverFile" style="display:none;" />
               <div class="upload-zone__inner">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span>هەڵبژاردنی وێنەی کڤەر</span>
+                <span>هەڵبژاردنی وێنەی ڕووکار</span>
               </div>
             </label>
 
             <div class="field" style="margin-top:.75rem;">
-              <label class="lbl">یان URL یی کڤەر بنووسە</label>
+              <label class="lbl">یان URL ی وێنەی ڕووکار بنووسە</label>
               <input v-model="form.coverUrl" class="inp" placeholder="https://…" :disabled="!!coverFile" />
             </div>
             <div v-if="errors.cover" class="err">{{ errors.cover }}</div>
@@ -404,7 +404,7 @@ const validate = () => {
     if (!form.kmrContent.title.trim())  e.kmrTitle       = 'ناونیشانی کورمانجی پێویستە'
     if (!form.projectTypeKmr.trim())    e.projectTypeKmr = 'جۆری پڕۆژە (کورمانجی) پێویستە'
   }
-  if (!coverFile.value && !form.coverUrl.trim()) e.cover = 'کڤەر پێویستە — فایل بار بکە یان URL بنووسە'
+  if (!coverFile.value && !form.coverUrl.trim()) e.cover = 'وێنەی ڕووکار پێویستە — فایل بار بکە یان URL بنووسە'
   errors.value = e
   return !Object.keys(e).length
 }

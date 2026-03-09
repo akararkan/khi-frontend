@@ -55,6 +55,10 @@ watch(isAdmin, (adminPage) => {
 </template>
 
 <style>
+*{
+  font-family: "Rabar", sans-serif;
+}
+
 /* Applied only inside the user-facing wrapper */
 .user-root {
   min-height: 100vh;

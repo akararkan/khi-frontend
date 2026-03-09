@@ -17,7 +17,7 @@
     <div class="plist__bar">
       <div class="search">
         <svg class="search__ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input v-model="searchQ" class="search__input" placeholder="گەڕان بە ناونیشان، تاگ یا کیووەرد…" @input="onSearch" />
+        <input v-model="searchQ" class="search__input" placeholder="گەڕان بە ناونیشان، تاگ یا کیوۆرد" @input="onSearch" />
         <Transition name="fade">
           <button v-if="searchQ" class="search__clear" @click="clearSearch">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -71,7 +71,7 @@
         <thead>
           <tr>
             <th style="width:52px">#</th>
-            <th style="width:66px">کڤەر</th>
+            <th style="width:66px">وێنەی ڕووکار</th>
             <th>ناونیشانی سۆرانی</th>
             <th>ناونیشانی کورمانجی</th>
             <th style="width:160px">جۆر</th>
