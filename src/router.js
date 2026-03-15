@@ -10,6 +10,7 @@ import Archive      from './components/pages/Archive.vue'
 import Library      from './components/pages/Library.vue'
 import Publishments from './components/pages/Publishments.vue'
 import Projects     from './components/pages/Projects.vue'
+import NewsView     from './components/pages/NewsView.vue'
 
 // Auth pages
 import Login              from './components/LoginView.vue'
@@ -61,6 +62,7 @@ const routes = [
   { path: '/library',      name: 'Library',      component: Library },
   { path: '/publishments', name: 'Publishments', component: Publishments },
   { path: '/projects',     name: 'Projects',     component: Projects },
+  { path: '/news',         name: 'News',         component: NewsView },
 
   // ── Auth ──────────────────────────────────────────────────────
   { 

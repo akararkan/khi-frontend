@@ -236,6 +236,7 @@
               class="search-overlay__input"
               :placeholder="lang.t('search.placeholder')"
               v-model="searchQuery"
+              @input="onSearchInput"
               @keyup.enter="performSearch"
               @keyup.escape="closeSearch"
             />
@@ -246,6 +247,31 @@
                 <path d="m21 21-4.3-4.3"></path>
               </svg>
             </button>
+          </div>
+
+          <!-- Live Search Results -->
+          <div class="search-results" v-if="searchQuery.trim().length >= 2">
+            <div v-if="searchLoading" class="search-results__loading">
+              <span class="search-spinner"></span>
+            </div>
+            <div v-else-if="searchResults.length" class="search-results__list">
+              <button
+                v-for="(result, idx) in searchResults.slice(0, 8)"
+                :key="`${result._type}-${result.id}-${idx}`"
+                class="search-result-item"
+                @click="goToResult(result)"
+              >
+                <span class="search-result-item__icon">{{ result._icon }}</span>
+                <div class="search-result-item__info">
+                  <span class="search-result-item__title">{{ result._title }}</span>
+                  <span class="search-result-item__meta">{{ result._typeName }}</span>
+                </div>
+                <svg class="search-result-item__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+            <div v-else class="search-results__empty">
+              {{ lang.activeLang === 'CKB' ? 'هیچ ئەنجامێک نەدۆزرایەوە' : 'Encam nehat dîtin' }}
+            </div>
           </div>
           <div class="search-overlay__quick">
             <span class="search-overlay__quick-label">{{ lang.t('search.quickLabel') }}</span>
@@ -398,10 +424,14 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useLanguageStore } from '@/stores/useLanguageStore'
+import axios from 'axios'
+import { API_BASE_URL } from './consts.js'
 
 const router    = useRouter()
 const authStore = useAuthStore()
 const lang      = useLanguageStore()
+
+const api = axios.create({ baseURL: API_BASE_URL, timeout: 12000 })
 
 // ── State ──────────────────────────────────────────────────────────
 const searchQuery     = ref('')
@@ -424,6 +454,105 @@ const scrollUpThreshold = 40 // px - navbar reveals after scrolling up this amou
 
 const avatarError = ref(false)
 watch(() => authStore.profileImage, () => { avatarError.value = false })
+
+// ── Live Search State ────────────────────────────────────────────
+const searchResults = ref([])
+const searchLoading = ref(false)
+const searchCache = ref({ sounds: [], videos: [], writings: [], images: [], news: [], projects: [] })
+let searchDebounce = null
+
+async function loadSearchData() {
+  if (searchCache.value.sounds.length || searchCache.value.videos.length) return
+  try {
+    const [s, v, w, i, n, p] = await Promise.allSettled([
+      api.get('/soundtracks'),
+      api.get('/videos', { params: { page: 0, size: 200 } }),
+      api.get('/writings', { params: { page: 0, size: 200 } }),
+      api.get('/image-collections'),
+      api.get('/news'),
+      api.get('/projects/getAll', { params: { page: 0, size: 50 } })
+    ])
+    if (s.status === 'fulfilled') { const d = s.value.data; searchCache.value.sounds = Array.isArray(d) ? d : d?.data || [] }
+    if (v.status === 'fulfilled') { const d = v.value.data; searchCache.value.videos = d?.content || d?.data?.content || [] }
+    if (w.status === 'fulfilled') { const d = w.value.data; searchCache.value.writings = d?.data?.content || d?.content || [] }
+    if (i.status === 'fulfilled') { const d = i.value.data; searchCache.value.images = d?.data || d || [] }
+    if (n.status === 'fulfilled') { searchCache.value.news = n.value.data?.data || n.value.data || [] }
+    if (p.status === 'fulfilled') { const d = p.value.data; searchCache.value.projects = d?.data?.content || d?.content || [] }
+  } catch (e) { console.warn('Search data load error:', e.message) }
+}
+
+function getTitle(item) {
+  const c = lang.activeLang === 'CKB'
+  return (c ? item.ckbContent?.title : item.kmrContent?.title) || (c ? item.kmrContent?.title : item.ckbContent?.title) || ''
+}
+function getDesc(item) {
+  const c = lang.activeLang === 'CKB'
+  return (c ? item.ckbContent?.description : item.kmrContent?.description) || (c ? item.kmrContent?.description : item.ckbContent?.description) || ''
+}
+
+function searchInItem(item, q) {
+  const title = getTitle(item).toLowerCase()
+  const desc = getDesc(item).toLowerCase()
+  const tags = [...(item.tagsCkb || []), ...(item.tagsKmr || []), ...(item.tags?.ckb || []), ...(item.tags?.kmr || [])].join(' ').toLowerCase()
+  const keywords = [...(item.keywordsCkb || []), ...(item.keywordsKmr || []), ...(item.keywords?.ckb || []), ...(item.keywords?.kmr || [])].join(' ').toLowerCase()
+  const writer = (item.ckbContent?.writer || item.kmrContent?.writer || '').toLowerCase()
+  const director = (item.ckbContent?.director || item.kmrContent?.director || item.director || '').toLowerCase()
+  return title.includes(q) || desc.includes(q) || tags.includes(q) || keywords.includes(q) || writer.includes(q) || director.includes(q)
+}
+
+function runSearch(q) {
+  if (!q || q.length < 2) { searchResults.value = []; return }
+  const al = lang.activeLang === 'CKB'
+  const typeName = (ckb, kmr) => al ? ckb : kmr
+  const results = []
+  
+  searchCache.value.videos.forEach(item => {
+    if (searchInItem(item, q)) results.push({ ...item, _type: 'video', _icon: '🎬', _title: getTitle(item), _typeName: typeName('ڤیدیۆ', 'Vîdyo') })
+  })
+  searchCache.value.sounds.forEach(item => {
+    if (searchInItem(item, q)) results.push({ ...item, _type: 'sound', _icon: '🎵', _title: getTitle(item), _typeName: typeName('دەنگ', 'Deng') })
+  })
+  searchCache.value.writings.forEach(item => {
+    if (searchInItem(item, q)) results.push({ ...item, _type: 'writing', _icon: '📚', _title: getTitle(item), _typeName: typeName('نووسین', 'Nivîsar') })
+  })
+  searchCache.value.images.forEach(item => {
+    if (searchInItem(item, q)) results.push({ ...item, _type: 'image', _icon: '🖼️', _title: getTitle(item), _typeName: typeName('وێنە', 'Wêne') })
+  })
+  searchCache.value.news.forEach(item => {
+    if (searchInItem(item, q)) results.push({ ...item, _type: 'news', _icon: '📰', _title: getTitle(item), _typeName: typeName('هەواڵ', 'Nûçe') })
+  })
+  searchCache.value.projects.forEach(item => {
+    if (searchInItem(item, q)) results.push({ ...item, _type: 'project', _icon: '📂', _title: getTitle(item), _typeName: typeName('پڕۆژە', 'Proje') })
+  })
+  
+  searchResults.value = results
+}
+
+function onSearchInput() {
+  clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => {
+    const q = searchQuery.value.trim().toLowerCase()
+    if (q.length < 2) { searchResults.value = []; return }
+    searchLoading.value = true
+    loadSearchData().then(() => {
+      runSearch(q)
+      searchLoading.value = false
+    })
+  }, 300)
+}
+
+function goToResult(result) {
+  closeSearch()
+  closeMobileMenu()
+  if (result._type === 'project') {
+    router.push('/projects')
+  } else if (result._type === 'news') {
+    router.push('/')
+    nextTick(() => document.getElementById('news')?.scrollIntoView({ behavior: 'smooth' }))
+  } else {
+    router.push('/publishments')
+  }
+}
 
 // ── Role display label ────────────────────────────────────────────
 function getRoleLabel(role) {
@@ -521,17 +650,25 @@ function openSearch() {
   searchOpen.value = true
   document.body.style.overflow = 'hidden'
   nextTick(() => searchInputRef.value?.focus())
+  loadSearchData()
 }
 function closeSearch() {
   searchOpen.value = false
   searchQuery.value = ''
+  searchResults.value = []
   document.body.style.overflow = ''
 }
 function performSearch() {
   if (searchQuery.value.trim()) {
-    router.push({ path: '/search', query: { q: searchQuery.value } })
-    closeSearch()
-    closeMobileMenu()
+    const q = searchQuery.value.trim().toLowerCase()
+    searchLoading.value = true
+    loadSearchData().then(() => {
+      runSearch(q)
+      searchLoading.value = false
+      if (searchResults.value.length === 1) {
+        goToResult(searchResults.value[0])
+      }
+    })
   }
 }
 
@@ -577,6 +714,7 @@ onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleKeydown)
+  if (searchDebounce) clearTimeout(searchDebounce)
 })
 watch(() => router.currentRoute.value, () => {
   closeMobileMenu()
@@ -1300,6 +1438,126 @@ watch(() => router.currentRoute.value, () => {
   background: rgba(255, 255, 255, .18);
   border-color: rgba(255, 255, 255, .25);
   color: var(--white);
+}
+
+/* ─── SEARCH RESULTS ────────────────────────────────────────────── */
+.search-results {
+  margin-top: 1.5rem;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .25);
+  overflow: hidden;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.search-results__loading {
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e5e5e5;
+  border-top-color: var(--brand-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.search-results__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: start;
+  font-family: var(--font-sans);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: linear-gradient(135deg, rgba(140, 21, 21, 0.04), rgba(140, 21, 21, 0.02));
+}
+
+.search-result-item__icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  background: #f7f7f7;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-result-item__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.search-result-item__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--grey-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-item:hover .search-result-item__title {
+  color: var(--brand-primary);
+}
+
+.search-result-item__meta {
+  font-size: 0.75rem;
+  color: var(--grey-500);
+  font-weight: 500;
+}
+
+.search-result-item__arrow {
+  color: var(--grey-300);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.search-result-item:hover .search-result-item__arrow {
+  color: var(--brand-primary);
+  transform: translateX(-4px);
+}
+
+[dir="ltr"] .search-result-item:hover .search-result-item__arrow {
+  transform: translateX(4px);
+}
+
+.search-results__empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--grey-500);
+  font-size: 0.9375rem;
 }
 
 .search-fade-enter-active,

@@ -1,173 +1,271 @@
 <template>
-  <main id="main-content" class="about">
+  <main id="main-content" class="about" :dir="dir" :lang="langAttr">
 
-    <!-- LOADING -->
+    <!-- ══ LOADING ═══════════════════════════════════════════ -->
     <div v-if="loading" class="state-screen">
-      <div class="spinner"></div>
-      <p>بارکردنی دەربارە…</p>
+      <div class="su-dots"><span/><span/><span/></div>
+      <p class="state-caption">{{ t('loading') }}</p>
     </div>
 
-    <!-- ERROR -->
+    <!-- ══ ERROR ══════════════════════════════════════════════ -->
     <div v-else-if="error" class="state-screen">
+      <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/>
+      </svg>
       <p class="state-err">{{ error }}</p>
-      <button class="text-btn" @click="fetchAbout">دووبارە هەوڵبدەرەوە</button>
+      <button class="su-text-btn" @click="fetchAbout">{{ t('retry') }}</button>
     </div>
 
-    <!-- EMPTY -->
+    <!-- ══ EMPTY ═══════════════════════════════════════════════ -->
     <div v-else-if="!page" class="state-screen">
-      <p>هیچ پەڕەیەکی دەربارە نییە.</p>
+      <p class="state-caption">{{ t('empty') }}</p>
     </div>
 
-    <!-- PAGE -->
+    <!-- ══ PAGE ════════════════════════════════════════════════ -->
     <template v-else>
 
-      <!-- HERO IMAGE — full bleed, no text overlay -->
-      <div class="hero">
-        <img :src="heroImage" alt="" class="hero__img" />
-      </div>
-
-      <!-- PAGE TITLE -->
-      <div class="page-header container">
-        <h1 class="page-header__title">{{ page.title }}</h1>
-        <p v-if="page.subtitle" class="page-header__lead">{{ page.subtitle }}</p>
-      </div>
-
-      <div class="container"><hr class="rule" /></div>
-
-      <!-- BLOCKS -->
-      <div class="blocks container">
-        <template v-for="(block, idx) in pairedBlocks" :key="idx">
-
-          <!-- TEXT + IMAGE paired into two columns -->
-          <div
-            v-if="block.type === 'pair'"
-            class="section-pair"
-            :class="{ 'section-pair--flip': idx % 2 !== 0 }"
+      <!-- ── Language toggle ───────────────────────── -->
+      <div v-if="hasBothLangs" class="lang-bar">
+        <div class="lang-bar__inner">
+          <button
+            class="lang-bar__btn"
+            :class="{ 'lang-bar__btn--active': lang === 'ckb' }"
+            @click="setLang('ckb')"
           >
-            <div class="section-pair__text">
-              <h3 v-if="block.text.title" class="section-h">{{ block.text.title }}</h3>
-              <div class="prose" v-html="fmt(block.text.contentText)"></div>
+            <span class="lang-bar__dot lang-bar__dot--ckb"></span>
+            کوردی سۆرانی
+          </button>
+          <div class="lang-bar__sep"></div>
+          <button
+            class="lang-bar__btn"
+            :class="{ 'lang-bar__btn--active': lang === 'kmr' }"
+            @click="setLang('kmr')"
+          >
+            <span class="lang-bar__dot lang-bar__dot--kmr"></span>
+            Kurmancî
+          </button>
+        </div>
+      </div>
+
+      <!-- ── Hero ─────────────────────────────────── -->
+      <!--
+        Priority order for the hero image:
+          1. page.heroImageUrl  — dedicated banner set in the admin editor
+          2. first IMAGE block with a mediaUrl — automatic fallback
+          3. picsum placeholder — last resort
+      -->
+      <div class="hero" role="img" :aria-label="pageTitle">
+        <img
+          :src="heroImage"
+          alt=""
+          class="hero__photo"
+          loading="eager"
+          fetchpriority="high"
+        />
+        <div class="hero__veil" aria-hidden="true"></div>
+      </div>
+
+      <!-- ── Page intro ─────────────────────────────── -->
+      <div class="intro">
+        <div class="intro__shell">
+          <p class="eyebrow">
+            <span class="eyebrow__rule" aria-hidden="true"></span>
+            {{ t('about') }}
+          </p>
+          <h1 class="intro__title">{{ pageTitle }}</h1>
+          <p v-if="pageSubtitle" class="intro__lead">{{ pageSubtitle }}</p>
+        </div>
+      </div>
+
+      <!-- ── Content blocks ─────────────────────────── -->
+      <div class="content-stack">
+        <template v-for="(block, idx) in pairedBlocks" :key="`b${idx}`">
+
+          <!-- separator (not after last, not before/after stats) -->
+          <div
+            v-if="idx > 0 && block.type !== 'stats' && pairedBlocks[idx-1].type !== 'stats'"
+            class="su-rule"
+            aria-hidden="true"
+          ></div>
+
+          <!-- TEXT + IMAGE → two-column alternating -->
+          <section
+            v-if="block.type === 'pair'"
+            class="su-duo wrap"
+            :class="{ 'su-duo--mirror': idx % 2 !== 0 }"
+          >
+            <div class="su-duo__body">
+              <h2 v-if="bTitle(block.text)" class="su-h">{{ bTitle(block.text) }}</h2>
+              <div class="su-prose" v-html="fmt(bText(block.text))"></div>
+              <a
+                v-if="block.text.mediaUrl"
+                :href="resolveUrl(block.text.mediaUrl)"
+                class="su-cta" target="_blank" rel="noopener"
+              >
+                {{ t('readMore') }}
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <line x1="4" y1="10" x2="16" y2="10"/><polyline points="10 4 16 10 10 16"/>
+                </svg>
+              </a>
             </div>
-            <figure class="fig" @click="openLb(block.image)">
-              <img :src="resolveUrl(block.image.mediaUrl)" :alt="block.image.altText || ''" loading="lazy" />
-              <figcaption v-if="block.image.title || block.image.contentText">
-                {{ [block.image.title, block.image.contentText].filter(Boolean).join(' — ') }}
+            <figure class="su-fig" @click="openLb(block.image)">
+              <div class="su-fig__crop">
+                <img
+                  :src="resolveUrl(block.image.mediaUrl)"
+                  :alt="bAlt(block.image)"
+                  loading="lazy"
+                />
+              </div>
+              <figcaption v-if="bTitle(block.image) || bText(block.image)" class="su-fig__cap">
+                <strong v-if="bTitle(block.image)">{{ bTitle(block.image) }}</strong>
+                <template v-if="bTitle(block.image) && bText(block.image)"> — </template>
+                {{ bText(block.image) }}
               </figcaption>
             </figure>
-          </div>
+          </section>
 
           <!-- TEXT standalone -->
-          <div v-else-if="block.type === 'text'" class="section-text" :id="`block-${block.data.sequence}`">
-            <h3 v-if="block.data.title" class="section-h">{{ block.data.title }}</h3>
-            <div class="prose" v-html="fmt(block.data.contentText)"></div>
-          </div>
+          <section v-else-if="block.type === 'text'" class="su-text wrap" :id="`s${block.data.sequence}`">
+            <h2 v-if="bTitle(block.data)" class="su-h">{{ bTitle(block.data) }}</h2>
+            <div class="su-prose su-prose--wide" v-html="fmt(bText(block.data))"></div>
+          </section>
 
-          <!-- IMAGE standalone (full-width) -->
+          <!-- IMAGE standalone -->
           <figure
             v-else-if="block.type === 'image'"
-            class="fig fig--full"
-            :id="`block-${block.data.sequence}`"
+            class="su-img-full"
+            :id="`s${block.data.sequence}`"
             @click="openLb(block.data)"
           >
-            <img :src="resolveUrl(block.data.mediaUrl)" :alt="block.data.altText || ''" loading="lazy" />
-            <figcaption v-if="block.data.title || block.data.contentText">
-              <strong v-if="block.data.title">{{ block.data.title }}</strong>
-              {{ block.data.contentText }}
+            <div class="su-img-full__crop wrap">
+              <img
+                :src="resolveUrl(block.data.mediaUrl)"
+                :alt="bAlt(block.data)"
+                loading="lazy"
+              />
+            </div>
+            <figcaption v-if="bTitle(block.data) || bText(block.data)" class="su-fig__cap wrap">
+              <strong v-if="bTitle(block.data)">{{ bTitle(block.data) }}</strong>
+              <template v-if="bTitle(block.data) && bText(block.data)"> — </template>
+              {{ bText(block.data) }}
             </figcaption>
           </figure>
 
           <!-- VIDEO -->
-          <div v-else-if="block.type === 'video'" class="section-video" :id="`block-${block.data.sequence}`">
-            <h3 v-if="block.data.title" class="section-h">{{ block.data.title }}</h3>
-            <div class="video-box">
-              <iframe v-if="isEmbed(block.data.mediaUrl)" :src="toEmbed(block.data.mediaUrl)"
+          <section v-else-if="block.type === 'video'" class="su-media wrap" :id="`s${block.data.sequence}`">
+            <h2 v-if="bTitle(block.data)" class="su-h">{{ bTitle(block.data) }}</h2>
+            <div class="su-video">
+              <iframe
+                v-if="isEmbed(block.data.mediaUrl)"
+                :src="toEmbed(block.data.mediaUrl)"
                 frameborder="0" allowfullscreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-              </iframe>
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              ></iframe>
               <video v-else controls preload="metadata">
                 <source :src="resolveUrl(block.data.mediaUrl)" />
               </video>
             </div>
-            <p v-if="block.data.contentText" class="media-cap">{{ block.data.contentText }}</p>
-          </div>
+            <p v-if="bText(block.data)" class="su-caption">{{ bText(block.data) }}</p>
+          </section>
 
           <!-- AUDIO -->
-          <div v-else-if="block.type === 'audio'" class="section-audio" :id="`block-${block.data.sequence}`">
-            <div class="audio-inner">
-              <div class="audio-inner__info">
-                <h3 v-if="block.data.title" class="section-h">{{ block.data.title }}</h3>
-                <p v-if="block.data.contentText" class="prose">{{ block.data.contentText }}</p>
-              </div>
-              <audio controls class="audio-el">
-                <source :src="resolveUrl(block.data.mediaUrl)" />
-              </audio>
+          <section v-else-if="block.type === 'audio'" class="su-audio-row wrap" :id="`s${block.data.sequence}`">
+            <div class="su-audio-row__info">
+              <h2 v-if="bTitle(block.data)" class="su-h su-h--sm">{{ bTitle(block.data) }}</h2>
+              <p v-if="bText(block.data)" class="su-prose">{{ bText(block.data) }}</p>
             </div>
-          </div>
+            <audio controls class="su-audio-row__el" preload="metadata">
+              <source :src="resolveUrl(block.data.mediaUrl)" />
+            </audio>
+          </section>
 
-          <!-- QUOTE -->
-          <div v-else-if="block.type === 'quote'" class="section-quote" :id="`block-${block.data.sequence}`">
-            <blockquote>
-              <p>{{ block.data.contentText }}</p>
-              <cite v-if="block.data.title">{{ block.data.title }}</cite>
-            </blockquote>
-          </div>
-
-          <!-- STATS -->
-          <div v-else-if="block.type === 'stats'" class="section-stats" :id="`block-${block.data.sequence}`">
-            <h3 v-if="block.data.title" class="section-h section-h--center">{{ block.data.title }}</h3>
-            <p v-if="block.data.contentText" class="prose prose--center">{{ block.data.contentText }}</p>
-            <div class="stats-row" v-if="getStats(block.data).length">
-              <div class="stat" v-for="(s, si) in getStats(block.data)" :key="si">
-                <span class="stat__n">{{ s.value }}</span>
-                <span class="stat__l">{{ s.label }}</span>
+          <!-- QUOTE — full-width pull quote, Stanford style -->
+          <section v-else-if="block.type === 'quote'" class="su-pullquote" :id="`s${block.data.sequence}`">
+            <div class="wrap">
+              <div class="su-pullquote__inner">
+                <span class="su-pullquote__deco" aria-hidden="true">"</span>
+                <blockquote class="su-pullquote__body">
+                  <p>{{ bText(block.data) }}</p>
+                  <cite v-if="bTitle(block.data)">{{ bTitle(block.data) }}</cite>
+                </blockquote>
               </div>
             </div>
-          </div>
+          </section>
+
+          <!-- STATS — dark band, Stanford numbers row -->
+          <section v-else-if="block.type === 'stats'" class="su-stats-band" :id="`s${block.data.sequence}`">
+            <div class="wrap">
+              <h2 v-if="bTitle(block.data)" class="su-h su-h--light su-h--center">{{ bTitle(block.data) }}</h2>
+              <p v-if="bText(block.data)" class="su-prose su-prose--light su-prose--center">{{ bText(block.data) }}</p>
+              <div v-if="getStats(block.data).length" class="su-stats">
+                <div class="su-stats__item" v-for="(s, si) in getStats(block.data)" :key="si">
+                  <span class="su-stats__num">{{ s.value }}</span>
+                  <span class="su-stats__bar" aria-hidden="true"></span>
+                  <span class="su-stats__lbl">{{ s.label }}</span>
+                </div>
+              </div>
+            </div>
+          </section>
 
           <!-- GALLERY item -->
           <figure
             v-else-if="block.type === 'gallery'"
-            class="fig"
-            :id="`block-${block.data.sequence}`"
+            class="su-img-full"
+            :id="`s${block.data.sequence}`"
             @click="openLb(block.data)"
           >
-            <img :src="resolveUrl(block.data.mediaUrl)" :alt="block.data.altText || ''" loading="lazy" />
-            <figcaption v-if="block.data.title">{{ block.data.title }}</figcaption>
+            <div class="su-img-full__crop wrap">
+              <img :src="resolveUrl(block.data.mediaUrl)" :alt="bAlt(block.data)" loading="lazy" />
+            </div>
+            <figcaption v-if="bTitle(block.data)" class="su-fig__cap wrap">{{ bTitle(block.data) }}</figcaption>
           </figure>
 
-          <hr v-if="idx < pairedBlocks.length - 1" class="section-rule" />
         </template>
       </div>
 
-      <!-- META -->
-      <div v-if="page.metaDescription" class="meta-footer container">
-        <p>{{ page.metaDescription }}</p>
+      <!-- ── Meta description ─────────────────────── -->
+      <div v-if="pageMetaDesc" class="su-meta wrap">
+        <p>{{ pageMetaDesc }}</p>
       </div>
 
-      <!-- MULTI-PAGE NAV -->
-      <div class="page-nav container" v-if="allPages.length > 1">
-        <span class="page-nav__lbl">پەڕەکانی دەربارە:</span>
-        <button
-          v-for="p in allPages" :key="p.id"
-          class="page-nav__btn"
-          :class="{ 'is-active': p.id === page.id }"
-          @click="switchPage(p)"
-        >{{ p.title }}</button>
-      </div>
+      <!-- ── Multi-page nav ─────────────────────────── -->
+      <nav v-if="allPages.length > 1" class="su-page-nav wrap" :aria-label="t('pagesNav')">
+        <span class="su-page-nav__label">{{ t('otherPages') }}</span>
+        <div class="su-page-nav__list">
+          <button
+            v-for="p in allPages" :key="p.id"
+            class="su-page-nav__item"
+            :class="{ 'su-page-nav__item--current': p.id === page.id }"
+            @click="switchPage(p)"
+          >{{ getPageTitle(p) }}</button>
+        </div>
+      </nav>
 
     </template>
 
-    <!-- LIGHTBOX -->
+    <!-- ══ LIGHTBOX ════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="lb">
-        <div v-if="lightbox" class="lightbox" @click.self="lightbox = null">
-          <button class="lightbox__x" @click="lightbox = null" aria-label="داخستن">✕</button>
-          <img :src="resolveUrl(lightbox.mediaUrl)" :alt="lightbox.altText || lightbox.title || ''" />
-          <p v-if="lightbox.title || lightbox.contentText" class="lightbox__cap">
-            <strong v-if="lightbox.title">{{ lightbox.title }}</strong>
-            <template v-if="lightbox.title && lightbox.contentText"> — </template>
-            {{ lightbox.contentText }}
-          </p>
+        <div
+          v-if="lightbox"
+          class="su-lb"
+          role="dialog"
+          :aria-label="t('imageView')"
+          @click.self="lightbox = null"
+        >
+          <button class="su-lb__close" @click="lightbox = null" :aria-label="t('close')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <figure class="su-lb__fig">
+            <img :src="resolveUrl(lightbox.mediaUrl)" :alt="bAlt(lightbox)" />
+            <figcaption v-if="bTitle(lightbox) || bText(lightbox)">
+              <strong v-if="bTitle(lightbox)">{{ bTitle(lightbox) }}</strong>
+              <template v-if="bTitle(lightbox) && bText(lightbox)"> — </template>
+              {{ bText(lightbox) }}
+            </figcaption>
+          </figure>
         </div>
       </Transition>
     </Teleport>
@@ -183,20 +281,96 @@ import { API_BASE_URL } from '../consts.js'
 const api      = axios.create({ baseURL: API_BASE_URL })
 const API_ROOT = API_BASE_URL.replace('/api/v1', '')
 
+// ─── state ────────────────────────────────────────────────────────────────────
 const allPages = ref([])
 const page     = ref(null)
 const loading  = ref(true)
 const error    = ref(null)
 const lightbox = ref(null)
+const lang     = ref('ckb') // 'ckb' | 'kmr'
 
+// ─── i18n strings ─────────────────────────────────────────────────────────────
+const strings = {
+  ckb: {
+    loading:   'بارکردنی زانیارییەکان…',
+    retry:     'دووبارە هەوڵبدەرەوە',
+    empty:     'هیچ پەڕەیەکی دەربارە نییە.',
+    readMore:  'زیاتر بخوێنەوە',
+    about:     'دەربارەمان',
+    otherPages:'پەڕەکانی دیکە:',
+    pagesNav:  'پەڕەکانی دەربارە',
+    imageView: 'پیشاندانی وێنە',
+    close:     'داخستن',
+  },
+  kmr: {
+    loading:   'Barikirna agahdarî…',
+    retry:     'Dîsa biceribîne',
+    empty:     'Tu rûpela derbarê tune.',
+    readMore:  'Bêtir bixwîne',
+    about:     'Derbarê me',
+    otherPages:'Rûpelên din:',
+    pagesNav:  'Rûpelên derbarê',
+    imageView: 'Nîşandana wêneyê',
+    close:     'Bigire',
+  }
+}
+const t = key => strings[lang.value]?.[key] ?? strings.ckb[key]
+
+const dir      = computed(() => 'rtl')
+const langAttr = computed(() => lang.value === 'ckb' ? 'ckb' : 'ku')
+
+// ─── language helpers ─────────────────────────────────────────────────────────
+function pickContent(block) {
+  if (!block) return {}
+  const primary   = lang.value === 'ckb' ? block.ckbContent : block.kmrContent
+  const secondary = lang.value === 'ckb' ? block.kmrContent : block.ckbContent
+  if (primary?.title || primary?.contentText || primary?.altText) return primary ?? {}
+  return secondary ?? {}
+}
+
+const bTitle = block => pickContent(block)?.title       || ''
+const bText  = block => pickContent(block)?.contentText || ''
+const bAlt   = block => pickContent(block)?.altText     || bTitle(block) || ''
+
+function setLang(l) { lang.value = l }
+
+const hasBothLangs = computed(() =>
+  !!(page.value?.ckbContent?.title && page.value?.kmrContent?.title)
+)
+
+const activePage = computed(() => {
+  if (!page.value) return {}
+  const p = lang.value === 'ckb' ? page.value.ckbContent : page.value.kmrContent
+  const f = lang.value === 'ckb' ? page.value.kmrContent : page.value.ckbContent
+  return {
+    title:           p?.title           || f?.title           || '',
+    subtitle:        p?.subtitle        || f?.subtitle        || '',
+    metaDescription: p?.metaDescription || f?.metaDescription || '',
+  }
+})
+const pageTitle    = computed(() => activePage.value.title)
+const pageSubtitle = computed(() => activePage.value.subtitle)
+const pageMetaDesc = computed(() => activePage.value.metaDescription)
+
+function getPageTitle(p) {
+  const primary  = lang.value === 'ckb' ? p.ckbContent : p.kmrContent
+  const fallback = lang.value === 'ckb' ? p.kmrContent : p.ckbContent
+  return primary?.title || fallback?.title || p.slugCkb || p.slugKmr || ''
+}
+
+// ─── data fetching ────────────────────────────────────────────────────────────
 async function fetchAbout() {
   loading.value = true; error.value = null
   try {
     const { data } = await api.get('/about')
     const list = Array.isArray(data) ? data : (data?.data || [])
     allPages.value = list.filter(p => p.active !== false)
-    const slug = window.location.hash?.replace('#', '')
-    page.value = allPages.value.find(p => p.slug === slug) || allPages.value[0] || null
+
+    const slug = window.location.hash?.replace('#', '') || ''
+    page.value =
+      allPages.value.find(p => p.slugCkb === slug || p.slugKmr === slug) ||
+      allPages.value[0] ||
+      null
   } catch (e) {
     error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
   } finally { loading.value = false }
@@ -204,14 +378,16 @@ async function fetchAbout() {
 
 function switchPage(p) {
   page.value = p
+  const slug = lang.value === 'ckb' ? (p.slugCkb || p.slugKmr) : (p.slugKmr || p.slugCkb)
+  if (slug) window.location.hash = slug
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+// ─── block layout ─────────────────────────────────────────────────────────────
 const blocks = computed(() =>
   (page.value?.blocks || []).slice().sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
 )
 
-// Pair adjacent TEXT + IMAGE blocks → two-column rows; everything else standalone
 const pairedBlocks = computed(() => {
   const raw = blocks.value
   const out = []
@@ -230,11 +406,23 @@ const pairedBlocks = computed(() => {
   return out
 })
 
+/**
+ * Hero image resolution — priority order:
+ *   1. page.heroImageUrl — dedicated field set explicitly in the admin editor
+ *   2. First IMAGE block with a mediaUrl — automatic content fallback
+ *   3. Picsum placeholder — last resort when no image is available
+ */
 const heroImage = computed(() => {
+  // 1. Dedicated hero image
+  if (page.value?.heroImageUrl) return resolveUrl(page.value.heroImageUrl)
+  // 2. First IMAGE block
   const img = blocks.value.find(b => b.contentType === 'IMAGE' && b.mediaUrl)
-  return img ? resolveUrl(img.mediaUrl) : 'https://picsum.photos/seed/khi/1600/640'
+  if (img) return resolveUrl(img.mediaUrl)
+  // 3. Placeholder
+  return 'https://picsum.photos/seed/khi/1600/640'
 })
 
+// ─── utilities ────────────────────────────────────────────────────────────────
 function resolveUrl(url) {
   if (!url) return ''
   if (url.startsWith('http')) return url
@@ -243,7 +431,11 @@ function resolveUrl(url) {
 
 function fmt(text) {
   if (!text) return ''
-  return text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')
+  return text
+    .split('\n')
+    .filter(l => l.trim())
+    .map(l => `<p>${l}</p>`)
+    .join('')
 }
 
 function isEmbed(url) {
@@ -262,7 +454,9 @@ function toEmbed(url) {
 function getStats(block) {
   try {
     const m = block.metadata
-    return (m?.items && Array.isArray(m.items)) ? m.items : (Array.isArray(m) ? m : [])
+    if (m?.items && Array.isArray(m.items)) return m.items
+    if (Array.isArray(m)) return m
+    return []
   } catch { return [] }
 }
 
@@ -272,277 +466,315 @@ onMounted(fetchAbout)
 </script>
 
 <style scoped>
-/* ═══════════════════════════════════════════════════════════
-   ABOUT — Stanford editorial
-   Full-bleed imagery · Serif type · Cardinal red · White space
-   Zero glassmorphism · Zero pill tags · Zero shadow cards
-═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   ABOUT — Stanford editorial design language
+   ───────────────────────────────────────────────────────────────────
+   ● Source Serif 4 (display) + Source Sans 3 (body) loaded via Google Fonts
+   ● Cardinal #8C1515 as the single accent colour — used sparingly
+   ● Full-bleed hero, white canvas, zero shadow cards, zero pill tags
+   ● Alternating text/image duos mirroring stanford.edu/about/
+   ● RTL-native for Kurdish (Sorani CKB + Kurmanji KMR)
+   ● Scroll-reveal via CSS @keyframes with staggered animation-delay
+═══════════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=Source+Sans+3:wght@300;400;600;700&display=swap');
 
+/* ─── tokens ──────────────────────────────────────────────── */
 .about {
-  --red:    #8C1515;
-  --text:   #2e2d29;
-  --muted:  #767674;
-  --line:   #d1cfc9;
-  --bg:     #ffffff;
-  --alt:    #f4f4f4;
-  --w:      1060px;
-  --serif:  Georgia, "Times New Roman", serif;
-  --sans:   "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+  --red:       #8C1515;
+  --red-deep:  #6f1111;
+  --gold:      #C9AA71;
+  --text:      #2E2D29;
+  --muted:     #767571;
+  --line:      #D1CFC9;
+  --pale:      #F4F4F2;
+  --dark:      #1C1A18;
+  --w:         1100px;
+  --serif:     'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --sans:      'Source Sans 3', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
   font-family: var(--sans);
-  font-size: 17px;
-  line-height: 1.75;
+  font-size: clamp(16px, 1.1vw, 18px);
+  line-height: 1.78;
   color: var(--text);
-  background: var(--bg);
+  background: #fff;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── layout shell ────────────────────────────────────────── */
+.wrap {
+  max-width: var(--w);
+  margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 52px);
 }
 
 :global(html) { scroll-behavior: smooth; }
 
-.container { max-width: var(--w); margin: 0 auto; padding: 0 32px; }
-
-/* ── States ── */
+/* ═══════════════════════════════════════════════════════════
+   STATES
+═══════════════════════════════════════════════════════════ */
 .state-screen {
   min-height: 60vh;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 14px;
-  color: var(--muted);
-}
-.state-err { color: var(--red); font-weight: 600; }
-.spinner {
-  width: 30px; height: 30px; border-radius: 50%;
-  border: 2px solid #e0ddd8; border-top-color: var(--red);
-  animation: spin .7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.text-btn {
-  background: none; border: none; padding: 0;
-  color: var(--red); font: inherit; font-weight: 700;
-  text-decoration: underline; cursor: pointer;
-}
-
-/* ── HERO ── */
-.hero { width: 100%; overflow: hidden; }
-.hero__img {
-  display: block; width: 100%;
-  height: clamp(280px, 40vw, 560px);
-  object-fit: cover; object-position: center 30%;
-}
-
-/* ── Page header ── */
-.page-header { padding: 48px 32px 28px; }
-.page-header__title {
-  font-family: var(--serif);
-  font-size: clamp(30px, 4.5vw, 52px);
-  font-weight: 400;
-  line-height: 1.1;
-  margin: 0 0 14px;
-  color: var(--text);
-}
-.page-header__lead {
-  font-size: 1.1rem;
-  color: var(--muted);
-  max-width: 72ch;
-  margin: 0;
-  line-height: 1.7;
-}
-
-/* ── Rules ── */
-.rule        { border: none; border-top: 1px solid var(--line); margin: 0 0 48px; }
-.section-rule { border: none; border-top: 1px solid var(--line); margin: 56px 0; }
-
-/* ── Blocks wrapper ── */
-.blocks { padding-bottom: 72px; }
-
-/* ── Typography inside blocks ── */
-.section-h {
-  font-family: var(--serif);
-  font-size: clamp(19px, 2.2vw, 24px);
-  font-weight: 400;
-  line-height: 1.25;
-  margin: 0 0 14px;
-  color: var(--text);
-}
-.section-h--center { text-align: center; }
-
-.prose { color: var(--text); line-height: 1.8; font-size: 1rem; }
-.prose--center { text-align: center; }
-.prose :deep(p) { margin: 0 0 .9em; }
-.prose :deep(p:last-child) { margin: 0; }
-
-/* ── TEXT + IMAGE pair (two-column) ── */
-.section-pair {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  align-items: start;
-}
-.section-pair--flip { direction: rtl; }
-.section-pair--flip > * { direction: ltr; }
-
-/* ── Standalone text ── */
-.section-text { max-width: 72ch; }
-
-/* ── Figures ── */
-.fig { margin: 0; cursor: zoom-in; }
-.fig img {
-  width: 100%; display: block;
-  transition: opacity .22s;
-  border-radius: 1px;
-}
-.fig:hover img { opacity: .9; }
-.fig figcaption {
-  margin-top: 10px;
-  font-size: .87rem;
-  color: var(--muted);
-  line-height: 1.5;
-}
-.fig--full img {
-  max-height: 500px;
-  object-fit: cover;
-}
-
-/* ── Video ── */
-.section-video { max-width: 820px; }
-.video-box {
-  position: relative; aspect-ratio: 16/9;
-  background: #111; border-radius: 2px; overflow: hidden;
-  margin-bottom: 10px;
-}
-.video-box iframe,
-.video-box video {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-}
-.media-cap { font-size: .9rem; color: var(--muted); margin: 0; }
-
-/* ── Audio ── */
-.section-audio {
-  background: var(--alt);
-  border-top: 3px solid var(--red);
-  padding: 28px 32px;
-}
-.audio-inner {
-  display: flex; align-items: center;
-  gap: 32px; flex-wrap: wrap;
-}
-.audio-inner__info { flex: 1; min-width: 180px; }
-.audio-el { flex: 0 0 260px; width: 260px; }
-
-/* ── Quote ── */
-.section-quote { padding-left: 24px; border-left: 4px solid var(--red); max-width: 68ch; }
-.section-quote blockquote { margin: 0; }
-.section-quote blockquote p {
-  font-family: var(--serif);
-  font-size: clamp(18px, 2vw, 22px);
-  font-style: italic;
-  line-height: 1.65;
-  margin: 0 0 12px;
-}
-.section-quote blockquote cite {
-  display: block; font-style: normal;
-  font-weight: 700; font-size: .9rem; color: var(--red);
-}
-
-/* ── Stats ── */
-.section-stats { text-align: center; }
-.stats-row {
-  display: flex; justify-content: center; flex-wrap: wrap;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  margin-top: 28px;
-}
-.stat {
-  flex: 1; min-width: 130px;
-  padding: 28px 20px;
-  border-right: 1px solid var(--line);
-}
-.stat:last-child { border-right: none; }
-.stat__n {
-  display: block;
-  font-family: var(--serif);
-  font-size: 2.6rem;
-  font-weight: 400;
-  color: var(--red);
-  line-height: 1;
-  margin-bottom: 8px;
-}
-.stat__l {
-  display: block;
-  font-size: .82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--muted);
-}
-
-/* ── Meta footer ── */
-.meta-footer {
-  padding: 28px 32px 52px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: .95rem;
-  max-width: 74ch;
-  line-height: 1.7;
-}
-.meta-footer p { margin: 0; }
-
-/* ── Page nav ── */
-.page-nav {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 24px 32px 56px;
-  border-top: 1px solid var(--line);
-}
-.page-nav__lbl {
-  font-size: .82rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
-}
-.page-nav__btn {
-  background: none; border: 1px solid var(--line);
-  border-radius: 2px; padding: 7px 16px;
-  font: inherit; font-size: .9rem; font-weight: 600;
-  color: var(--text); cursor: pointer;
-  transition: border-color .15s, color .15s;
-}
-.page-nav__btn:hover { border-color: var(--red); color: var(--red); }
-.page-nav__btn.is-active { background: var(--red); border-color: var(--red); color: #fff; }
-
-/* ── Lightbox ── */
-.lightbox {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,.92);
-  display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: 48px 24px 24px;
+  gap: 16px; text-align: center; padding: 48px;
+  color: var(--muted);
 }
-.lightbox__x {
-  position: absolute; top: 18px; right: 18px;
-  width: 40px; height: 40px; border-radius: 50%;
-  background: none; border: 1px solid rgba(255,255,255,.3);
-  color: #fff; font-size: 1rem; cursor: pointer;
-  transition: border-color .15s;
-}
-.lightbox__x:hover { border-color: #fff; }
-.lightbox img { max-width: 88vw; max-height: 78vh; display: block; border-radius: 2px; }
-.lightbox__cap {
-  margin-top: 12px; color: rgba(255,255,255,.7);
-  font-size: .88rem; text-align: center;
-}
-.lightbox__cap strong { color: #fff; }
+.state-caption { font-size: 1.05rem; }
+.state-err     { color: var(--red); font-weight: 600; font-size: 1.05rem; }
+.state-icon    { width: 40px; height: 40px; color: var(--red); opacity: .65; }
 
-.lb-enter-active, .lb-leave-active { transition: opacity .25s ease; }
-.lb-enter-from, .lb-leave-to { opacity: 0; }
+.su-dots { display: flex; gap: 9px; align-items: center; }
+.su-dots span {
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--red);
+  animation: dot-pulse 1.3s ease-in-out infinite;
+}
+.su-dots span:nth-child(2) { animation-delay: .18s; background: #b33; }
+.su-dots span:nth-child(3) { animation-delay: .36s; background: #c55; }
+@keyframes dot-pulse {
+  0%,80%,100% { transform: scale(.55); opacity: .35; }
+  40%          { transform: scale(1);   opacity: 1;   }
+}
 
-/* ── Responsive ── */
-@media (max-width: 800px) {
-  .section-pair { grid-template-columns: 1fr; gap: 24px; }
-  .section-pair--flip { direction: ltr; }
-  .hero__img { height: 220px; }
-  .audio-inner { flex-direction: column; }
-  .audio-el { width: 100%; flex: none; }
-  .stat { border-right: none; border-bottom: 1px solid var(--line); }
-  .stat:last-child { border-bottom: none; }
-  .stats-row { flex-direction: column; }
-  .section-audio { padding: 20px; }
-  .container { padding: 0 18px; }
+.su-text-btn {
+  background: none; border: none; padding: 0;
+  font: 700 1rem var(--sans);
+  color: var(--red); text-decoration: underline; text-underline-offset: 3px;
+  cursor: pointer; transition: color .15s;
+}
+.su-text-btn:hover { color: var(--red-deep); }
+
+/* ═══════════════════════════════════════════════════════════
+   LANGUAGE BAR
+═══════════════════════════════════════════════════════════ */
+.lang-bar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(255,255,255,.96);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.lang-bar__inner {
+  max-width: var(--w); margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 52px);
+  height: 46px; display: flex; align-items: center; gap: 0;
+}
+.lang-bar__sep { width: 1px; height: 16px; background: var(--line); flex-shrink: 0; }
+.lang-bar__btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 0 18px; height: 46px;
+  background: none; border: none;
+  font: 600 .82rem var(--sans); letter-spacing: .04em;
+  color: var(--muted); cursor: pointer; position: relative; transition: color .18s;
+}
+.lang-bar__btn::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px; background: var(--red); transform: scaleX(0); transition: transform .2s ease;
+}
+.lang-bar__btn--active { color: var(--text); font-weight: 700; }
+.lang-bar__btn--active::after { transform: scaleX(1); }
+.lang-bar__btn:hover { color: var(--text); }
+.lang-bar__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.lang-bar__dot--ckb { background: var(--red); }
+.lang-bar__dot--kmr { background: #1d6bbf; }
+
+/* ═══════════════════════════════════════════════════════════
+   HERO — full-bleed photograph
+═══════════════════════════════════════════════════════════ */
+.hero {
+  position: relative; overflow: hidden; background: var(--dark);
+  animation: hero-reveal 1.2s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes hero-reveal {
+  from { opacity: 0; transform: scale(1.035); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.hero__photo {
+  display: block; width: 100%;
+  height: clamp(260px, 44vw, 600px);
+  object-fit: cover; object-position: center 32%;
+}
+.hero__veil {
+  position: absolute; inset: auto 0 0 0; height: 200px;
+  background: linear-gradient(to top, #ffffff 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE INTRO
+═══════════════════════════════════════════════════════════ */
+.intro { padding: 0 0 52px; animation: rise .7s .1s cubic-bezier(.2,.8,.2,1) both; }
+.intro__shell { max-width: var(--w); margin-inline: auto; padding-inline: clamp(20px, 4vw, 52px); }
+.eyebrow {
+  display: flex; align-items: center; gap: 14px;
+  font: 700 .72rem/.1 var(--sans); letter-spacing: .14em;
+  text-transform: uppercase; color: var(--red); margin: 0 0 22px; padding-top: 48px;
+}
+.eyebrow__rule { display: block; width: 32px; height: 2px; background: var(--red); flex-shrink: 0; }
+.intro__title { font: 300 clamp(32px, 5.2vw, 62px)/1.05 var(--serif); letter-spacing: -.01em; color: var(--text); margin: 0 0 20px; }
+.intro__lead { font: 300 clamp(1.05rem, 1.5vw, 1.22rem)/1.72 var(--serif); color: #4a4845; max-width: 68ch; margin: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION HEADING
+═══════════════════════════════════════════════════════════ */
+.su-h {
+  font: 300 clamp(19px, 2.4vw, 26px)/1.22 var(--serif);
+  color: var(--text); margin: 0 0 18px; position: relative; padding-bottom: 17px;
+}
+.su-h::after { content: ''; position: absolute; bottom: 0; inset-inline-start: 0; width: 38px; height: 3px; background: var(--red); }
+.su-h--sm   { font-size: clamp(17px, 2vw, 21px); }
+.su-h--light { color: rgba(255,255,255,.95); }
+.su-h--light::after { background: rgba(255,255,255,.3); }
+.su-h--center { text-align: center; }
+.su-h--center::after { inset-inline-start: 50%; transform: translateX(-50%); }
+
+/* ═══════════════════════════════════════════════════════════
+   HORIZONTAL RULE
+═══════════════════════════════════════════════════════════ */
+.su-rule { border: none; border-top: 1px solid var(--line); max-width: var(--w); margin: 0 auto; padding-inline: clamp(20px, 4vw, 52px); }
+.content-stack .su-rule { max-width: 100%; }
+
+/* ═══════════════════════════════════════════════════════════
+   PROSE
+═══════════════════════════════════════════════════════════ */
+.su-prose { font-size: 1rem; line-height: 1.84; color: var(--text); }
+.su-prose--wide { max-width: 74ch; }
+.su-prose--center { text-align: center; }
+.su-prose--light { color: rgba(255,255,255,.72); }
+.su-prose :deep(p) { margin: 0 0 .95em; }
+.su-prose :deep(p:last-child) { margin: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   CTA LINK
+═══════════════════════════════════════════════════════════ */
+.su-cta {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 24px;
+  font: 700 .8rem var(--sans); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--red); text-decoration: none; border-bottom: 1px solid transparent;
+  transition: border-color .18s, gap .2s ease;
+}
+.su-cta svg { width: 15px; height: 15px; flex-shrink: 0; }
+.su-cta:hover { border-bottom-color: var(--red); gap: 11px; }
+
+/* ═══════════════════════════════════════════════════════════
+   CONTENT STACK
+═══════════════════════════════════════════════════════════ */
+.content-stack { display: flex; flex-direction: column; gap: 0; padding-bottom: 80px; }
+
+.su-text { padding: 60px clamp(20px, 4vw, 52px); animation: rise .7s cubic-bezier(.2,.8,.2,1) both; }
+
+.su-duo {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: clamp(40px, 6vw, 96px); align-items: start;
+  padding: 64px clamp(20px, 4vw, 52px);
+  animation: rise .7s cubic-bezier(.2,.8,.2,1) both;
+}
+.su-duo--mirror { direction: ltr; }
+.su-duo--mirror > * { direction: rtl; }
+@media (max-width: 840px) {
+  .su-duo { grid-template-columns: 1fr; gap: 28px; }
+  .su-duo--mirror { direction: rtl; }
+  .su-duo--mirror > * { direction: rtl; }
+}
+.su-duo__body { padding-top: 6px; }
+
+.su-fig { margin: 0; }
+.su-fig, .su-img-full { cursor: zoom-in; }
+.su-fig__crop, .su-img-full__crop { overflow: hidden; background: var(--pale); }
+.su-fig__crop img, .su-img-full__crop img { display: block; width: 100%; transition: transform .55s cubic-bezier(.2,.8,.2,1), opacity .28s; }
+.su-fig:hover .su-fig__crop img, .su-img-full:hover .su-img-full__crop img { transform: scale(1.04); opacity: .9; }
+.su-img-full__crop { padding-inline: clamp(20px, 4vw, 52px); max-width: var(--w); margin-inline: auto; }
+.su-img-full__crop img { max-height: 500px; object-fit: cover; }
+.su-fig__cap { margin-top: 11px; font: 400 .85rem/1.55 var(--sans); color: var(--muted); }
+.su-fig__cap strong { color: var(--text); }
+
+.su-media { padding: 60px clamp(20px, 4vw, 52px); max-width: calc(var(--w) * .95); animation: rise .7s cubic-bezier(.2,.8,.2,1) both; }
+.su-video { position: relative; aspect-ratio: 16/9; background: #111; overflow: hidden; margin-bottom: 12px; }
+.su-video iframe, .su-video video { position: absolute; inset: 0; width: 100%; height: 100%; }
+.su-caption { font: 400 .88rem/1.55 var(--sans); color: var(--muted); margin: 0; }
+
+.su-audio-row {
+  display: flex; align-items: center; gap: 52px; flex-wrap: wrap;
+  padding: 36px clamp(20px, 4vw, 52px);
+  border-top: 3px solid var(--red); background: var(--pale);
+}
+.su-audio-row__info { flex: 1; min-width: 200px; }
+.su-audio-row__el   { flex: 0 0 260px; width: 260px; }
+@media (max-width: 700px) { .su-audio-row__el { width: 100%; flex: none; } .su-audio-row { gap: 20px; } }
+
+.su-pullquote { background: var(--pale); padding: 72px 0; }
+.su-pullquote__inner { max-width: 840px; position: relative; padding-inline-start: 72px; }
+.su-pullquote__deco { position: absolute; inset-inline-start: 0; top: -14px; font: 300 9.5rem/1 var(--serif); color: var(--red); opacity: .14; pointer-events: none; user-select: none; }
+.su-pullquote__body { margin: 0; }
+.su-pullquote__body p { font: 300 clamp(20px, 2.8vw, 28px)/1.58 var(--serif); font-style: italic; color: var(--text); margin: 0 0 20px; }
+.su-pullquote__body cite { display: block; font: 700 .78rem var(--sans); font-style: normal; letter-spacing: .1em; text-transform: uppercase; color: var(--red); }
+@media (max-width: 700px) { .su-pullquote__inner { padding-inline-start: 32px; } .su-pullquote__deco { font-size: 6rem; } }
+
+.su-stats-band { background: var(--dark); padding: 72px 0; }
+.su-stats-band .wrap { animation: rise .7s cubic-bezier(.2,.8,.2,1) both; }
+.su-stats { display: flex; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,.12); margin-top: 48px; }
+.su-stats__item { flex: 1; min-width: 140px; padding: 36px 28px; border-inline-end: 1px solid rgba(255,255,255,.1); text-align: center; }
+.su-stats__item:last-child { border-inline-end: none; }
+.su-stats__num { display: block; font: 300 clamp(2.5rem, 5vw, 3.8rem)/1 var(--serif); color: var(--gold); margin-bottom: 14px; }
+.su-stats__bar { display: block; width: 28px; height: 2px; background: rgba(255,255,255,.18); margin: 0 auto 14px; }
+.su-stats__lbl { display: block; font: 700 .72rem var(--sans); text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.48); }
+@media (max-width: 700px) {
+  .su-stats { flex-direction: column; }
+  .su-stats__item { border-inline-end: none; border-bottom: 1px solid rgba(255,255,255,.08); padding: 24px 20px; }
+  .su-stats__item:last-child { border-bottom: none; }
+}
+
+.su-meta { padding: 28px 0 52px; border-top: 1px solid var(--line); color: var(--muted); font: 400 .93rem/1.72 var(--sans); }
+.su-meta p { margin: 0; max-width: 74ch; }
+
+.su-page-nav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 26px 0 64px; border-top: 1px solid var(--line); }
+.su-page-nav__label { font: 700 .73rem var(--sans); letter-spacing: .11em; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
+.su-page-nav__list { display: flex; gap: 8px; flex-wrap: wrap; }
+.su-page-nav__item { background: none; border: 1px solid var(--line); border-radius: 2px; padding: 8px 18px; font: 600 .88rem var(--sans); color: var(--text); cursor: pointer; transition: border-color .15s, color .15s, background .15s; }
+.su-page-nav__item:hover { border-color: var(--red); color: var(--red); }
+.su-page-nav__item--current { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHTBOX
+═══════════════════════════════════════════════════════════ */
+.su-lb { position: fixed; inset: 0; z-index: 9999; background: rgba(10,8,6,.94); display: flex; align-items: center; justify-content: center; padding: 56px 24px 28px; }
+.su-lb__close { position: absolute; top: 16px; inset-inline-end: 20px; width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.8); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+.su-lb__close svg { width: 18px; height: 18px; }
+.su-lb__close:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.55); color: #fff; }
+.su-lb__fig { margin: 0; text-align: center; }
+.su-lb__fig img { max-width: 88vw; max-height: 76vh; display: block; margin: 0 auto; border-radius: 2px; box-shadow: 0 32px 80px rgba(0,0,0,.6); }
+.su-lb__fig figcaption { margin-top: 14px; color: rgba(255,255,255,.55); font: 400 .85rem var(--sans); text-align: center; max-width: 60ch; margin-inline: auto; }
+.su-lb__fig figcaption strong { color: rgba(255,255,255,.9); }
+
+/* ═══════════════════════════════════════════════════════════
+   TRANSITIONS + ANIMATIONS
+═══════════════════════════════════════════════════════════ */
+.lb-enter-active { transition: opacity .28s ease, transform .28s ease; }
+.lb-leave-active { transition: opacity .2s ease; }
+.lb-enter-from   { opacity: 0; transform: scale(.97); }
+.lb-leave-to     { opacity: 0; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
+.content-stack > *:nth-child(1)  { animation: rise .7s .05s cubic-bezier(.2,.8,.2,1) both; }
+.content-stack > *:nth-child(2)  { animation: rise .7s .13s cubic-bezier(.2,.8,.2,1) both; }
+.content-stack > *:nth-child(3)  { animation: rise .7s .21s cubic-bezier(.2,.8,.2,1) both; }
+.content-stack > *:nth-child(4)  { animation: rise .7s .29s cubic-bezier(.2,.8,.2,1) both; }
+.content-stack > *:nth-child(5)  { animation: rise .7s .37s cubic-bezier(.2,.8,.2,1) both; }
+.content-stack > *:nth-child(n+6){ animation: rise .7s .44s cubic-bezier(.2,.8,.2,1) both; }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 840px) {
+  .hero__photo  { height: clamp(200px, 50vw, 380px); }
+  .intro        { padding-bottom: 36px; }
+  .eyebrow      { padding-top: 32px; }
+  .su-text, .su-media, .su-duo { padding-block: 40px; }
+}
+@media (max-width: 600px) {
+  .intro__title  { letter-spacing: 0; }
+  .su-pullquote  { padding-block: 48px; }
+  .su-stats-band { padding-block: 48px; }
+  .lang-bar__btn { padding-inline: 12px; }
 }
 </style>

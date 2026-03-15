@@ -871,8 +871,9 @@ const fetchAll = async () => {
   loading.value = true
   try {
     const { data } = await api.get('/api/v1/soundtracks')
-    const arr = data?.data ?? data ?? []
-    items.value = (Array.isArray(arr) ? arr : []).map(normalize)
+    
+const arr = data?.content ?? data?.data ?? data ?? []
+items.value = (Array.isArray(arr) ? arr : []).map(normalize)
   } catch (e) {
     console.error(e)
   } finally {

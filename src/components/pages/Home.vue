@@ -98,11 +98,11 @@
         </template>
 
         <div class="section__footer">
-          <button class="btn btn--outline-dark" @click="go('/news')">
-            {{ lbl('allNews') }}
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
-        </div>
+  <button class="btn btn--outline-dark" @click="go('/news')">
+    {{ lbl('allNews') }}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  </button>
+</div>
       </div>
     </section>
 
@@ -297,15 +297,32 @@
               <div class="book-card__hover">
                 <span>{{ lbl('read') }}</span>
               </div>
+              <div class="book-card__category" v-if="book.writingTopic">
+                {{ writingTopicLabel(book.writingTopic) }}
+              </div>
             </div>
             <div class="book-card__info">
               <h4 class="book-card__title">{{ pTitle(book) }}</h4>
               <p v-if="pWriter(book)" class="book-card__author">{{ pWriter(book) }}</p>
-              <span v-if="book.ckbContent?.pageCount || book.kmrContent?.pageCount" class="book-card__pages-count">
-                {{ book.ckbContent?.pageCount || book.kmrContent?.pageCount }} {{ lbl('pages') }}
-              </span>
+              <div class="book-card__meta-row">
+                <span v-if="book.ckbContent?.pageCount || book.kmrContent?.pageCount" class="book-card__pages-count">
+                  📄 {{ book.ckbContent?.pageCount || book.kmrContent?.pageCount }} {{ lbl('pages') }}
+                </span>
+                <span v-if="book.writingTopic" class="book-card__topic-chip">{{ writingTopicLabel(book.writingTopic) }}</span>
+              </div>
             </div>
           </article>
+        </div>
+
+        <!-- Writing Categories Summary -->
+        <div v-if="writingCategories.length" class="writing-cats">
+          <div class="writing-cats__row">
+            <div v-for="cat in writingCategories" :key="cat.key" class="writing-cat-chip" @click="go('/publishments')">
+              <span class="writing-cat-chip__icon">{{ cat.icon }}</span>
+              <span class="writing-cat-chip__label">{{ cat.label }}</span>
+              <span class="writing-cat-chip__count">{{ cat.count }}</span>
+            </div>
+          </div>
         </div>
 
         <div v-else class="empty-state">
@@ -362,6 +379,27 @@
                   </div>
                 </div>
                 <h4 class="gallery-card__title">{{ pTitle(col) }}</h4>
+              </article>
+            </div>
+          </div>
+
+          <!-- Photo Stories -->
+          <div v-if="photoStories.length" class="images-row">
+            <h3 class="images-row__title">{{ lbl('photoStories') }}</h3>
+            <div class="stories-grid">
+              <article v-for="story in photoStories.slice(0, 3)" :key="story.id" class="story-card" @click="openImageLightbox(story)">
+                <div class="story-card__thumb">
+                  <img :src="pCover(story)" :alt="pTitle(story)" @error="onImgErr">
+                  <div class="story-card__overlay" />
+                  <div class="story-card__badge">📖 {{ lbl('photoStory') }}</div>
+                  <div class="story-card__count" v-if="story.imageAlbum?.length">
+                    {{ story.imageAlbum.length }} {{ lbl('steps') }}
+                  </div>
+                </div>
+                <div class="story-card__info">
+                  <h4 class="story-card__title">{{ pTitle(story) }}</h4>
+                  <p class="story-card__desc">{{ truncate(pDesc(story), 80) }}</p>
+                </div>
               </article>
             </div>
           </div>
@@ -558,6 +596,9 @@ const i18n = {
     imageDesc: 'گالەری وێنەی مێژوویی کوردی',
     singleImages: 'وێنە تاکەکان',
     photoGalleries: 'گالەری وێنە',
+    photoStories: 'چیرۆکی وێنەیی',
+    photoStory: 'چیرۆکی وێنەیی',
+    steps: 'هەنگاو',
     memBadge: 'یادگاریەکان',
     memTitle: 'ئەلبوومی یادگاری',
     memDesc: 'تۆمارەکانی نایابی مێژوویی',
@@ -610,6 +651,9 @@ const i18n = {
     imageDesc: 'Galeriya wêneyên dîrokî',
     singleImages: 'Wêneyên Yekane',
     photoGalleries: 'Galerî',
+    photoStories: 'Çîroka Wêneyan',
+    photoStory: 'Çîroka Wêne',
+    steps: 'Gavar',
     memBadge: 'Bîranîn',
     memTitle: 'Albûma Bîranînê',
     memDesc: 'Tomarên kêm ên dîrokî yên taybet',
@@ -680,12 +724,74 @@ const allMemories = computed(() => [
 
 const filteredMemories = computed(() => allMemories.value)
 
+const writingTopicMap = {
+  HISTORICAL: { icon: '📜', CKB: 'مێژوویی', KMR: 'Dîrokî' },
+  FOLKLORE: { icon: '🏺', CKB: 'فۆلکلۆر', KMR: 'Folklor' },
+  RELIGIOUS: { icon: '🕌', CKB: 'ئاینی', KMR: 'Olî' },
+  POLITICAL: { icon: '⚖️', CKB: 'سیاسی', KMR: 'Siyasî' },
+  POETRY: { icon: '✨', CKB: 'شیعر', KMR: 'Helbest' },
+  LITERATURE: { icon: '📖', CKB: 'ئەدەبی', KMR: 'Edebî' },
+  CULTURAL: { icon: '🎭', CKB: 'کەلتووری', KMR: 'Çandî' },
+  EDUCATIONAL: { icon: '🎓', CKB: 'پەروەردەیی', KMR: 'Perwerdehî' },
+  SCIENTIFIC: { icon: '🔬', CKB: 'زانستی', KMR: 'Zanistî' },
+  BIOGRAPHICAL: { icon: '👤', CKB: 'ژیاننامە', KMR: 'Jiyannivîs' },
+  CHILDREN: { icon: '🧸', CKB: 'منداڵان', KMR: 'Zarokan' },
+  PHILOSOPHY: { icon: '💭', CKB: 'فەلسەفە', KMR: 'Felsefe' },
+  SOCIOLOGY: { icon: '🏘️', CKB: 'کۆمەڵناسی', KMR: 'Civaknas' },
+  LINGUISTICS: { icon: '🗣️', CKB: 'زمانەوانی', KMR: 'Zimannasî' },
+  ARTS: { icon: '🎨', CKB: 'هونەر', KMR: 'Huner' },
+  ECONOMICS: { icon: '📊', CKB: 'ئابووری', KMR: 'Aborî' },
+  MEDICINE: { icon: '🩺', CKB: 'پزیشکی', KMR: 'Bijîşkî' },
+  LAW: { icon: '⚖️', CKB: 'یاسایی', KMR: 'Yasayî' },
+  OTHER: { icon: '📁', CKB: 'تر', KMR: 'Din' },
+}
+
+function writingTopicLabel(topic) {
+  const al = lang?.activeLang || 'CKB'
+  return writingTopicMap[topic]?.[al] || topic || ''
+}
+
+const writingCategories = computed(() => {
+  const al = lang?.activeLang || 'CKB'
+  const counts = {}
+  writings.value.forEach(w => {
+    const t = w.writingTopic || 'OTHER'
+    counts[t] = (counts[t] || 0) + 1
+  })
+  return Object.entries(counts)
+    .map(([key, count]) => ({
+      key,
+      label: writingTopicMap[key]?.[al] || key,
+      icon: writingTopicMap[key]?.icon || '📁',
+      count
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
+})
+
+function toArray(raw) {
+  if (!raw) return []
+  // ApiResponse wrapper → unwrap .data first
+  const inner = raw?.data !== undefined ? raw.data : raw
+  if (Array.isArray(inner)) return inner
+  // Spring Page inside wrapper
+  if (Array.isArray(inner?.content)) return inner.content
+  // bare Spring Page
+  if (Array.isArray(inner?.data)) return inner.data
+  // inner.data is itself a Page  { data: { content: [...] } }
+  if (Array.isArray(inner?.data?.content)) return inner.data.content
+  return []
+}
+
 // Methods
 async function fetchNews() {
   newsLoading.value = true
   try {
     const { data } = await api.get('/news')
-    newsList.value = data?.data || data || []
+    newsList.value = toArray(data)
+  } catch (e) {
+    console.error('[KHI] fetchNews failed', e)
+    newsList.value = []
   } finally {
     newsLoading.value = false
   }
@@ -696,24 +802,30 @@ async function fetchPublications() {
   try {
     const [s, v, w, i] = await Promise.allSettled([
       api.get('/soundtracks'),
-      api.get('/videos', { params: { page: 0, size: 100 } }),
-      api.get('/writings', { params: { page: 0, size: 100 } }),
+      api.get('/videos',            { params: { page: 0, size: 100 } }),
+      api.get('/writings',          { params: { page: 0, size: 100 } }),
       api.get('/image-collections')
     ])
-    if (s.status === 'fulfilled') { const d = s.value.data; sounds.value = Array.isArray(d) ? d : d?.data || [] }
-    if (v.status === 'fulfilled') { const d = v.value.data; videos.value = d?.content || d?.data?.content || [] }
-    if (w.status === 'fulfilled') { const d = w.value.data; writings.value = d?.data?.content || d?.content || [] }
-    if (i.status === 'fulfilled') { const d = i.value.data; imageCollections.value = d?.data || d || [] }
+    sounds.value           = s.status === 'fulfilled' ? toArray(s.value.data) : []
+    videos.value           = v.status === 'fulfilled' ? toArray(v.value.data) : []
+    writings.value         = w.status === 'fulfilled' ? toArray(w.value.data) : []
+    imageCollections.value = i.status === 'fulfilled' ? toArray(i.value.data) : []
+  } catch (e) {
+    console.error('[KHI] fetchPublications failed', e)
   } finally {
     pubLoading.value = false
   }
 }
 
+// ── Projects ──────────────────────────────────────────────────────────────────
 async function fetchProjects() {
   projLoading.value = true
   try {
     const { data } = await api.get('/projects/getAll', { params: { page: 0, size: 50 } })
-    projects.value = data?.data?.content || data?.content || []
+    projects.value = toArray(data)
+  } catch (e) {
+    console.error('[KHI] fetchProjects failed', e)
+    projects.value = []
   } finally {
     projLoading.value = false
   }
@@ -2188,6 +2300,177 @@ onMounted(async () => {
   color: #C6922A;
 }
 
+/* Photo Stories */
+.stories-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.story-card {
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.story-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.story-card__thumb {
+  position: relative;
+  aspect-ratio: 16/10;
+  overflow: hidden;
+}
+
+.story-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.story-card:hover .story-card__thumb img {
+  transform: scale(1.05);
+}
+
+.story-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%);
+}
+
+.story-card__badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  background: rgba(198, 146, 42, 0.9);
+  color: white;
+  padding: 0.25rem 0.625rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+}
+
+.story-card__count {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.story-card__info {
+  padding: 1rem;
+}
+
+.story-card__title {
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.375rem;
+  font-size: 1rem;
+}
+
+.story-card__desc {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+/* Writing Category Chips */
+.writing-cats {
+  margin-top: 2rem;
+}
+
+.writing-cats__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  justify-content: center;
+}
+
+.writing-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f7f7f7;
+  border: 1px solid #e5e5e5;
+  border-radius: 100px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.writing-cat-chip:hover {
+  background: #8C1515;
+  color: white;
+  border-color: #8C1515;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(140, 21, 21, 0.2);
+}
+
+.writing-cat-chip__icon {
+  font-size: 1rem;
+}
+
+.writing-cat-chip__label {
+  font-weight: 600;
+}
+
+.writing-cat-chip__count {
+  background: rgba(0,0,0,0.06);
+  padding: 0.125rem 0.5rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.writing-cat-chip:hover .writing-cat-chip__count {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Book Card Category Badge */
+.book-card__category {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background: rgba(140, 21, 21, 0.9);
+  color: white;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 3;
+}
+
+.book-card__meta-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.book-card__topic-chip {
+  font-size: 0.6875rem;
+  background: rgba(140, 21, 21, 0.08);
+  color: #8C1515;
+  padding: 0.125rem 0.5rem;
+  border-radius: 100px;
+  font-weight: 600;
+}
+
 /* Loading */
 .loading-grid {
   display: grid;
@@ -2399,7 +2682,8 @@ onMounted(async () => {
   
   .clips-grid,
   .albums-grid,
-  .galleries-grid {
+  .galleries-grid,
+  .stories-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   

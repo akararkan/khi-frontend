@@ -1,243 +1,4 @@
-<template>
-  <div class="dash" dir="rtl">
 
-    <!-- ═══════════════════════════════════════════════════════════
-         HERO BANNER — Luxury glassmorphism
-    ═══════════════════════════════════════════════════════════ -->
-    <header class="hero">
-      <div class="hero__canvas">
-        <div class="hero__mesh"></div>
-        <div class="hero__orb hero__orb--1"></div>
-        <div class="hero__orb hero__orb--2"></div>
-        <div class="hero__orb hero__orb--3"></div>
-        <div class="hero__grid"></div>
-      </div>
-
-      <div class="hero__left">
-        <div class="hero__emblem">
-          <span class="hero__emblem-text">KHI</span>
-          <div class="hero__emblem-ring"></div>
-        </div>
-        <div class="hero__copy">
-          <p class="hero__eyebrow">سیستەمی بەڕێوەبردنی ناوەڕۆک</p>
-          <h1 class="hero__title">
-            بەخێربێیت،&nbsp;
-            <em class="hero__name">{{ auth.username || auth.role || 'ئەدمین' }}</em>
-          </h1>
-          <p class="hero__sub">ناوەندی کەلەپووری کوردی — KHI Dashboard</p>
-        </div>
-      </div>
-
-      <div class="hero__right">
-        <div class="hero__meta">
-          <time class="hero__date">{{ today }}</time>
-          <div class="hero__status">
-            <span class="hero__pulse"></span>
-            سیستەم چالاکە
-          </div>
-        </div>
-        <div class="hero__total-pill" v-if="!loading">
-          <span class="hero__total-n">{{ totalContent }}</span>
-          <span class="hero__total-l">تۆمار</span>
-        </div>
-      </div>
-    </header>
-
-    <!-- ═══════════════════════════════════════════════════════════
-         QUICK ACTIONS RIBBON
-    ═══════════════════════════════════════════════════════════ -->
-    <section class="ribbon">
-      <span class="ribbon__label">دەستپێکردنی خێرا</span>
-      <div class="ribbon__actions">
-        <RouterLink v-for="q in quickActions" :key="q.label" :to="q.to" class="qa">
-          <span class="qa__icon" v-html="q.icon"></span>
-          <span class="qa__text">{{ q.label }}</span>
-        </RouterLink>
-      </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════
-         STAT CARDS
-    ═══════════════════════════════════════════════════════════ -->
-    <section class="stat-grid">
-      <RouterLink
-        v-for="(s, idx) in stats"
-        :key="s.key"
-        class="stat"
-        :to="s.to"
-        :style="{ '--c': s.color, '--cs': s.soft, animationDelay: `${idx * 70}ms` }"
-      >
-        <div class="stat__glow"></div>
-        <div class="stat__header">
-          <div class="stat__ico" v-html="s.icon"></div>
-          <div class="stat__trend" v-if="!loading && s.num !== '—'">
-            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 9 L5 1 L9 9" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-        </div>
-        <div class="stat__body">
-          <div class="stat__val">
-            <span v-if="loading" class="skel"></span>
-            <AnimatedCounter v-else :to="Number(s.num) || 0" />
-          </div>
-          <div class="stat__name">{{ s.label }}</div>
-        </div>
-        <div class="stat__bar">
-          <div class="stat__fill" :style="{ width: loading ? '0%' : barPct(s.num), background: `linear-gradient(90deg, ${s.color}88, ${s.color})` }"></div>
-        </div>
-      </RouterLink>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════════
-         MAIN CONTENT GRID
-    ═══════════════════════════════════════════════════════════ -->
-    <div class="body-grid">
-
-      <!-- LEFT: Section Cards -->
-      <section class="sections">
-        <div class="section-head">
-          <div class="section-head__icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--crimson)" stroke-width="2.2">
-              <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
-              <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
-            </svg>
-          </div>
-          <h2 class="section-head__title">بەشەکانی ناوەڕۆک</h2>
-        </div>
-
-        <div class="cards">
-          <RouterLink
-            v-for="(c, idx) in shortcuts"
-            :key="c.key"
-            class="card"
-            :to="c.to"
-            :style="{ '--cc': c.color, '--ccs': c.soft, animationDelay: `${idx * 60 + 200}ms` }"
-          >
-            <div class="card__shine"></div>
-            <div class="card__top">
-              <div class="card__ico" :style="{ background: c.soft, border: `1.5px solid ${c.color}22` }" v-html="c.icon"></div>
-              <div class="card__badge" v-if="!loading && getCount(c.key) !== null">
-                <AnimatedCounter :to="getCount(c.key)" />
-              </div>
-            </div>
-            <h3 class="card__title">{{ c.label }}</h3>
-            <p class="card__hint">{{ c.hint }}</p>
-            <div class="card__foot">
-              <RouterLink :to="c.toNew" class="card__add" @click.stop>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                نوێ زیادبکە
-              </RouterLink>
-              <div class="card__arrow">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                  <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-            <div class="card__bar" :style="{ background: `linear-gradient(90deg, ${c.color}00, ${c.color}22, ${c.color}00)` }"></div>
-          </RouterLink>
-        </div>
-      </section>
-
-      <!-- RIGHT: Sidebar -->
-      <aside class="sidebar">
-
-        <!-- Donut Chart -->
-        <div class="panel" v-if="!loading && totalRaw > 0">
-          <div class="panel__head">
-            <div class="panel__icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--crimson)" stroke-width="2.2">
-                <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0110 10h-10z"/>
-              </svg>
-            </div>
-            <span class="panel__title">دابەشبوونی ناوەڕۆک</span>
-          </div>
-
-          <div class="donut-wrap">
-            <svg class="donut" viewBox="0 0 160 160">
-              <!-- Track -->
-              <circle cx="80" cy="80" r="60" fill="none" stroke="#f0eeeb" stroke-width="14"/>
-              <!-- Segments -->
-              <circle
-                v-for="(seg, i) in donutSegments"
-                :key="'arc'+i"
-                cx="80" cy="80" r="60"
-                fill="none"
-                :stroke="seg.color"
-                stroke-width="14"
-                :stroke-dasharray="seg.dash"
-                :stroke-dashoffset="seg.offset"
-                stroke-linecap="round"
-                class="donut__arc"
-                :style="{ animationDelay: `${i * 100}ms` }"
-              />
-            </svg>
-            <div class="donut__center">
-              <div class="donut__num">{{ totalContent }}</div>
-              <div class="donut__lbl">کۆی گشتی</div>
-            </div>
-          </div>
-
-          <div class="legend">
-            <RouterLink
-              v-for="(seg, i) in donutSegments"
-              :key="'leg'+i"
-              :to="palette[seg.key]?.to || '#'"
-              class="legend-row"
-            >
-              <span class="legend-row__dot" :style="{ background: seg.color }"></span>
-              <span class="legend-row__label">{{ seg.label }}</span>
-              <span class="legend-row__val" :style="{ color: seg.color }">{{ seg.count }}</span>
-              <span class="legend-row__pct">{{ pct(seg.count) }}٪</span>
-            </RouterLink>
-          </div>
-        </div>
-
-        <!-- Summary List -->
-        <div class="panel">
-          <div class="panel__head">
-            <div class="panel__icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--crimson)" stroke-width="2.2">
-                <path d="M18 20V10M12 20V4M6 20v-6"/>
-              </svg>
-            </div>
-            <span class="panel__title">ئامار بە جۆر</span>
-          </div>
-
-          <div class="slist">
-            <RouterLink
-              v-for="b in breakdownStats"
-              :key="b.key"
-              :to="b.to"
-              class="srow"
-              :style="{ '--rc': b.color }"
-            >
-              <div class="srow__left">
-                <div class="srow__ico" v-html="b.icon"></div>
-                <div class="srow__info">
-                  <span class="srow__name">{{ b.label }}</span>
-                  <span class="srow__sub">{{ b.sub }}</span>
-                </div>
-              </div>
-              <div class="srow__right">
-                <span v-if="loading" class="skel skel--sm"></span>
-                <span v-else class="srow__num">{{ getCount(b.key) ?? '—' }}</span>
-                <div class="srow__pill" :style="{ background: b.soft }">
-                  <div class="srow__pill-fill" :style="{ width: loading ? '0%' : barPct(getCount(b.key)), background: b.color }"></div>
-                </div>
-              </div>
-            </RouterLink>
-          </div>
-
-          <div class="total-card" v-if="!loading">
-            <div class="total-card__label">کۆی گشتی تۆمارەکان</div>
-            <div class="total-card__val">{{ totalContent }}</div>
-            <div class="total-card__sub">لە ٧ بەش</div>
-          </div>
-        </div>
-
-      </aside>
-    </div>
-  </div>
-</template>
 
 <script setup>
 import { ref, computed, onMounted, defineComponent, h } from 'vue'
@@ -441,326 +202,1428 @@ const today = computed(() =>
 onMounted(fetchCounts)
 </script>
 
+<template>
+  <div class="dash-luxury" dir="rtl">
+    <!-- Enhanced Hero with Particle Effect -->
+    <header class="hero-luxury">
+      <div class="hero-particles">
+        <div v-for="n in 20" :key="n" class="particle" :style="{ '--delay': `${n * 0.2}s` }"></div>
+      </div>
+      
+      <div class="hero-content">
+        <div class="hero-badge">
+          <div class="badge-emblem">
+            <span class="badge-text">KHI</span>
+            <div class="badge-ring badge-ring--outer"></div>
+            <div class="badge-ring badge-ring--inner"></div>
+          </div>
+        </div>
+        
+        <div class="hero-typography">
+          <span class="hero-eyebrow">سیستەمی بەڕێوەبردنی ناوەڕۆک</span>
+          <h1 class="hero-title">
+            <span class="title-welcome">بەخێربێیت،</span>
+            <span class="title-name">{{ auth.username || auth.role || 'ئەدمین' }}</span>
+          </h1>
+          <p class="hero-subtitle">ناوەندی کەلەپووری کوردی — Dashboard</p>
+        </div>
+      </div>
+
+      <div class="hero-status">
+        <div class="status-pill status-pill--live">
+          <span class="status-pulse"></span>
+          <span>سیستەم چالاکە</span>
+        </div>
+        <time class="status-date">{{ today }}</time>
+        <div class="total-counter" v-if="!loading">
+          <span class="counter-value">{{ totalContent }}</span>
+          <span class="counter-label">تۆمار</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Quick Actions Bento Grid -->
+    <section class="bento-ribbon">
+      <div class="bento-header">
+        <div class="bento-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <span>دەستپێکردنی خێرا</span>
+      </div>
+      
+      <div class="bento-grid">
+        <RouterLink 
+          v-for="(q, idx) in quickActions" 
+          :key="q.label" 
+          :to="q.to" 
+          class="bento-item"
+          :style="{ '--i': idx }"
+        >
+          <div class="bento-shine"></div>
+          <span class="bento-icon-bg" v-html="q.icon"></span>
+          <span class="bento-text">{{ q.label }}</span>
+          <div class="bento-arrow">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </div>
+        </RouterLink>
+      </div>
+    </section>
+
+    <!-- Stats Masonry -->
+    <section class="stats-masonry">
+      <RouterLink
+        v-for="(s, idx) in stats"
+        :key="s.key"
+        class="stat-card"
+        :to="s.to"
+        :style="{ 
+          '--c': s.color, 
+          '--cs': s.soft, 
+          '--delay': `${idx * 80}ms`,
+          '--angle': `${(idx * 45) % 360}deg`
+        }"
+      >
+        <div class="stat-aurora"></div>
+        <div class="stat-border"></div>
+        
+        <div class="stat-header">
+          <div class="stat-icon-wrap">
+            <div class="stat-icon" v-html="s.icon"></div>
+            <div class="stat-glow-icon"></div>
+          </div>
+          <div class="stat-trend" v-if="!loading">
+            <svg width="12" height="12" viewBox="0 0 12 12">
+              <path d="M2 10L6 2L10 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-body">
+          <div class="stat-value">
+            <span v-if="loading" class="skeleton-text"></span>
+            <AnimatedCounter v-else :to="Number(s.num) || 0" class="counter-animated" />
+          </div>
+          <div class="stat-label">{{ s.label }}</div>
+        </div>
+
+        <div class="stat-progress">
+          <div class="progress-track">
+            <div class="progress-fill" :style="{ width: loading ? '0%' : barPct(s.num) }"></div>
+          </div>
+          <div class="progress-glow" :style="{ width: loading ? '0%' : barPct(s.num) }"></div>
+        </div>
+      </RouterLink>
+    </section>
+
+    <!-- Main Layout -->
+    <div class="layout-split">
+      <!-- Content Sections -->
+      <section class="content-sections">
+        <div class="section-header">
+          <div class="header-accent"></div>
+          <div class="header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+            </svg>
+          </div>
+          <h2>بەشەکانی ناوەڕۆک</h2>
+        </div>
+
+        <div class="cards-compact">
+          <RouterLink
+            v-for="(c, idx) in shortcuts"
+            :key="c.key"
+            class="compact-card"
+            :to="c.to"
+            :style="{ 
+              '--cc': c.color, 
+              '--ccs': c.soft,
+              '--enter-delay': `${idx * 50}ms`
+            }"
+          >
+            <div class="card-ambient"></div>
+            <div class="card-border"></div>
+            
+            <div class="card-top">
+              <div class="card-icon-box" :style="{ background: c.soft }">
+                <span v-html="c.icon"></span>
+              </div>
+              <div class="card-count" v-if="!loading && getCount(c.key) !== null">
+                <AnimatedCounter :to="getCount(c.key)" />
+              </div>
+            </div>
+
+            <div class="card-content">
+              <h3>{{ c.label }}</h3>
+              <p>{{ c.hint }}</p>
+            </div>
+
+            <div class="card-actions">
+              <RouterLink :to="c.toNew" class="btn-add" @click.stop>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>نوێ</span>
+              </RouterLink>
+              <div class="btn-arrow">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="card-underline" :style="{ background: c.color }"></div>
+          </RouterLink>
+        </div>
+      </section>
+
+      <!-- Sidebar -->
+      <aside class="sidebar-luxury">
+        <!-- Donut Chart Card -->
+        <div class="panel-luxury" v-if="!loading && totalRaw > 0">
+          <div class="panel-header">
+            <div class="panel-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2a10 10 0 0110 10h-10z"/>
+              </svg>
+            </div>
+            <h3>دابەشبوونی ناوەڕۆک</h3>
+          </div>
+
+          <div class="chart-container">
+            <div class="donut-chart">
+              <svg viewBox="0 0 200 200">
+                <defs>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" stroke-width="20" class="donut-track"/>
+                <circle
+                  v-for="(seg, i) in donutSegments"
+                  :key="i"
+                  cx="100" cy="100" r="70"
+                  fill="none"
+                  :stroke="seg.color"
+                  stroke-width="20"
+                  :stroke-dasharray="seg.dash"
+                  :stroke-dashoffset="seg.offset"
+                  class="donut-segment"
+                  :style="{ animationDelay: `${i * 150}ms` }"
+                />
+              </svg>
+              <div class="donut-center">
+                <span class="donut-total">{{ totalContent }}</span>
+                <span class="donut-label">کۆی گشتی</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-legend">
+            <div 
+              v-for="(seg, i) in donutSegments" 
+              :key="i"
+              class="legend-item"
+              :style="{ '--lc': seg.color }"
+            >
+              <div class="legend-dot"></div>
+              <span class="legend-name">{{ seg.label }}</span>
+              <span class="legend-value">{{ seg.count }}</span>
+              <span class="legend-pct">{{ pct(seg.count) }}٪</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats List -->
+        <div class="panel-luxury panel-stats">
+          <div class="panel-header">
+            <div class="panel-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 20V10M12 20V4M6 20v-6"/>
+              </svg>
+            </div>
+            <h3>ئامار بە جۆر</h3>
+          </div>
+
+          <div class="stats-list">
+            <RouterLink
+              v-for="(b, idx) in breakdownStats"
+              :key="b.key"
+              :to="b.to"
+              class="stat-row"
+              :style="{ '--row-color': b.color, '--row-delay': `${idx * 60}ms` }"
+            >
+              <div class="row-left">
+                <div class="row-icon" v-html="b.icon"></div>
+                <div class="row-info">
+                  <span class="row-title">{{ b.label }}</span>
+                  <span class="row-sub">{{ b.sub }}</span>
+                </div>
+              </div>
+              <div class="row-right">
+                <span v-if="loading" class="skeleton-sm"></span>
+                <span v-else class="row-number">{{ getCount(b.key) ?? '—' }}</span>
+                <div class="row-bar">
+                  <div class="row-fill" :style="{ width: loading ? '0%' : barPct(getCount(b.key)) }"></div>
+                </div>
+              </div>
+            </RouterLink>
+          </div>
+
+          <div class="total-summary" v-if="!loading">
+            <div class="summary-content">
+              <span class="summary-label">کۆی گشتی تۆمارەکان</span>
+              <span class="summary-value">{{ totalContent }}</span>
+              <span class="summary-meta">لە {{ Object.keys(counts).length }} بەش</span>
+            </div>
+            <div class="summary-glow"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</template>
+
+
+
 <style scoped>
-/* ─── Reset & Root ────────────────────────────────────────────── */
-.dash {
+/* ═══════════════════════════════════════════════════════════════
+   LUXURY DASHBOARD - Enhanced Kurdish CMS Interface
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Design Tokens ───────────────────────────────────────────── */
+.dash-luxury {
+  --bg-primary: #faf9f7;
+  --bg-secondary: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --accent-crimson: #8C1515;
+  --accent-gold: #D4AF37;
+  --accent-cream: #f5f3f0;
+  --border-light: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 40px rgba(140, 21, 21, 0.15);
+  
   direction: rtl;
-  max-width: 1340px;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 2rem 1.5rem;
+  background: var(--bg-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans Arabic", sans-serif;
+  line-height: 1.6;
+}
+
+/* ─── Animations ──────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes border-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes enter-up {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.98); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+@keyframes particle-rise {
+  0% { 
+    transform: translateY(100%) rotate(0deg); 
+    opacity: 0; 
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { 
+    transform: translateY(-100vh) rotate(360deg); 
+    opacity: 0; 
+  }
+}
+
+/* ─── Skeleton Loaders ────────────────────────────────────────── */
+.skeleton-text, .skeleton-sm {
+  background: linear-gradient(90deg, #e8e5e1 25%, #f0ede9 50%, #e8e5e1 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.skeleton-text { width: 60px; height: 28px; }
+.skeleton-sm { width: 32px; height: 16px; }
+
+/* ─── HERO SECTION ────────────────────────────────────────────── */
+.hero-luxury {
+  position: relative;
+  background: linear-gradient(135deg, #2A0606 0%, #8C1515 50%, #5A0E0E 100%);
+  border-radius: 32px;
+  padding: 3rem;
+  color: white;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-glow), 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+/* Particle Effect */
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  bottom: -10px;
+  width: 4px;
+  height: 4px;
+  background: rgba(212, 175, 55, 0.6);
+  border-radius: 50%;
+  left: calc(var(--i) * 5%);
+  animation: particle-rise 15s infinite;
+  animation-delay: var(--delay);
+  animation-timing-function: linear;
+}
+
+/* Hero Content */
+.hero-content {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  z-index: 1;
+  position: relative;
+}
+
+.hero-badge {
+  position: relative;
+  animation: float 6s ease-in-out infinite;
+}
+
+.badge-emblem {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05));
+  border: 2px solid rgba(212, 175, 55, 0.5);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 0 0 4px rgba(212, 175, 55, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.badge-text {
+  font-weight: 900;
+  font-size: 1.25rem;
+  color: var(--accent-gold);
+  letter-spacing: 0.05em;
+}
+
+.badge-ring {
+  position: absolute;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.badge-ring--outer {
+  width: 90px;
+  height: 90px;
+  animation: pulse-glow 4s ease-in-out infinite;
+}
+
+.badge-ring--inner {
+  width: 60px;
+  height: 60px;
+  animation: pulse-glow 4s ease-in-out infinite reverse;
+}
+
+/* Hero Typography */
+.hero-typography {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hero-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-title {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title-welcome {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.title-name {
+  color: var(--accent-gold);
+  text-shadow: 0 2px 20px rgba(212, 175, 55, 0.3);
+}
+
+.hero-subtitle {
+  font-size: 0.875rem;
+  opacity: 0.6;
+  margin: 0;
+}
+
+/* Hero Status */
+.hero-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+  z-index: 1;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-pulse {
+  width: 8px;
+  height: 8px;
+  background: #4ade80;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+}
+
+.status-date {
+  font-size: 0.8125rem;
+  opacity: 0.6;
+  font-weight: 500;
+}
+
+.total-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 1.25rem 2rem;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.counter-value {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--accent-gold);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter-label {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+/* ─── BENTO RIBBON ────────────────────────────────────────────── */
+.bento-ribbon {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-md);
+}
+
+.bento-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.bento-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, rgba(140, 21, 21, 0.1), rgba(140, 21, 21, 0.05));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-crimson);
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.bento-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg-primary);
+  border: 1.5px solid var(--border-light);
+  border-radius: 16px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: enter-up 0.5s both;
+  animation-delay: calc(var(--i) * 50ms);
+}
+
+.bento-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.6s;
+}
+
+.bento-item:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: var(--accent-crimson);
+  box-shadow: 0 8px 24px rgba(140, 21, 21, 0.12);
+}
+
+.bento-item:hover .bento-shine {
+  transform: translateX(100%);
+}
+
+.bento-icon-bg {
+  width: 32px;
+  height: 32px;
+  background: white;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  color: var(--accent-crimson);
+  flex-shrink: 0;
+}
+
+.bento-text {
+  flex: 1;
+}
+
+.bento-arrow {
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s;
+  color: var(--accent-crimson);
+}
+
+.bento-item:hover .bento-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ─── STATS MASONRY ───────────────────────────────────────────── */
+.stats-masonry {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-light);
+  border-radius: 24px;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: enter-up 0.6s both;
+  animation-delay: var(--delay);
+}
+
+.stat-aurora {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top right, var(--cs), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.stat-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 1.5px;
+  background: linear-gradient(var(--angle), var(--c), transparent, var(--c));
+  background-size: 200% 200%;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s;
+  animation: border-flow 3s linear infinite;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.08),
+    0 0 0 1px var(--c);
+}
+
+.stat-card:hover .stat-aurora {
+  opacity: 1;
+}
+
+.stat-card:hover .stat-border {
+  opacity: 1;
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.stat-icon-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+}
+
+.stat-icon {
+  width: 100%;
+  height: 100%;
+  background: var(--cs);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--c) 20%, transparent);
+  position: relative;
+  z-index: 1;
+}
+
+.stat-glow-icon {
+  position: absolute;
+  inset: -4px;
+  background: var(--c);
+  border-radius: 18px;
+  opacity: 0.2;
+  filter: blur(8px);
+  transition: opacity 0.3s;
+}
+
+.stat-card:hover .stat-glow-icon {
+  opacity: 0.4;
+}
+
+.stat-trend {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 0.25rem;
+  border-radius: 6px;
+}
+
+.stat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.stat-progress {
+  position: relative;
+  height: 4px;
+  margin-top: auto;
+}
+
+.progress-track {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-cream);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 70%, white));
+  border-radius: 99px;
+  transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 50%, transparent);
+}
+
+.progress-glow {
+  position: absolute;
+  height: 100%;
+  background: var(--c);
+  border-radius: 99px;
+  filter: blur(4px);
+  opacity: 0.5;
+  transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─── LAYOUT SPLIT ────────────────────────────────────────────── */
+.layout-split {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .layout-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── CONTENT SECTIONS ────────────────────────────────────────── */
+.content-sections {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding-bottom: 2rem;
 }
 
-/* ─── Skeletons ───────────────────────────────────────────────── */
-.skel {
-  display: inline-block; width: 42px; height: 26px; border-radius: 6px;
-  background: linear-gradient(90deg, #ede9e4 25%, #f7f5f2 50%, #ede9e4 75%);
-  background-size: 300%; animation: shimmer 1.6s infinite;
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
 }
-.skel--sm { width: 28px; height: 18px; border-radius: 4px; }
-@keyframes shimmer { 0%{background-position:300% 0} 100%{background-position:-300% 0} }
-@keyframes up { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
-/* ─── HERO ────────────────────────────────────────────────────── */
-.hero {
-  position: relative; display: flex; align-items: center;
-  justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;
-  padding: 2.2rem 2.4rem; border-radius: 24px; overflow: hidden;
-  min-height: 120px; color: #fff;
+.header-accent {
+  width: 4px;
+  height: 32px;
+  background: linear-gradient(to bottom, var(--accent-crimson), transparent);
+  border-radius: 99px;
 }
-.hero__canvas {
-  position: absolute; inset: 0; z-index: 0;
-  background: linear-gradient(135deg, #2A0606 0%, #8C1515 45%, #5A0E0E 100%);
-}
-.hero__mesh {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 70% 60% at 20% 50%, rgba(254,221,0,.10) 0%, transparent 65%),
-    radial-gradient(ellipse 40% 80% at 85% 20%, rgba(255,100,100,.08) 0%, transparent 60%);
-}
-.hero__orb {
-  position: absolute; border-radius: 50%; pointer-events: none;
-  filter: blur(1px);
-}
-.hero__orb--1 {
-  width: 300px; height: 300px; top: -130px; left: -80px;
-  background: radial-gradient(circle, rgba(254,221,0,.18) 0%, transparent 65%);
-  animation: drift1 8s ease-in-out infinite alternate;
-}
-.hero__orb--2 {
-  width: 200px; height: 200px; bottom: -80px; right: 12%;
-  background: radial-gradient(circle, rgba(255,80,80,.06) 0%, transparent 65%);
-  animation: drift2 11s ease-in-out infinite alternate;
-}
-.hero__orb--3 {
-  width: 120px; height: 120px; top: 20px; right: 30%;
-  background: radial-gradient(circle, rgba(254,221,0,.08) 0%, transparent 60%);
-  animation: drift1 14s ease-in-out infinite alternate-reverse;
-}
-.hero__grid {
-  position: absolute; inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-@keyframes drift1 { 0%{transform:translate(0,0)} 100%{transform:translate(20px,12px)} }
-@keyframes drift2 { 0%{transform:translate(0,0)} 100%{transform:translate(-15px,10px)} }
 
-.hero__left { display: flex; align-items: center; gap: 1.3rem; position: relative; z-index: 1; flex: 1; min-width: 0; }
-.hero__emblem {
-  position: relative; width: 58px; height: 58px; flex: 0 0 58px;
-  border-radius: 16px; background: rgba(254,221,0,.13);
-  border: 1.5px solid rgba(254,221,0,.4);
-  box-shadow: 0 0 0 4px rgba(254,221,0,.06), inset 0 1px 0 rgba(255,255,255,.15);
-  display: flex; align-items: center; justify-content: center;
+.header-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, rgba(140, 21, 21, 0.1), rgba(140, 21, 21, 0.05));
+  border: 1px solid rgba(140, 21, 21, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-crimson);
 }
-.hero__emblem-text {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 900; font-size: 1rem; color: var(--gold); letter-spacing: .04em; position: relative; z-index: 1;
-}
-.hero__emblem-ring {
-  position: absolute; inset: -5px; border-radius: 20px;
-  border: 1px solid rgba(254,221,0,.18);
-}
-.hero__eyebrow { font-size: .72rem; opacity: .55; margin-bottom: .3rem; letter-spacing: .04em; text-transform: uppercase; }
-.hero__title { font-size: 1.4rem; font-weight: 800; line-height: 1.3; margin-bottom: .2rem; }
-.hero__name { font-style: normal; color: var(--gold); }
-.hero__sub { font-size: .78rem; opacity: .5; }
 
-.hero__right { display: flex; flex-direction: column; align-items: flex-end; gap: .7rem; position: relative; z-index: 1; flex-shrink: 0; }
-.hero__meta { display: flex; flex-direction: column; align-items: flex-end; gap: .3rem; }
-.hero__date { font-size: .74rem; opacity: .5; white-space: nowrap; }
-.hero__status { display: flex; align-items: center; gap: .4rem; font-size: .74rem; opacity: .7; }
-.hero__pulse {
-  width: 7px; height: 7px; border-radius: 50%; background: #4ade80;
-  box-shadow: 0 0 0 3px rgba(74,222,128,.3);
-  animation: pulse 2s ease infinite;
+.section-header h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
 }
-@keyframes pulse { 0%,100%{box-shadow:0 0 0 3px rgba(74,222,128,.3)} 50%{box-shadow:0 0 0 7px rgba(74,222,128,.06)} }
 
-.hero__total-pill {
-  display: flex; align-items: baseline; gap: .4rem; padding: .5rem 1rem;
-  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
-  border-radius: 99px; backdrop-filter: blur(12px);
+/* Cards Grid */
+.cards-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
 }
-.hero__total-n { font-size: 1.5rem; font-weight: 900; color: var(--gold); line-height: 1; }
-.hero__total-l { font-size: .72rem; opacity: .6; }
 
-/* ─── RIBBON ──────────────────────────────────────────────────── */
-.ribbon {
-  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  padding: .85rem 1.2rem;
-  background: var(--white); border: 1px solid var(--border); border-radius: 16px;
-  box-shadow: var(--shadow-sm);
+.compact-card {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-light);
+  border-radius: 20px;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: enter-up 0.5s both;
+  animation-delay: var(--enter-delay);
 }
-.ribbon__label {
-  font-size: .72rem; font-weight: 800; color: var(--muted);
-  white-space: nowrap; letter-spacing: .04em; text-transform: uppercase;
-  border-left: 2.5px solid var(--crimson); padding-left: .6rem;
-}
-.ribbon__actions { display: flex; gap: .45rem; flex-wrap: wrap; flex: 1; }
-.qa {
-  display: inline-flex; align-items: center; gap: .4rem;
-  padding: .4rem .9rem; border-radius: 99px;
-  background: var(--cream); border: 1.5px solid var(--border);
-  color: var(--muted); text-decoration: none;
-  font-size: .74rem; font-weight: 700; white-space: nowrap;
-  transition: all .18s; position: relative; overflow: hidden;
-}
-.qa::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, var(--crimson), #b01e1e);
-  opacity: 0; transition: opacity .18s; border-radius: inherit;
-}
-.qa:hover { color: #fff; border-color: var(--crimson); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(140,21,21,.25); }
-.qa:hover::before { opacity: 1; }
-.qa__icon, .qa__text { position: relative; z-index: 1; }
-.qa__icon :deep(svg) { transition: stroke .18s; }
-.qa:hover .qa__icon :deep(svg) { stroke: white !important; }
 
-/* ─── STAT CARDS ──────────────────────────────────────────────── */
-.stat-grid {
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: .75rem;
+.card-ambient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(600px circle at var(--mouse-x, 100px) var(--mouse-y, 100px), var(--ccs), transparent 40%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
 }
-@media (max-width: 1100px) { .stat-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 680px)  { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
 
-.stat {
-  position: relative; display: flex; flex-direction: column; gap: .5rem;
-  padding: 1.1rem; background: var(--white); border: 1px solid var(--border);
-  border-radius: 18px; text-decoration: none; color: var(--text); overflow: hidden;
-  transition: transform .2s, box-shadow .2s, border-color .2s;
-  animation: up .5s cubic-bezier(.22,1,.36,1) both;
+.compact-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  border-color: var(--cc);
 }
-.stat:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(0,0,0,.1); border-color: var(--c); }
-.stat__glow {
-  position: absolute; inset: 0; border-radius: inherit; opacity: 0; transition: opacity .2s;
-  background: radial-gradient(ellipse at top right, var(--cs), transparent 60%);
-}
-.stat:hover .stat__glow { opacity: 1; }
-.stat__header { display: flex; align-items: flex-start; justify-content: space-between; }
-.stat__ico {
-  width: 38px; height: 38px; border-radius: 11px; background: var(--cs);
-  border: 1px solid color-mix(in srgb, var(--c) 20%, transparent);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.stat__trend { color: #4ade80; opacity: .8; }
-.stat__body { flex: 1; }
-.stat__val { font-size: 1.45rem; font-weight: 900; line-height: 1; color: var(--text); }
-.stat__name { font-size: .68rem; font-weight: 700; color: var(--muted); margin-top: .25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stat__bar { height: 3px; background: var(--cream-dk); border-radius: 99px; overflow: hidden; margin-top: .35rem; }
-.stat__fill { height: 100%; border-radius: 99px; transition: width 1.4s cubic-bezier(.34,1.56,.64,1); }
 
-/* ─── BODY GRID ───────────────────────────────────────────────── */
-.body-grid {
-  display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start;
+.compact-card:hover .card-ambient {
+  opacity: 1;
 }
-@media (max-width: 1020px) { .body-grid { grid-template-columns: 1fr; } }
 
-/* ─── SECTION HEAD ────────────────────────────────────────────── */
-.section-head {
-  display: flex; align-items: center; gap: .55rem; margin-bottom: 1.1rem;
+.card-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  background: linear-gradient(135deg, var(--cc), transparent 50%) border-box;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) padding-box, 
+    linear-gradient(#fff 0 0);
+  mask: 
+    linear-gradient(#fff 0 0) padding-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s;
 }
-.section-head__icon {
-  width: 34px; height: 34px; border-radius: 10px;
-  background: rgba(140,21,21,.06); border: 1px solid rgba(140,21,21,.12);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.section-head__title { font-size: .95rem; font-weight: 800; color: var(--text); }
 
-/* ─── CARDS GRID ──────────────────────────────────────────────── */
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(188px, 1fr)); gap: .85rem; }
+.compact-card:hover .card-border {
+  opacity: 1;
+}
 
-.card {
-  position: relative; display: flex; flex-direction: column; gap: .1rem;
-  text-decoration: none; background: var(--white);
-  border: 1px solid var(--border); border-radius: 18px;
-  padding: 1.2rem; overflow: hidden;
-  transition: transform .2s, box-shadow .2s;
-  animation: up .5s cubic-bezier(.22,1,.36,1) both;
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
-.card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(0,0,0,.09); }
-.card__shine {
-  position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255,255,255,.8) 0%, transparent 50%);
-  opacity: 0; transition: opacity .2s;
-}
-.card:hover .card__shine { opacity: .3; }
 
-.card__top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: .75rem; }
-.card__ico {
-  width: 44px; height: 44px; border-radius: 13px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  transition: transform .2s;
+.card-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cc);
+  transition: transform 0.3s;
 }
-.card:hover .card__ico { transform: scale(1.08) rotate(-3deg); }
-.card__badge {
-  font-size: 1rem; font-weight: 900; color: var(--text);
-  background: var(--cream-dk); border: 1px solid var(--border);
-  border-radius: 9px; padding: .12rem .52rem;
-  font-variant-numeric: tabular-nums;
+
+.compact-card:hover .card-icon-box {
+  transform: scale(1.1) rotate(-5deg);
 }
-.card__title { font-size: .87rem; font-weight: 800; color: var(--text); margin-bottom: .2rem; }
-.card__hint  { font-size: .73rem; color: var(--muted); flex: 1; line-height: 1.5; }
-.card__foot {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: .8rem; padding-top: .7rem;
-  border-top: 1px dashed var(--cream-dk);
+
+.card-count {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  background: var(--accent-cream);
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
 }
-.card__add {
-  display: inline-flex; align-items: center; gap: .3rem; padding: .28rem .65rem;
-  border-radius: 7px; background: rgba(140,21,21,.06);
-  border: 1px solid rgba(140,21,21,.14);
-  color: var(--crimson); font-size: .71rem; font-weight: 800;
-  text-decoration: none; transition: all .15s;
+
+.card-content {
+  flex: 1;
 }
-.card__add:hover { background: rgba(140,21,21,.12); transform: scale(1.02); }
-.card__arrow { color: var(--border); transition: all .2s; display: flex; }
-.card:hover .card__arrow { color: var(--cc); transform: translateX(-4px); }
-.card__bar {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
-  opacity: 0; transition: opacity .2s;
+
+.card-content h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
 }
-.card:hover .card__bar { opacity: 1; }
+
+.card-content p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border-light);
+}
+
+.btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, rgba(140, 21, 21, 0.08), rgba(140, 21, 21, 0.04));
+  border: 1px solid rgba(140, 21, 21, 0.2);
+  border-radius: 8px;
+  color: var(--accent-crimson);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-add:hover {
+  background: var(--accent-crimson);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(140, 21, 21, 0.25);
+}
+
+.btn-arrow {
+  color: var(--border-medium);
+  transition: all 0.3s;
+}
+
+.compact-card:hover .btn-arrow {
+  color: var(--cc);
+  transform: translateX(-4px);
+}
+
+.card-underline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.compact-card:hover .card-underline {
+  opacity: 1;
+}
 
 /* ─── SIDEBAR ─────────────────────────────────────────────────── */
-.sidebar { display: flex; flex-direction: column; gap: 1.2rem; }
+.sidebar-luxury {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
 
-.panel {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: 18px; padding: 1.35rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+.panel-luxury {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
 }
-.panel__head {
-  display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem;
-}
-.panel__icon {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: rgba(140,21,21,.06); border: 1px solid rgba(140,21,21,.1);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.panel__title { font-size: .86rem; font-weight: 800; color: var(--text); }
 
-/* Donut */
-.donut-wrap { position: relative; width: 148px; height: 148px; margin: .3rem auto 1.2rem; }
-.donut { width: 100%; height: 100%; transform: rotate(-90deg); }
-.donut__arc {
-  animation: arcDraw 1s cubic-bezier(.34,1.56,.64,1) both;
-  transition: stroke-dasharray .5s, stroke-dashoffset .5s;
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
-@keyframes arcDraw { from{stroke-dasharray:0 400;opacity:0} }
-.donut__center {
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%); text-align: center; pointer-events: none;
+
+.panel-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, rgba(140, 21, 21, 0.1), rgba(140, 21, 21, 0.05));
+  border: 1px solid rgba(140, 21, 21, 0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-crimson);
 }
-.donut__num { font-size: 1.5rem; font-weight: 900; color: var(--text); line-height: 1; }
-.donut__lbl { font-size: .62rem; color: var(--muted); font-weight: 700; margin-top: .2rem; letter-spacing: .03em; }
+
+.panel-header h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Donut Chart */
+.chart-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.donut-chart {
+  position: relative;
+  width: 180px;
+  height: 180px;
+}
+
+.donut-chart svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+  color: var(--accent-cream);
+}
+
+.donut-track {
+  stroke: currentColor;
+}
+
+.donut-segment {
+  stroke-linecap: round;
+  transition: all 0.3s;
+  animation: enter-up 1s both;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.donut-segment:hover {
+  filter: drop-shadow(0 0 8px currentColor);
+  transform: scale(1.02);
+  transform-origin: center;
+}
+
+.donut-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.donut-total {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.donut-label {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
 
 /* Legend */
-.legend { display: flex; flex-direction: column; gap: .3rem; }
-.legend-row {
-  display: flex; align-items: center; gap: .5rem; padding: .35rem .45rem;
-  border-radius: 8px; text-decoration: none; color: inherit; transition: background .15s;
+.chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
-.legend-row:hover { background: var(--cream); }
-.legend-row__dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
-.legend-row__label { flex: 1; font-size: .77rem; font-weight: 700; color: var(--text); }
-.legend-row__val { font-size: .8rem; font-weight: 900; font-variant-numeric: tabular-nums; }
-.legend-row__pct { font-size: .68rem; color: var(--muted); min-width: 32px; text-align: left; }
 
-/* Summary rows */
-.slist { display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem; }
-.srow {
-  display: flex; align-items: center; justify-content: space-between; gap: .6rem;
-  padding: .6rem .55rem; border-radius: 11px; text-decoration: none;
-  color: inherit; transition: background .15s; cursor: pointer;
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  transition: background 0.2s;
 }
-.srow:hover { background: var(--cream); }
-.srow__left { display: flex; align-items: center; gap: .5rem; flex: 1; min-width: 0; }
-.srow__ico {
-  width: 28px; height: 28px; flex: 0 0 28px; border-radius: 8px;
-  background: var(--cream-dk); border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-}
-.srow__info { display: flex; flex-direction: column; min-width: 0; }
-.srow__name { font-size: .81rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.srow__sub  { font-size: .67rem; color: var(--muted); }
-.srow__right { display: flex; align-items: center; gap: .55rem; flex-shrink: 0; }
-.srow__num { font-size: .88rem; font-weight: 900; color: var(--rc); font-variant-numeric: tabular-nums; min-width: 28px; text-align: center; }
-.srow__pill { height: 4px; width: 48px; border-radius: 99px; overflow: hidden; }
-.srow__pill-fill { height: 100%; border-radius: 99px; transition: width 1.4s cubic-bezier(.34,1.56,.64,1); }
 
-/* Total card */
-.total-card {
-  background: linear-gradient(135deg, #2A0606, #8C1515);
-  border-radius: 14px; padding: 1.1rem; text-align: center; color: #fff;
-  box-shadow: 0 6px 24px rgba(140,21,21,.3);
+.legend-item:hover {
+  background: var(--accent-cream);
 }
-.total-card__label { font-size: .7rem; opacity: .6; margin-bottom: .25rem; letter-spacing: .03em; }
-.total-card__val   { font-size: 2rem; font-weight: 900; color: var(--gold); line-height: 1; }
-.total-card__sub   { font-size: .68rem; opacity: .5; margin-top: .2rem; }
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--lc);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lc) 20%, transparent);
+}
+
+.legend-name {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.legend-value {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: var(--lc);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-pct {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  min-width: 36px;
+  text-align: left;
+}
+
+/* Stats List */
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+  animation: enter-up 0.4s both;
+  animation-delay: var(--row-delay);
+}
+
+.stat-row:hover {
+  background: var(--accent-cream);
+  transform: translateX(-4px);
+}
+
+.row-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.row-icon {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--row-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.row-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.row-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.row-sub {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}
+
+.row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.row-number {
+  font-size: 0.9375rem;
+  font-weight: 900;
+  color: var(--row-color);
+  min-width: 32px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-bar {
+  width: 50px;
+  height: 4px;
+  background: var(--accent-cream);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.row-fill {
+  height: 100%;
+  background: var(--row-color);
+  border-radius: 99px;
+  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--row-color) 50%, transparent);
+}
+
+/* Total Summary */
+.total-summary {
+  position: relative;
+  background: linear-gradient(135deg, #2A0606 0%, #8C1515 100%);
+  border-radius: 16px;
+  padding: 1.25rem;
+  color: white;
+  text-align: center;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(140, 21, 21, 0.3);
+}
+
+.summary-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.2), transparent 70%);
+  animation: rotate 10s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.summary-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+.summary-value {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--accent-gold);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-meta {
+  font-size: 0.6875rem;
+  opacity: 0.5;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .dash-luxury {
+    padding: 1rem;
+  }
+  
+  .hero-luxury {
+    flex-direction: column;
+    text-align: center;
+    padding: 2rem;
+    gap: 2rem;
+  }
+  
+  .hero-content {
+    flex-direction: column;
+  }
+  
+  .hero-status {
+    align-items: center;
+  }
+  
+  .stats-masonry {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .cards-compact {
+    grid-template-columns: 1fr;
+  }
+  
+  .bento-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-masonry {
+    grid-template-columns: 1fr;
+  }
+  
+  .total-counter {
+    padding: 1rem 1.5rem;
+  }
+  
+  .counter-value {
+    font-size: 2rem;
+  }
+}
 </style>
