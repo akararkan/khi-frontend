@@ -1,14 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { API_BASE } from '@/components/consts.js'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 const ADMIN_ROLES = ['EMPLOYEE', 'ADMIN', 'SUPER_ADMIN']
 
-/**
- * ✅ Aggressively wipe every cookie the browser holds for this origin.
- *    Spring Boot sets JSESSIONID — if we don't kill it, the next
- *    fetch with credentials:'include' will re-attach the OLD session.
- */
 function nukeAllCookies() {
   const paths = ['/', '/api', '/oauth2', '']
   document.cookie.split(';').forEach(c => {
@@ -22,14 +17,12 @@ function nukeAllCookies() {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  // ─── State ───────────────────────────────────────────────────────────
   const token   = ref(null)
   const user    = ref(null)
   const loading = ref(false)
   const error   = ref(null)
   let expirationTimer = null
 
-  // ─── Computed ────────────────────────────────────────────────────────
   const isAuthenticated = computed(() => !!token.value)
   const username        = computed(() => user.value?.username || null)
   const role            = computed(() => user.value?.role || null)
@@ -47,14 +40,6 @@ export const useAuthStore = defineStore('auth', () => {
     return null
   })
 
-  // ─── Actions ─────────────────────────────────────────────────────────
-
-  /**
-   * Fetch full profile from the API.
-   * ✅ FIX: No credentials:'include' — JWT in header is enough.
-   *         This prevents the JSESSIONID cookie from overriding the JWT user.
-   * ✅ FIX: REPLACE user.value entirely instead of merging old + new.
-   */
   async function fetchMe() {
     if (!token.value) return null
     try {
@@ -64,15 +49,12 @@ export const useAuthStore = defineStore('auth', () => {
           'Accept': 'application/json',
           'Cache-Control': 'no-cache',
         },
-        // ✅ FIX: removed credentials:'include' — prevents JSESSIONID from
-        //         overriding the JWT identity on the server side
       })
       if (!res.ok) {
         logger.error('fetchMe failed:', res.status)
         return null
       }
       const data = await res.json()
-      // ✅ FIX: REPLACE, not merge — only keep role/userId from JWT as fallback
       const jwtRole   = user.value?.role
       const jwtUserId = user.value?.userId
       user.value = {
@@ -96,9 +78,6 @@ export const useAuthStore = defineStore('auth', () => {
     logger.debug('updateUserData:', partial)
   }
 
-  /**
-   * Restore session from localStorage.
-   */
   function hydrate() {
     try {
       const storedToken = localStorage.getItem('khi_token')
@@ -118,7 +97,6 @@ export const useAuthStore = defineStore('auth', () => {
 
         if (payload?.exp) setupExpirationTimer(payload.exp, user.value?.role)
 
-        // Background refresh
         fetchMe()
 
         return true
@@ -165,7 +143,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     token.value = rawToken
-    // ✅ FIX: brand new user object, no leftover fields
     user.value  = {
       username: payload?.sub || payload?.username || null,
       role:     payload?.ROLE || payload?.role || payload?.authorities?.[0] || 'GUEST',
@@ -180,14 +157,7 @@ export const useAuthStore = defineStore('auth', () => {
     return true
   }
 
-  /**
-   * ✅ FIX: login() now:
-   *   1. Clears ALL old state + cookies BEFORE the login request
-   *   2. Does NOT send credentials:'include' on the login fetch
-   *      (your backend accepts JSON body, it doesn't need cookies)
-   */
   async function login(usernameInput, password) {
-    // ✅ STEP 1: Nuke everything from the old session FIRST
     _clearSession()
 
     loading.value = true
@@ -197,9 +167,6 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        // ✅ FIX: removed credentials:'include'
-        //         Login sends username+password in body, no cookies needed.
-        //         This prevents the old JSESSIONID from being sent.
         body: JSON.stringify({ username: usernameInput, password }),
       })
 
@@ -227,12 +194,10 @@ export const useAuthStore = defineStore('auth', () => {
       const tok  = data.token || data?.data?.token
       if (!tok) throw new Error('تۆکن وەرنەگیرا')
 
-      // ✅ STEP 2: Kill any cookies the login response may have set (JSESSIONID)
       nukeAllCookies()
 
       setToken(tok)
 
-      // ✅ STEP 3: Fetch full profile using the NEW token (no cookies)
       await fetchMe()
 
       return { ok: true }
@@ -246,7 +211,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function registerGuest(payload) {
-    // ✅ FIX: Clear old session first
     _clearSession()
 
     loading.value = true
@@ -256,7 +220,6 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        // ✅ FIX: removed credentials:'include'
         body: JSON.stringify(payload),
       })
 
@@ -289,28 +252,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  /**
-   * ✅ FIX: logout() now:
-   *   1. Saves the token
-   *   2. Clears ALL local state + cookies IMMEDIATELY
-   *   3. THEN tells the server (fire-and-forget)
-   */
   async function logout() {
     if (expirationTimer) { clearTimeout(expirationTimer); expirationTimer = null }
 
     const savedToken = token.value
 
-    // ✅ Clear everything FIRST — so even if the server call hangs,
-    //    the UI is already clean for the next user
     _clearSession()
 
-    // Tell the server (best effort, don't wait)
     if (savedToken) {
       try {
         await fetch(`${API_BASE}/api/auth/logout`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${savedToken}`, 'Content-Type': 'application/json' },
-          // ✅ FIX: removed credentials:'include'
         })
       } catch (err) {
         console.warn('Logout request failed (ignored):', err)
@@ -318,14 +271,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  /**
-   * ✅ FIX: _clearSession is now thorough:
-   *   - Pinia state → null
-   *   - localStorage → removed
-   *   - sessionStorage → cleared
-   *   - ALL cookies → nuked (JSESSIONID, etc.)
-   *   - Expiration timer → cleared
-   */
   function _clearSession() {
     if (expirationTimer) { clearTimeout(expirationTimer); expirationTimer = null }
 
@@ -350,19 +295,15 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    // State
     token, user, loading, error,
-    // Computed
     isAuthenticated, username, role, profileImage,
     hasAdminAccess, isGuest, isEmployee, isAdmin, isSuperAdmin,
-    // Actions
     hydrate, setToken, login, registerGuest, logout, clearError, authHeader,
     updateUserData, fetchMe, _clearSession,
     setupExpirationTimer, handleExpiration,
   }
 })
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const logger = {
   debug: (...args) => console.debug('[Auth]', ...args),
   log:   (...args) => console.log('[Auth]',   ...args),
