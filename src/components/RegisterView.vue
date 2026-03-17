@@ -261,6 +261,10 @@ import { useAuthStore } from '@/stores/useAuthStore'
 
 const router    = useRouter()
 const authStore = useAuthStore()
+
+// ✅ FIX: Use same env variable as auth store and api.js
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+
 const showPassword = ref(false)
 const showSuccess  = ref(false)
 const currentStep  = ref(1)
@@ -306,9 +310,9 @@ const submit = async () => {
   setTimeout(() => router.push('/login'), 1500)
 }
 
-// ✅ NEW: same flow as login — Google handles both sign-up and sign-in
+// ✅ FIX: Use dynamic API_BASE instead of hardcoded localhost:8080
 const handleGoogleSignup = () => {
-  window.location.href = 'http://localhost:8080/oauth2/authorize/google'
+  window.location.href = `${API_BASE}/oauth2/authorize/google`
 }
 
 onMounted(() => authStore.clearError())

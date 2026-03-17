@@ -3,17 +3,49 @@
     <Sidebar />
     <div class="shell__main">
       <Topbar />
-      <!-- AdminLayout.vue -->
-<main class="shell__content">
-  <router-view :key="$route.fullPath" />
-</main>
+      <main class="shell__content" ref="contentEl">
+        <router-view :key="$route.fullPath" />
+      </main>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, watch, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import Sidebar from '@/components/Sidebar.vue'
 import Topbar from '@/components/Topbar.vue'
+import { useAdminStore } from '@/stores/useAdminStore'
+
+const route = useRoute()
+const adminStore = useAdminStore()
+const contentEl = ref(null)
+
+// ── Save scroll position before leaving a route ────────────
+let currentPath = ''
+
+watch(() => route.fullPath, (newPath, oldPath) => {
+  // Save scroll of the page we're leaving
+  if (oldPath && contentEl.value) {
+    adminStore.saveScrollPosition(oldPath, contentEl.value.scrollTop)
+  }
+  currentPath = newPath
+
+  // Track last visited admin route
+  adminStore.lastRoute = newPath
+
+  // Restore scroll of the page we're arriving at
+  nextTick(() => {
+    if (contentEl.value) {
+      const saved = adminStore.getScrollPosition(newPath)
+      contentEl.value.scrollTop = saved
+    }
+  })
+}, { immediate: true })
+
+onMounted(() => {
+  adminStore.lastRoute = route.fullPath
+})
 </script>
 
 <style>
@@ -64,21 +96,26 @@ input, textarea, select { font-family: inherit; }
 
 <style scoped>
 .shell {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   background: var(--cream);
+  overflow: hidden; /* Prevent body-level scroll — each panel scrolls independently */
 }
+
 .shell__main {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
+  height: 100vh;       /* Fill viewport exactly */
+  overflow: hidden;    /* Children handle their own scroll */
 }
+
 .shell__content {
   flex: 1;
   padding: 1.5rem 1.75rem;
-  overflow-y: auto;
-  min-width: 0;
+  overflow-y: auto;    /* This is the scrollable main content area */
+  overflow-x: hidden;
+  min-height: 0;       /* CRITICAL: allows flex child to shrink below content size */
 }
 </style>

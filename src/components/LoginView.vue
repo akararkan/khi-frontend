@@ -298,6 +298,9 @@ const router  = useRouter()
 const route   = useRoute()
 const authStore = useAuthStore()
 
+// ✅ FIX: Use same env variable as your auth store and api.js
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+
 const showPassword = ref(false)
 const showSuccess  = ref(false)
 const form = reactive({ username: '', password: '' })
@@ -359,17 +362,17 @@ const handleSubmit = async () => {
   }, 1200)
 }
 
-// Redirect browser to backend OAuth2 authorization endpoint
+// ✅ FIX: Use dynamic API_BASE instead of hardcoded localhost:8080
 const handleGoogleLogin = () => {
-  window.location.href = 'http://localhost:8080/oauth2/authorize/google'
+  window.location.href = `${API_BASE}/oauth2/authorize/google`
 }
 
 onMounted(() => {
-  // ✅ FIX: Always clear error state when entering login page
+  // Always clear error state when entering login page
   authStore.clearError()
 
-  // ✅ FIX: If we arrived here from a logout action or with expired flag,
-  //         force-clear ALL session data to prevent old user from persisting
+  // If we arrived here from a logout action or with expired flag,
+  // force-clear ALL session data to prevent old user from persisting
   const fromLogout = route.query.logout === '1'
   const isExpired  = isExpiredSession.value
 
@@ -384,7 +387,7 @@ onMounted(() => {
     return
   }
   
-  // ✅ FIX: Only redirect if authenticated AND not coming from logout
+  // Only redirect if authenticated AND not coming from logout
   if (authStore.isAuthenticated && !fromLogout) {
     if (authStore.hasAdminAccess) {
       router.replace('/admin')

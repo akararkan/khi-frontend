@@ -13,7 +13,7 @@
 
     <!-- ═══ BRAND ════════════════════════════════════════ -->
     <div class="brand">
-      <div class="brand__gem" @click="slim && (slim = false)" :class="{ 'brand__gem--clickable': slim }">
+      <div class="brand__gem" @click="slim && toggleSlim(false)" :class="{ 'brand__gem--clickable': slim }">
         <span class="brand__gem-inner">KHI</span>
         <div class="brand__gem-ring"></div>
         <div class="brand__gem-ring brand__gem-ring--outer"></div>
@@ -27,7 +27,7 @@
         </div>
       </Transition>
       <Transition name="slide-fade">
-        <button v-if="!slim" class="brand__collapse" @click="slim = true" title="تەنگکردن">
+        <button v-if="!slim" class="brand__collapse" @click="toggleSlim(true)" title="تەنگکردن">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -37,14 +37,14 @@
 
     <!-- Slim: expand trigger -->
     <Transition name="pop">
-      <button v-if="slim" class="expand-fab" @click="slim = false" title="فراوانکردن">
+      <button v-if="slim" class="expand-fab" @click="toggleSlim(false)" title="فراوانکردن">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
           <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
     </Transition>
 
-    <!-- ═══ NAV ════════════════════════════════════════════ -->
+    <!-- ═══ NAV (scrollable) ═════════════════════════════ -->
     <nav class="nav" ref="navEl">
 
       <!-- Home -->
@@ -96,7 +96,7 @@
         <button
           class="nav-item nav-item--btn"
           :class="{ 'nav-item--active': isPublicationsActive }"
-          @click="pubOpen = !pubOpen"
+          @click="togglePub"
         >
           <span class="nav-item__ico">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -196,16 +196,30 @@
 </template>
 
 <script setup>
-import { ref, computed, defineComponent, h } from 'vue'
+import { ref, computed, defineComponent, h, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useAdminStore } from '@/stores/useAdminStore'
 
 const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
-const slim   = ref(false)
-const pubOpen = ref(true)
-const navEl  = ref(null)
+const adminStore = useAdminStore()
+
+// ── Persistent sidebar state (survives reload) ──────────────
+const slim    = ref(adminStore.sidebarSlim)
+const pubOpen = ref(adminStore.pubAccordionOpen)
+const navEl   = ref(null)
+
+function toggleSlim(value) {
+  slim.value = value
+  adminStore.sidebarSlim = value
+}
+
+function togglePub() {
+  pubOpen.value = !pubOpen.value
+  adminStore.pubAccordionOpen = pubOpen.value
+}
 
 // ── Tiny inline Arrow component ─────────────────────────────
 const ArrowIcon = defineComponent({
@@ -250,7 +264,6 @@ const isActive = (key) => {
 
 const doLogout = async () => {
   await auth.logout()
-  // ✅ FIX: Use window.location for a full page reload — kills all in-memory state
   window.location.href = '/login?logout=1'
 }
 </script>
@@ -258,7 +271,6 @@ const doLogout = async () => {
 <style scoped>
 /* ── Design Tokens ─────────────────────────────────────── */
 .side {
-  /* ── Your original palette, untouched ── */
   --s-bg1:     #200404;
   --s-bg2:     #6B0F0F;
   --s-bg3:     #420C0C;
@@ -271,7 +283,6 @@ const doLogout = async () => {
   --s-hover:   rgba(255,255,255,.08);
   --s-active:  rgba(254,221,0,.12);
 
-  /* ── Derived helpers (no new hues) ── */
   --s-gold-dim:   rgba(254,221,0,.55);
   --s-gold-soft:  rgba(254,221,0,.18);
   --s-gold-ghost: rgba(254,221,0,.07);
@@ -281,17 +292,20 @@ const doLogout = async () => {
   --s-glass-hi:   rgba(255,255,255,.075);
   --s-border-hi:  rgba(255,255,255,.13);
 
-  /* Shape */
   --s-rad:        12px;
   --s-rad-sm:     9px;
 
-  /* Motion */
   --s-ease:       cubic-bezier(.4,0,.2,1);
   --s-spring:     cubic-bezier(.34,1.56,.64,1);
   --s-trans:      .22s var(--s-ease);
   --s-trans-slow: .35s var(--s-ease);
 
-  /* Layout */
+  /* ═══ LAYOUT FIX ═══════════════════════════════════════
+     height: 100vh + display:flex + overflow:hidden on the
+     aside itself. The .nav gets flex:1 + min-height:0 +
+     overflow-y:auto so it scrolls independently when the
+     nav items exceed the available space.
+  ═══════════════════════════════════════════════════════ */
   width: 276px;
   flex: 0 0 276px;
   height: 100vh;
@@ -299,11 +313,9 @@ const doLogout = async () => {
   top: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: hidden;        /* sidebar itself never scrolls — .nav does */
   transition: width var(--s-trans-slow), flex-basis var(--s-trans-slow);
   z-index: 100;
-
-  /* Your system font stack — no external import */
   font-family: inherit;
 }
 .side--slim { width: 74px; flex: 0 0 74px; }
@@ -329,7 +341,6 @@ const doLogout = async () => {
 /* ── Atmospheric BG ────────────────────────────────────── */
 .side__bg {
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  /* Your original three bg colors as the base */
   background:
     radial-gradient(ellipse 130% 55% at 65% 0%,  var(--s-bg2) 0%, transparent 60%),
     radial-gradient(ellipse 80%  70% at 0%  100%, var(--s-bg3) 0%, transparent 65%),
@@ -342,13 +353,11 @@ const doLogout = async () => {
 }
 .side__bg-orb--1 {
   width: 320px; height: 320px; top: -140px; right: -80px;
-  /* Your original orb1: gold glow at top-right */
   background: radial-gradient(circle, rgba(254,221,0,.12) 0%, rgba(107,15,15,.18) 40%, transparent 70%);
   animation: orb1 14s ease-in-out infinite alternate;
 }
 .side__bg-orb--2 {
   width: 200px; height: 200px; bottom: 40px; left: -80px;
-  /* Your original orb2: red glow at bottom-left */
   background: radial-gradient(circle, rgba(200,30,30,.15) 0%, rgba(254,221,0,.06) 45%, transparent 70%);
   animation: orb2 18s ease-in-out infinite alternate;
 }
@@ -359,7 +368,6 @@ const doLogout = async () => {
   animation: orb3 22s ease-in-out infinite alternate;
 }
 
-/* Dot grid */
 .side__bg-grid {
   position: absolute; inset: 0;
   background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);
@@ -367,7 +375,6 @@ const doLogout = async () => {
   mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.4) 20%, rgba(0,0,0,.4) 80%, transparent 100%);
 }
 
-/* Noise grain overlay */
 .side__bg-noise {
   position: absolute; inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
@@ -376,7 +383,6 @@ const doLogout = async () => {
   mix-blend-mode: overlay;
 }
 
-/* Vignette on edges */
 .side__bg-vignette {
   position: absolute; inset: 0;
   background:
@@ -402,7 +408,6 @@ const doLogout = async () => {
   background: linear-gradient(180deg, rgba(254,221,0,.03) 0%, transparent 100%);
 }
 
-/* Subtle shimmer line at bottom of brand */
 .brand::after {
   content: '';
   position: absolute; bottom: 0; left: 16px; right: 16px;
@@ -505,6 +510,7 @@ const doLogout = async () => {
   color: var(--s-dim); cursor: pointer;
   transition: all var(--s-trans);
   box-shadow: 0 2px 12px rgba(0,0,0,.25);
+  flex-shrink: 0;
 }
 .expand-fab:hover {
   background: var(--s-gold-ghost);
@@ -514,11 +520,23 @@ const doLogout = async () => {
   box-shadow: 0 4px 20px rgba(254,221,0,.12), 0 2px 12px rgba(0,0,0,.35);
 }
 
-/* ── NAV ───────────────────────────────────────────────── */
+/* ═══ NAV — THE SCROLLABLE REGION ═══════════════════════
+   flex: 1      → take remaining space between brand & footer
+   min-height: 0 → CRITICAL: allows flex child to shrink
+                   below its content size (enables scrolling)
+   overflow-y: auto → scroll only when items exceed space
+═══════════════════════════════════════════════════════ */
 .nav {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding: .85rem .7rem; display: flex; flex-direction: column; gap: .22rem;
-  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.08) transparent;
+  flex: 1;
+  min-height: 0;           /* ← KEY FIX: without this, flex won't shrink below content */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: .85rem .7rem;
+  display: flex;
+  flex-direction: column;
+  gap: .22rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.08) transparent;
 }
 .nav::-webkit-scrollbar { width: 3px; }
 .nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 99px; }
@@ -529,6 +547,7 @@ const doLogout = async () => {
   display: flex; align-items: center;
   padding: .7rem .55rem .35rem; height: 34px;
   gap: .6rem;
+  flex-shrink: 0;
 }
 .nav-divider__text {
   font-size: .65rem; font-weight: 800;
@@ -556,6 +575,7 @@ const doLogout = async () => {
   color: var(--s-dim); text-decoration: none;
   border: 1px solid transparent; position: relative;
   min-height: 44px; white-space: nowrap; overflow: hidden;
+  flex-shrink: 0;       /* ← prevent items from squishing */
   transition:
     color var(--s-trans),
     background var(--s-trans),
@@ -653,7 +673,7 @@ const doLogout = async () => {
 .nav-item__chevron.open { transform: rotate(180deg); opacity: .65; }
 
 /* ── Sub-list (accordion) ──────────────────────────────── */
-.accordion { display: flex; flex-direction: column; }
+.accordion { display: flex; flex-direction: column; flex-shrink: 0; }
 
 .sub-list {
   position: relative; display: flex; flex-direction: column;
@@ -679,6 +699,7 @@ const doLogout = async () => {
   border: 1px solid transparent; position: relative;
   transition: all var(--s-trans); font-size: .85rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* Connector tick */
@@ -736,7 +757,8 @@ const doLogout = async () => {
 
 /* ── FOOTER ────────────────────────────────────────────── */
 .side-foot {
-  flex-shrink: 0; padding: .85rem .7rem;
+  flex-shrink: 0;
+  padding: .85rem .7rem;
   border-top: 1px solid var(--s-border);
   display: flex; flex-direction: column; gap: .6rem;
   background: linear-gradient(0deg, rgba(0,0,0,.2) 0%, transparent 100%);

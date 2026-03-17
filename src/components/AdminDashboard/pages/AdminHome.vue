@@ -32,6 +32,7 @@ const loading = ref(true)
 const counts  = ref({})
 
 // ── API Endpoints (FIXED: videos uses correct path) ─────────────
+// ── API Endpoints (FIXED: videos extraction simplified) ─────────────
 const endpoints = [
   {
     key: 'projects',
@@ -45,8 +46,20 @@ const endpoints = [
   },
   {
     key: 'videos',
-    url: '/api/publishments/videos?page=0&size=1',   // ✅ FIXED – was /api/v1/videos (500)
-    extract: d => d?.totalElements ?? d?.data?.totalElements ?? (Array.isArray(d?.content) ? null : null) ?? (d?.content !== undefined ? d.totalElements : null)
+    url: '/api/v1/videos?page=0&size=1',
+    // ✅ FIXED - Simplified extraction logic
+    extract: d => {
+      // Try common patterns for Spring Boot paginated responses
+      if (d?.totalElements !== undefined) return d.totalElements;
+      if (d?.data?.totalElements !== undefined) return d.data.totalElements;
+      if (d?.page?.totalElements !== undefined) return d.page.totalElements;
+      if (d?.data?.page?.totalElements !== undefined) return d.data.page.totalElements;
+      // Fallback: if content array exists, return its length (for non-paginated responses)
+      if (Array.isArray(d?.content)) return d.content.length;
+      if (Array.isArray(d?.data?.content)) return d.data.content.length;
+      if (Array.isArray(d)) return d.length;
+      return null;
+    }
   },
   {
     key: 'image-collections',
@@ -72,13 +85,26 @@ const endpoints = [
 
 const fetchCounts = async () => {
   loading.value = true
+  
+  // Debug: Log the videos response specifically
+  try {
+    const videoRes = await api.get('/api/v1/videos?page=0&size=1')
+    console.log('Videos API Response:', JSON.stringify(videoRes.data, null, 2))
+  } catch (e) {
+    console.error('Videos API Error:', e)
+  }
+  
   const results = await Promise.allSettled(
     endpoints.map(ep =>
       api.get(ep.url)
         .then(r => ({ key: ep.key, val: ep.extract(r.data), ok: true }))
-        .catch(() => ({ key: ep.key, val: null, ok: false }))
+        .catch((e) => ({ key: ep.key, val: null, ok: false, error: e.message }))
     )
   )
+  
+  // Debug: Log results
+  console.log('Count Results:', results)
+  
   const c = {}
   results.forEach(r => {
     if (r.status === 'fulfilled') c[r.value.key] = r.value.val
