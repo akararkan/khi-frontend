@@ -1,10 +1,14 @@
-FROM node:18-alpine
+# ---------- Build stage ----------
+FROM node:20-alpine AS builder
 WORKDIR /app
-
+COPY package*.json ./
+RUN npm ci
 COPY . .
-RUN npm install
 RUN npm run build
 
-RUN npm install -g serve
+# ---------- Run stage ----------
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
-CMD ["serve", "-s", "dist", "-l", "0.0.0.0:$PORT"]
+CMD ["/bin/sh", "-c", "envsubst '$PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
