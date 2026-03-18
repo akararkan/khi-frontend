@@ -322,9 +322,9 @@ onMounted(fetchCounts)
             <div class="stat-glow-icon"></div>
           </div>
           <div class="stat-trend" v-if="!loading">
-            <svg width="12" height="12" viewBox="0 0 12 12">
+            <!-- <svg width="12" height="12" viewBox="0 0 12 12">
               <path d="M2 10L6 2L10 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-            </svg>
+            </svg> -->
           </div>
         </div>
 
