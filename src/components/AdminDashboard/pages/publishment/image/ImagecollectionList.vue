@@ -81,6 +81,10 @@
             <th style="width:130px">جۆر</th>
             <th style="width:120px">موضوع</th>
             <th style="width:112px">بەروار</th>
+            <!-- NEW: LOCATION -->
+            <th style="width:100px">شوێن</th>
+            <!-- NEW: COLLECTED BY -->
+            <th style="width:100px">کۆکەر</th>
             <th style="width:88px">زمان</th>
             <th style="width:72px">وێنە</th>
             <th style="width:116px">کردار</th>
@@ -90,10 +94,11 @@
           <tr v-for="(c, idx) in filteredItems" :key="c.id" class="tbl__row" @click="openDetail(c)">
             <td><span class="tbl__id">{{ idx + 1 }}</span></td>
             <td>
-              <div class="cover-wrap" v-if="c.ckbCoverUrl || c.kmrCoverUrl || c.hoverUrl">
-                <img class="cover-img cover-img--base"  :src="c.ckbCoverUrl || c.kmrCoverUrl || c.hoverUrl" loading="lazy" />
-                <img class="cover-img cover-img--hover" :src="c.hoverUrl || c.ckbCoverUrl || c.kmrCoverUrl" loading="lazy" v-if="c.hoverUrl" />
-                <div class="cover-hover-badge" v-if="c.hoverUrl" title="دارای Hover Image">H</div>
+              <!-- FIXED: Using correct DTO field names -->
+              <div class="cover-wrap" v-if="c.ckbCoverUrl || c.kmrCoverUrl || c.hoverCoverUrl">
+                <img class="cover-img cover-img--base"  :src="c.ckbCoverUrl || c.kmrCoverUrl" loading="lazy" />
+                <img class="cover-img cover-img--hover" :src="c.hoverCoverUrl || c.ckbCoverUrl" loading="lazy" v-if="c.hoverCoverUrl" />
+                <div class="cover-hover-badge" v-if="c.hoverCoverUrl" title="هۆڤەر">H</div>
               </div>
               <div class="cover-empty" v-else>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
@@ -111,6 +116,19 @@
               <span v-else class="tbl__dash">—</span>
             </td>
             <td class="tbl__date">{{ fmtDate(c.publishmentDate) }}</td>
+            
+            <!-- NEW CELLS -->
+            <td>
+              <div class="tbl__meta" :title="c.ckbContent?.location || c.kmrContent?.location">
+                {{ c.ckbContent?.location || c.kmrContent?.location || '—' }}
+              </div>
+            </td>
+            <td>
+              <div class="tbl__meta" :title="c.ckbContent?.collectedBy || c.kmrContent?.collectedBy">
+                {{ c.ckbContent?.collectedBy || c.kmrContent?.collectedBy || '—' }}
+              </div>
+            </td>
+            
             <td>
               <div class="lang-row">
                 <span v-for="l in (c.contentLanguages||[])" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span>
@@ -163,7 +181,7 @@
     </Teleport>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  DETAIL MODAL                                                         -->
+    <!--  DETAIL MODAL - UPDATED WITH MISSING FIELDS                          -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="modal">
@@ -180,7 +198,7 @@
                 ? `background-image:url(${detailItem.ckbCoverUrl || detailItem.kmrCoverUrl})`
                 : ''"
             >
-              <div v-if="detailItem.hoverUrl" class="dk__hero-hover" :style="`background-image:url(${detailItem.hoverUrl})`" />
+              <div v-if="detailItem.hoverCoverUrl" class="dk__hero-hover" :style="`background-image:url(${detailItem.hoverCoverUrl})`" />
               <div class="dk__hero-grain"></div>
               <div class="dk__hero-gradient"></div>
 
@@ -190,7 +208,7 @@
                   <span v-if="detailItem.topic" class="dk__badge dk__badge--topic">
                     {{ detailItem.topic.nameCkb || detailItem.topic.nameKmr }}
                   </span>
-                  <span v-if="detailItem.hoverUrl" class="dk__badge dk__badge--hover">
+                  <span v-if="detailItem.hoverCoverUrl" class="dk__badge dk__badge--hover">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
                     Hover
                   </span>
@@ -255,10 +273,10 @@
                     </div>
                   </div>
                   <!-- Hover -->
-                  <div class="dk__cover-item" :class="{ 'dk__cover-item--empty': !detailItem.hoverUrl }">
+                  <div class="dk__cover-item" :class="{ 'dk__cover-item--empty': !detailItem.hoverCoverUrl }">
                     <span class="dk__cover-label dk__cover-label--hover">هۆڤەر</span>
-                    <div class="dk__cover-img-wrap" :class="{ 'dk__cover-img-wrap--empty': !detailItem.hoverUrl, 'dk__cover-img-wrap--hover': !!detailItem.hoverUrl }">
-                      <img v-if="detailItem.hoverUrl" :src="detailItem.hoverUrl" alt="Hover Image" />
+                    <div class="dk__cover-img-wrap" :class="{ 'dk__cover-img-wrap--empty': !detailItem.hoverCoverUrl, 'dk__cover-img-wrap--hover': !!detailItem.hoverCoverUrl }">
+                      <img v-if="detailItem.hoverCoverUrl" :src="detailItem.hoverCoverUrl" alt="Hover Image" />
                       <template v-else>
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         <span>نییە</span>
@@ -269,7 +287,6 @@
               </div>
 
               <!-- ── Bilingual Content ── -->
-              <!-- ImageContent fields: title, description, location, collectedBy (no topic) -->
               <div class="dk__section" v-if="detailItem.ckbContent || detailItem.kmrContent">
                 <div class="dk__sec-head">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -330,7 +347,7 @@
                 </div>
               </div>
 
-              <!-- ── Image Album ── -->
+              <!-- ── Image Album WITH METADATA ── -->
               <div class="dk__section" v-if="detailItem.imageAlbum?.length">
                 <div class="dk__sec-head">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
@@ -340,13 +357,37 @@
                 <div class="dk__album-grid">
                   <div v-for="(img, i) in detailItem.imageAlbum" :key="img.id || i" class="dk__album-item">
                     <div class="dk__album-num">{{ i + 1 }}</div>
+                    
+                    <!-- Image -->
                     <div class="dk__album-img-wrap">
                       <img v-if="img.imageUrl || img.externalUrl" :src="img.imageUrl || img.externalUrl" loading="lazy" @error="e => e.target.style.display='none'" />
                       <div v-else class="dk__album-img-empty">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
                       </div>
                     </div>
+
+                    <!-- Info -->
                     <div class="dk__album-meta">
+                      <!-- NEW: Metadata Chips (The missing fields!) -->
+                      <div v-if="img.widthPx || img.heightPx || img.fileSizeBytes" class="dk__album-tech">
+                        <span v-if="img.widthPx && img.heightPx" class="dk__tech-chip dk__tech-chip--dim">
+                          {{ img.widthPx }}×{{ img.heightPx }}
+                          <small v-if="img.aspectRatio">({{ img.aspectRatio.toFixed(2) }})</small>
+                        </span>
+                        <span v-if="img.humanReadableSize" class="dk__tech-chip dk__tech-chip--size">
+                          {{ img.humanReadableSize }}
+                        </span>
+                        <span v-if="img.mimeType" class="dk__tech-chip dk__tech-chip--mime">
+                          {{ img.mimeType.replace('image/', '') }}
+                        </span>
+                      </div>
+
+                      <!-- URLs Indicator -->
+                      <div class="dk__album-source" v-if="img.externalUrl || img.embedUrl">
+                        <span v-if="img.externalUrl" class="dk__source-badge dk__source-badge--ext">دەرەکی</span>
+                        <span v-if="img.embedUrl" class="dk__source-badge dk__source-badge--embed">Embed</span>
+                      </div>
+
                       <div v-if="img.captionCkb || img.captionKmr" class="dk__album-captions">
                         <div v-if="img.captionCkb" class="dk__album-cap-row">
                           <span class="dk__album-lang-dot dk__album-lang-dot--ckb">CKB</span>
@@ -476,7 +517,7 @@
                   </div>
                   <div class="dk__info-item">
                     <span class="dk__info-icon">🎨</span>
-                    <div class="dk__info-data"><span class="dk__info-label">Hover Image</span><span class="dk__info-value" :class="detailItem.hoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.hoverUrl ? '✓ هەیە' : '— نییە' }}</span></div>
+                    <div class="dk__info-data"><span class="dk__info-label">Hover Image</span><span class="dk__info-value" :class="detailItem.hoverCoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.hoverCoverUrl ? '✓ هەیە' : '— نییە' }}</span></div>
                   </div>
                   <div class="dk__info-item">
                     <span class="dk__info-icon">📸</span>
@@ -540,9 +581,10 @@ let   toastTimer   = null
 const normalize = (d = {}) => {
   const out = { ...d }
 
-  out.ckbCoverUrl = d.ckbCoverUrl   || ''
-  out.kmrCoverUrl = d.kmrCoverUrl   || ''
-  out.hoverUrl    = d.hoverCoverUrl || ''   // hoverCoverUrl → hoverUrl for template convenience
+  // CRITICAL FIX: Map DTO field names correctly (hoverCoverUrl, not hoverUrl)
+  out.ckbCoverUrl = d.ckbCoverUrl || ''
+  out.kmrCoverUrl = d.kmrCoverUrl || ''
+  out.hoverCoverUrl = d.hoverCoverUrl || ''  // Correct DTO field name
 
   out.topic = d.topicId
     ? { id: d.topicId, nameCkb: d.topicNameCkb || '', nameKmr: d.topicNameKmr || '' }
@@ -553,11 +595,30 @@ const normalize = (d = {}) => {
   out.tags     = { ckb: [...(d.tags?.ckb     || [])], kmr: [...(d.tags?.kmr     || [])] }
   out.keywords = { ckb: [...(d.keywords?.ckb || [])], kmr: [...(d.keywords?.kmr || [])] }
 
+  // NEW: Normalize album items with metadata
   out.imageAlbum = Array.isArray(d.imageAlbum)
-    ? [...d.imageAlbum].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    ? d.imageAlbum.map(img => ({
+        ...img,
+        // Ensure metadata fields exist
+        widthPx: img.widthPx || null,
+        heightPx: img.heightPx || null,
+        fileSizeBytes: img.fileSizeBytes || null,
+        mimeType: img.mimeType || null,
+        aspectRatio: img.aspectRatio || (img.widthPx && img.heightPx ? img.widthPx / img.heightPx : null),
+        humanReadableSize: img.humanReadableSize || formatBytes(img.fileSizeBytes)
+      })).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     : []
 
   return out
+}
+
+// Helper for formatting bytes if backend doesn't send human readable
+function formatBytes(bytes) {
+  if (!bytes) return null
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
 }
 
 // ── Topics for filter dropdown ────────────────────────────────────────────────
@@ -688,6 +749,79 @@ onBeforeUnmount(() => { clearTimeout(toastTimer); window.removeEventListener('ke
 </script>
 
 <style scoped>
+/* ─── NEW TABLE COLUMNS STYLES ─── */
+.tbl__meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── ALBUM TECH METADATA (The missing fields display) ─── */
+.dk__album-tech {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dk__tech-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.dk__tech-chip--dim {
+  background: rgba(30, 64, 175, 0.08);
+  color: #1e40af;
+  border: 1px solid rgba(30, 64, 175, 0.15);
+}
+
+.dk__tech-chip--size {
+  background: rgba(140, 21, 21, 0.08);
+  color: #8c1515;
+  border: 1px solid rgba(140, 21, 21, 0.15);
+}
+
+.dk__tech-chip--mime {
+  background: rgba(5, 150, 105, 0.08);
+  color: #059669;
+  border: 1px solid rgba(5, 150, 105, 0.15);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+}
+
+.dk__album-source {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+
+.dk__source-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.dk__source-badge--ext {
+  background: rgba(30, 64, 175, 0.1);
+  color: #1e40af;
+}
+
+.dk__source-badge--embed {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+}
+
+/* ─── EXISTING STYLES FROM ORIGINAL (Preserved) ─── */
 .icl { direction:rtl; max-width:1400px; margin:0 auto; }
 .icl__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; gap:1rem; flex-wrap:wrap; }
 .icl__title { font-size:1.55rem; font-weight:700; color:var(--text); }

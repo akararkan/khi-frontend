@@ -30,9 +30,9 @@
         <option value="KMR">کرمانجی</option>
       </select>
 
-      <select v-model="filterTopic" class="toolbar__select">
-        <option value="">هەموو بابەتەکان</option>
-        <option v-for="t in writingTopics" :key="t.value" :value="t.value">{{ t.label }}</option>
+      <select v-model="filterGenre" class="toolbar__select">
+        <option value="">هەموو جۆرەکان</option>
+        <option v-for="(def, key) in genreDefs" :key="key" :value="key">{{ def.label }}</option>
       </select>
 
       <select v-model="filterInstitute" class="toolbar__select">
@@ -66,7 +66,7 @@
             <th>#</th>
             <th>کڤەر</th>
             <th>ناونیشان</th>
-            <th>بابەت</th>
+            <th>جۆرەکان</th>
             <th>نووسەر</th>
             <th>سەری</th>
             <th>بڕیار</th>
@@ -83,17 +83,10 @@
             <td>
               <div class="cover-cell">
                 <template v-if="item.ckbCoverUrl || item.kmrCoverUrl || item.hoverUrl">
-                  <img
-                    class="cover-cell__img cover-cell__img--base"
-                    :src="item.ckbCoverUrl || item.kmrCoverUrl || item.hoverUrl"
-                    alt=""
-                  />
-                  <img
-                    v-if="item.hoverUrl"
-                    class="cover-cell__img cover-cell__img--hover"
-                    :src="item.hoverUrl"
-                    alt=""
-                  />
+                  <img class="cover-cell__img cover-cell__img--base"
+                    :src="item.ckbCoverUrl || item.kmrCoverUrl || item.hoverUrl" alt="" />
+                  <img v-if="item.hoverUrl" class="cover-cell__img cover-cell__img--hover"
+                    :src="item.hoverUrl" alt="" />
                 </template>
                 <div v-else class="cover-cell__empty">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -111,10 +104,14 @@
               </div>
             </td>
 
+            <!-- Genres (multi) -->
             <td>
-              <span class="topic-pill" :style="topicStyle(item.writingTopic)">
-                {{ topicLabel(item.writingTopic) }}
-              </span>
+              <div class="genre-pills">
+                <span v-for="g in item.bookGenres" :key="g" class="topic-pill" :style="genreStyle(g)">
+                  {{ genreLabel(g) }}
+                </span>
+                <span v-if="!item.bookGenres.length" class="muted">—</span>
+              </div>
             </td>
 
             <td>
@@ -129,7 +126,7 @@
 
             <td>
               <span v-if="item.seriesInfo" class="series-badge" :class="item.seriesInfo.isParent ? 'series-badge--parent' : 'series-badge--child'">
-                {{ item.seriesInfo.isParent ? '👑' : '📚' }} 
+                {{ item.seriesInfo.isParent ? '👑' : '📚' }}
                 {{ item.seriesInfo.seriesName }}
               </span>
               <span v-else class="muted">—</span>
@@ -145,17 +142,12 @@
 
             <td @click.stop>
               <div class="act-btns">
-                <RouterLink
-                  :to="`/admin/writings/${item.id}/edit`"
-                  class="icon-btn icon-btn--edit"
-                  title="دەستکاری"
-                >
+                <RouterLink :to="`/admin/writings/${item.id}/edit`" class="icon-btn icon-btn--edit" title="دەستکاری">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
                   </svg>
                 </RouterLink>
-
                 <button class="icon-btn icon-btn--del" title="سڕینەوە" @click="confirmDelete(item)">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"/>
@@ -184,18 +176,12 @@
             </button>
 
             <!-- Hero -->
-            <div
-              class="dk__hero"
+            <div class="dk__hero"
               :style="(detailItem.ckbCoverUrl || detailItem.kmrCoverUrl)
                 ? `background-image:url(${detailItem.ckbCoverUrl || detailItem.kmrCoverUrl})`
-                : ''"
-            >
-              <div
-                v-if="detailItem.hoverUrl"
-                class="dk__hero-hover"
-                :style="`background-image:url(${detailItem.hoverUrl})`"
-              />
-
+                : ''">
+              <div v-if="detailItem.hoverUrl" class="dk__hero-hover"
+                :style="`background-image:url(${detailItem.hoverUrl})`" />
               <div class="dk__hero-grain"></div>
               <div class="dk__hero-gradient"></div>
 
@@ -208,8 +194,9 @@
                 </div>
 
                 <div class="dk__hero-badges">
-                  <span class="dk__badge dk__badge--topic" :style="topicStyle(detailItem.writingTopic)">
-                    {{ topicLabel(detailItem.writingTopic) }}
+                  <span v-for="g in detailItem.bookGenres" :key="g"
+                    class="dk__badge dk__badge--topic" :style="genreStyle(g)">
+                    {{ genreLabel(g) }}
                   </span>
 
                   <span v-if="detailItem.seriesInfo" class="dk__badge dk__badge--series">
@@ -223,11 +210,8 @@
                     Hover
                   </span>
 
-                  <span
-                    v-for="lang in detailItem.contentLanguages"
-                    :key="lang"
-                    class="dk__badge dk__badge--lang"
-                  >
+                  <span v-for="lang in detailItem.contentLanguages" :key="lang"
+                    class="dk__badge dk__badge--lang">
                     {{ lang === 'CKB' ? '🇮🇶 سۆرانی' : '🌍 کورمانجی' }}
                   </span>
                 </div>
@@ -242,27 +226,11 @@
                     </svg>
                     {{ detailItem.writer }}
                   </div>
-
                   <div v-if="detailItem.seriesInfo && !detailItem.seriesInfo.isParent" class="dk__stat dk__stat--series">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                    </svg>
                     بەشی {{ detailItem.seriesInfo.seriesOrder }} لە {{ detailItem.seriesInfo.totalBooks }}
                   </div>
-
-                  <div v-if="detailItem.pageCount" class="dk__stat">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                    </svg>
-                    {{ detailItem.pageCount }} پەڕە
-                  </div>
-
-                  <div v-if="detailItem.fileFormat" class="dk__stat">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-                    </svg>
-                    {{ detailItem.fileFormat }}
-                  </div>
+                  <div v-if="detailItem.pageCount" class="dk__stat">{{ detailItem.pageCount }} پەڕە</div>
+                  <div v-if="detailItem.fileFormat" class="dk__stat">{{ detailItem.fileFormat }}</div>
                 </div>
               </div>
             </div>
@@ -271,71 +239,26 @@
 
               <!-- Covers Grid -->
               <div class="dk__section" v-if="detailItem.ckbCoverUrl || detailItem.kmrCoverUrl || detailItem.hoverUrl">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-                  </svg>
-                  وێنەی کڤەر
-                </div>
-
+                <div class="dk__sec-head">🖼️ وێنەی کڤەر</div>
                 <div class="dk__covers-grid">
                   <div class="dk__cover-item" v-if="detailItem.ckbCoverUrl">
-                    <span class="dk__cover-label dk__cover-label--ckb">سۆرانی (CKB)</span>
-                    <div class="dk__cover-img-wrap">
-                      <img :src="detailItem.ckbCoverUrl" alt="CKB Cover" />
-                    </div>
+                    <span class="dk__cover-label dk__cover-label--ckb">سۆرانی</span>
+                    <div class="dk__cover-img-wrap"><img :src="detailItem.ckbCoverUrl" alt="" /></div>
                   </div>
-
                   <div class="dk__cover-item" v-if="detailItem.kmrCoverUrl">
-                    <span class="dk__cover-label dk__cover-label--kmr">کورمانجی (KMR)</span>
-                    <div class="dk__cover-img-wrap">
-                      <img :src="detailItem.kmrCoverUrl" alt="KMR Cover" />
-                    </div>
+                    <span class="dk__cover-label dk__cover-label--kmr">کورمانجی</span>
+                    <div class="dk__cover-img-wrap"><img :src="detailItem.kmrCoverUrl" alt="" /></div>
                   </div>
-
                   <div class="dk__cover-item" v-if="detailItem.hoverUrl">
                     <span class="dk__cover-label dk__cover-label--hover">هۆڤەر</span>
-                    <div class="dk__cover-img-wrap dk__cover-img-wrap--hover">
-                      <img :src="detailItem.hoverUrl" alt="Hover Image" />
-                    </div>
-                  </div>
-
-                  <!-- Empty placeholders -->
-                  <div class="dk__cover-item dk__cover-item--empty" v-if="!detailItem.ckbCoverUrl">
-                    <span class="dk__cover-label dk__cover-label--ckb">سۆرانی (CKB)</span>
-                    <div class="dk__cover-img-wrap dk__cover-img-wrap--empty">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                      <span>نییە</span>
-                    </div>
-                  </div>
-
-                  <div class="dk__cover-item dk__cover-item--empty" v-if="!detailItem.kmrCoverUrl">
-                    <span class="dk__cover-label dk__cover-label--kmr">کورمانجی (KMR)</span>
-                    <div class="dk__cover-img-wrap dk__cover-img-wrap--empty">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                      <span>نییە</span>
-                    </div>
-                  </div>
-
-                  <div class="dk__cover-item dk__cover-item--empty" v-if="!detailItem.hoverUrl">
-                    <span class="dk__cover-label dk__cover-label--hover">هۆڤەر</span>
-                    <div class="dk__cover-img-wrap dk__cover-img-wrap--empty">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                      <span>نییە</span>
-                    </div>
+                    <div class="dk__cover-img-wrap dk__cover-img-wrap--hover"><img :src="detailItem.hoverUrl" alt="" /></div>
                   </div>
                 </div>
               </div>
 
               <!-- Bilingual Content -->
-              <div class="dk__section" v-if="detailItem.descriptionCkb || detailItem.descriptionKmr || detailItem.genreCkb || detailItem.genreKmr">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                  ناوەڕۆک و وەسف
-                </div>
-
+              <div class="dk__section" v-if="detailItem.descriptionCkb || detailItem.descriptionKmr">
+                <div class="dk__sec-head">📄 ناوەڕۆک و وەسف</div>
                 <div class="dk__content-grid">
                   <div class="dk__content-col" v-if="detailItem.descriptionCkb || detailItem.genreCkb">
                     <div class="dk__lang-tag dk__lang-tag--ckb">سۆرانی</div>
@@ -345,7 +268,6 @@
                     </div>
                     <p v-if="detailItem.descriptionCkb" class="dk__desc">{{ detailItem.descriptionCkb }}</p>
                   </div>
-
                   <div class="dk__content-col" v-if="detailItem.descriptionKmr || detailItem.genreKmr">
                     <div class="dk__lang-tag dk__lang-tag--kmr">کورمانجی</div>
                     <div v-if="detailItem.genreKmr" class="dk__meta-row">
@@ -359,13 +281,7 @@
 
               <!-- Series Info -->
               <div class="dk__section" v-if="detailItem.seriesInfo">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                  </svg>
-                  زانیاری سەری کتێب
-                </div>
-
+                <div class="dk__sec-head">📚 زانیاری سەری کتێب</div>
                 <div class="dk__series-card" :class="detailItem.seriesInfo.isParent ? 'dk__series-card--parent' : 'dk__series-card--child'">
                   <div class="dk__series-icon">{{ detailItem.seriesInfo.isParent ? '👑' : '📚' }}</div>
                   <div class="dk__series-info">
@@ -379,47 +295,9 @@
                 </div>
               </div>
 
-              <!-- Files -->
-              <div class="dk__section" v-if="detailItem.fileUrl || detailItem.externalUrl">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-                  </svg>
-                  فایلی کتێب
-                </div>
-
-                <div class="dk__files">
-                  <div v-if="detailItem.fileUrl" class="dk__file-row">
-                    <span class="dk__file-label">فایلی ناوەندی:</span>
-                    <a :href="detailItem.fileUrl" target="_blank" class="dk__file-link">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                      </svg>
-                      داگرتن
-                    </a>
-                  </div>
-                  <div v-if="detailItem.externalUrl" class="dk__file-row">
-                    <span class="dk__file-label">لینکی دەرەکی:</span>
-                    <a :href="detailItem.externalUrl" target="_blank" class="dk__file-link dk__file-link--ext">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                      کردنەوە
-                    </a>
-                  </div>
-                </div>
-              </div>
-
               <!-- Tags & Keywords -->
               <div class="dk__section" v-if="detailItem.tagsCkb?.length || detailItem.tagsKmr?.length || detailItem.keywordsCkb?.length || detailItem.keywordsKmr?.length">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
-                    <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
-                  </svg>
-                  تاگ و کلیلەوشەکان
-                </div>
-
+                <div class="dk__sec-head"># تاگ و کلیلەوشەکان</div>
                 <div class="dk__tags-grid">
                   <div v-if="detailItem.tagsCkb?.length" class="dk__tag-group">
                     <span class="dk__tag-label">تاگ (سۆرانی)</span>
@@ -427,21 +305,18 @@
                       <span v-for="t in detailItem.tagsCkb" :key="'tc'+t" class="dk__chip dk__chip--ckb">{{ t }}</span>
                     </div>
                   </div>
-
                   <div v-if="detailItem.tagsKmr?.length" class="dk__tag-group">
                     <span class="dk__tag-label">تاگ (کورمانجی)</span>
                     <div class="dk__tag-list">
                       <span v-for="t in detailItem.tagsKmr" :key="'tk'+t" class="dk__chip dk__chip--kmr">{{ t }}</span>
                     </div>
                   </div>
-
                   <div v-if="detailItem.keywordsCkb?.length" class="dk__tag-group">
                     <span class="dk__tag-label">کلیلەوشە (سۆرانی)</span>
                     <div class="dk__tag-list">
                       <span v-for="k in detailItem.keywordsCkb" :key="'kc'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
                     </div>
                   </div>
-
                   <div v-if="detailItem.keywordsKmr?.length" class="dk__tag-group">
                     <span class="dk__tag-label">کلیلەوشە (کورمانجی)</span>
                     <div class="dk__tag-list">
@@ -453,66 +328,23 @@
 
               <!-- Info Grid -->
               <div class="dk__section">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-                  </svg>
-                  زانیاری گشتی
-                </div>
-
+                <div class="dk__sec-head">ℹ️ زانیاری گشتی</div>
                 <div class="dk__info-grid">
                   <div class="dk__info-item">
                     <span class="dk__info-icon">🆔</span>
-                    <div class="dk__info-data">
-                      <span class="dk__info-label">ناسنامە</span>
-                      <span class="dk__info-value">#{{ detailItem.id }}</span>
-                    </div>
+                    <div class="dk__info-data"><span class="dk__info-label">ناسنامە</span><span class="dk__info-value">#{{ detailItem.id }}</span></div>
                   </div>
-
                   <div class="dk__info-item">
                     <span class="dk__info-icon">🏷</span>
                     <div class="dk__info-data">
-                      <span class="dk__info-label">بابەت</span>
-                      <span class="dk__info-value">{{ topicLabel(detailItem.writingTopic) }}</span>
+                      <span class="dk__info-label">جۆرەکان</span>
+                      <span class="dk__info-value">{{ (detailItem.bookGenres || []).map(g => genreLabel(g)).join('، ') || '—' }}</span>
                     </div>
                   </div>
-
                   <div class="dk__info-item">
                     <span class="dk__info-icon">✍️</span>
-                    <div class="dk__info-data">
-                      <span class="dk__info-label">نووسەر</span>
-                      <span class="dk__info-value">{{ detailItem.writer || '—' }}</span>
-                    </div>
+                    <div class="dk__info-data"><span class="dk__info-label">نووسەر</span><span class="dk__info-value">{{ detailItem.writer || '—' }}</span></div>
                   </div>
-
-                  <div class="dk__info-item" v-if="detailItem.genreCkb || detailItem.genreKmr">
-                    <span class="dk__info-icon">📖</span>
-                    <div class="dk__info-data">
-                      <span class="dk__info-label">جۆر</span>
-                      <span class="dk__info-value">{{ detailItem.genreCkb || detailItem.genreKmr }}</span>
-                    </div>
-                  </div>
-
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">🖼</span>
-                    <div class="dk__info-data">
-                      <span class="dk__info-label">کڤەری CKB</span>
-                      <span class="dk__info-value" :class="detailItem.ckbCoverUrl ? 'dk__info-value--yes' : ''">
-                        {{ detailItem.ckbCoverUrl ? '✓ هەیە' : '— نییە' }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">🖼</span>
-                    <div class="dk__info-data">
-                      <span class="dk__info-label">کڤەری KMR</span>
-                      <span class="dk__info-value" :class="detailItem.kmrCoverUrl ? 'dk__info-value--yes' : ''">
-                        {{ detailItem.kmrCoverUrl ? '✓ هەیە' : '— نییە' }}
-                      </span>
-                    </div>
-                  </div>
-
                   <div class="dk__info-item">
                     <span class="dk__info-icon">🏛</span>
                     <div class="dk__info-data">
@@ -522,29 +354,13 @@
                       </span>
                     </div>
                   </div>
-
-                  <div class="dk__info-item" v-if="detailItem.pageCount">
-                    <span class="dk__info-icon">📄</span>
-                    <div class="dk__info-data">
-                      <span class="dk__info-label">ژمارەی پەڕەکان</span>
-                      <span class="dk__info-value">{{ detailItem.pageCount }}</span>
-                    </div>
-                  </div>
-
                   <div class="dk__info-item">
                     <span class="dk__info-icon">📅</span>
-                    <div class="dk__info-data">
-                      <span class="dk__info-label">کاتی دروستکردن</span>
-                      <span class="dk__info-value">{{ fmtDateFull(detailItem.createdAt) }}</span>
-                    </div>
+                    <div class="dk__info-data"><span class="dk__info-label">کاتی دروستکردن</span><span class="dk__info-value">{{ fmtDateFull(detailItem.createdAt) }}</span></div>
                   </div>
-
                   <div class="dk__info-item" v-if="detailItem.updatedAt">
                     <span class="dk__info-icon">🔄</span>
-                    <div class="dk__info-data">
-                      <span class="dk__info-label">دوایین نوێکردنەوە</span>
-                      <span class="dk__info-value">{{ fmtDateFull(detailItem.updatedAt) }}</span>
-                    </div>
+                    <div class="dk__info-data"><span class="dk__info-label">دوایین نوێکردنەوە</span><span class="dk__info-value">{{ fmtDateFull(detailItem.updatedAt) }}</span></div>
                   </div>
                 </div>
               </div>
@@ -553,16 +369,9 @@
 
             <!-- Footer -->
             <div class="dk__foot">
-              <RouterLink :to="`/admin/writings/${detailItem.id}/edit`" class="btn btn--primary btn--sm">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/>
-                </svg>
-                دەستکاریکردن
-              </RouterLink>
+              <RouterLink :to="`/admin/writings/${detailItem.id}/edit`" class="btn btn--primary btn--sm">دەستکاریکردن</RouterLink>
               <button class="btn btn--ghost btn--sm" @click="detailItem = null">داخستن</button>
             </div>
-
           </div>
         </div>
       </Transition>
@@ -575,17 +384,14 @@
           <div class="modal modal--sm">
             <div class="modal__del-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
               </svg>
             </div>
-
             <h3 class="modal__del-title">سڕینەوەی کتێب</h3>
             <p class="modal__del-sub">
               دەتەوێت <strong>{{ deleteTarget.titleCkb || deleteTarget.titleKmr }}</strong> بسڕیتەوە؟
               ئەم کردارە گەرێنەوەی نییە.
             </p>
-
             <div class="modal__del-acts">
               <button class="btn btn--danger btn--sm" :disabled="deleting" @click="doDelete">
                 <span v-if="deleting" class="spin-sm"></span>
@@ -593,7 +399,6 @@
               </button>
               <button class="btn btn--ghost btn--sm" @click="deleteTarget = null">پاشگەزبوونەوە</button>
             </div>
-
           </div>
         </div>
       </Transition>
@@ -610,22 +415,44 @@ const items        = ref([])
 const loading      = ref(false)
 const search       = ref('')
 const filterLang   = ref('')
-const filterTopic  = ref('')
+const filterGenre  = ref('')
 const filterInstitute = ref('')
 const detailItem   = ref(null)
 const deleteTarget = ref(null)
 const deleting     = ref(false)
 
-const writingTopics = [
-  { value: 'RELIGIOUS', label: 'مەذھەبی', color: '#8c1515' },
-  { value: 'HISTORICAL', label: 'مێژووی', color: '#1a47a0' },
-  { value: 'FOLKLORE', label: 'فۆڵکلۆر', color: '#4d6e1a' },
-  { value: 'POLITICAL', label: 'سیاسی', color: '#804200' },
-  { value: 'POETRY', label: 'شیعر', color: '#6e1870' },
-  { value: 'SCIENTIFIC', label: 'زانستی', color: '#005c6a' },
-  { value: 'EDUCATIONAL', label: 'فێرکاری', color: '#0a5c3c' },
-  { value: 'OTHER', label: 'یتر', color: '#666' },
-]
+// ── Genre definitions ─────────────────────────────────────────────────────────
+const genreDefs = {
+  POETRY:      { label: 'شیعر',         color: '#6e1870' },
+  NOVEL:       { label: 'ڕۆمان',        color: '#8c1515' },
+  SHORT_STORY: { label: 'چیرۆکی کورت',  color: '#1a47a0' },
+  DRAMA:       { label: 'شانۆ',          color: '#7C3AED' },
+  HISTORY:     { label: 'مێژوو',         color: '#c8a800' },
+  BIOGRAPHY:   { label: 'ژیاننامە',     color: '#0d7c7c' },
+  PHILOSOPHY:  { label: 'فەلسەفە',      color: '#7C3AED' },
+  RELIGION:    { label: 'ئایین',         color: '#16784a' },
+  FOLKLORE:    { label: 'زارگوتن',      color: '#c8a800' },
+  POLITICS:    { label: 'سیاسەت',       color: '#8c1515' },
+  SOCIOLOGY:   { label: 'کۆمەڵناسی',    color: '#1a47a0' },
+  ECONOMICS:   { label: 'ئابووری',       color: '#16784a' },
+  LAW:         { label: 'یاسا',           color: '#4b5563' },
+  LINGUISTICS: { label: 'زمانناسی',     color: '#1a47a0' },
+  ARTS:        { label: 'هونەر',          color: '#c0285e' },
+  CULTURAL:    { label: 'کولتووری',      color: '#c8a800' },
+  SCIENCE:     { label: 'زانست',          color: '#0d7c7c' },
+  MEDICINE:    { label: 'پزیشکی',        color: '#16784a' },
+  EDUCATIONAL: { label: 'پەروەردەیی',   color: '#1a47a0' },
+  CHILDREN:    { label: 'منداڵان',       color: '#c8a800' },
+  TRAVEL:      { label: 'گەشتوگوزار',   color: '#0d7c7c' },
+  OTHER:       { label: 'یتر',            color: '#666' },
+}
+
+const genreLabel = (v) => genreDefs[v]?.label || v || '—'
+const genreStyle = (v) => {
+  const g = genreDefs[v]
+  if (!g) return { background: '#eee', color: '#666' }
+  return { background: g.color + '15', color: g.color, border: `1px solid ${g.color}30` }
+}
 
 const normalize = (d) => ({
   ...d,
@@ -639,7 +466,6 @@ const normalize = (d) => ({
   pageCount:       d.ckbContent?.pageCount || d.kmrContent?.pageCount || 0,
   fileFormat:      d.ckbContent?.fileFormat || d.kmrContent?.fileFormat || '',
   fileUrl:         d.ckbContent?.fileUrl || d.kmrContent?.fileUrl || '',
-  externalUrl:     d.ckbContent?.externalUrl || d.kmrContent?.externalUrl || '',
   tagsCkb:         [...(d.tags?.ckb     || [])],
   tagsKmr:         [...(d.tags?.kmr     || [])],
   keywordsCkb:     [...(d.keywords?.ckb || [])],
@@ -648,7 +474,7 @@ const normalize = (d) => ({
   ckbCoverUrl:     d.ckbCoverUrl   || '',
   kmrCoverUrl:     d.kmrCoverUrl   || '',
   hoverUrl:        d.hoverCoverUrl || '',
-  writingTopic:    d.writingTopic || 'OTHER',
+  bookGenres:      Array.isArray(d.bookGenres) ? [...d.bookGenres] : [],
   publishedByInstitute: !!d.publishedByInstitute,
   createdAt:       d.createdAt,
   updatedAt:       d.updatedAt,
@@ -675,7 +501,7 @@ const filtered = computed(() => {
   }
 
   if (filterLang.value)  list = list.filter(item => (item.contentLanguages || []).includes(filterLang.value))
-  if (filterTopic.value) list = list.filter(item => item.writingTopic === filterTopic.value)
+  if (filterGenre.value) list = list.filter(item => (item.bookGenres || []).includes(filterGenre.value))
   if (filterInstitute.value !== '') {
     const val = filterInstitute.value === 'true'
     list = list.filter(item => item.publishedByInstitute === val)
@@ -697,18 +523,7 @@ const fetchAll = async () => {
   }
 }
 
-const topicLabel = (v) => writingTopics.find(t => t.value === v)?.label || v || '—'
-const topicStyle = (v) => {
-  const t = writingTopics.find(x => x.value === v)
-  if (!t) return { background: '#eee', color: '#666' }
-  return { 
-    background: t.color + '15', 
-    color: t.color,
-    border: `1px solid ${t.color}30`
-  }
-}
-
-const openDetail   = (item) => { detailItem.value = item }
+const openDetail    = (item) => { detailItem.value = item }
 const confirmDelete = (item) => { deleteTarget.value = item }
 
 const doDelete = async () => {

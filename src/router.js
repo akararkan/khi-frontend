@@ -16,7 +16,7 @@ import NewsView     from './components/pages/NewsView.vue'
 import Login              from './components/LoginView.vue'
 import Register           from './components/RegisterView.vue'
 import OAuth2Redirect     from './components/OAuth2RedirectHandler.vue'
-import UserProfile        from './components/UserProfileView.vue' // ✅ NEW
+import UserProfile        from './components/UserProfileView.vue'
 
 // Admin layout + pages
 import AdminLayout    from './components/AdminDashboard/AdminLayout.vue'
@@ -52,6 +52,10 @@ import WritingEditor from './components/AdminDashboard/pages/publishment/writing
 import AdminAboutList   from './components/AdminDashboard/pages/about/AdminAboutList.vue'
 import AdminAboutEditor from './components/AdminDashboard/pages/about/AdminAboutEditor.vue'
 
+// Admin — Contact
+import ContactList   from './components/AdminDashboard/pages/contact/ContactList.vue'
+import ContactEditor from './components/AdminDashboard/pages/contact/ContactEditor.vue'
+
 const routes = [
   // ── Public ────────────────────────────────────────────────────
   { path: '/',             name: 'Home',         component: Home },
@@ -65,37 +69,10 @@ const routes = [
   { path: '/news',         name: 'News',         component: NewsView },
 
   // ── Auth ──────────────────────────────────────────────────────
-  { 
-    path: '/login',    
-    name: 'Login',    
-    component: Login,    
-    meta: { guestOnly: true } 
-  },
-  { 
-    path: '/register', 
-    name: 'Register', 
-    component: Register, 
-    meta: { guestOnly: true } 
-  },
-
-  // OAuth2 redirect landing page
-  {
-    path: '/oauth2/redirect',
-    name: 'OAuth2Redirect',
-    component: OAuth2Redirect,
-    meta: { public: true },
-  },
-
-  // ✅ NEW: User Profile (Accessible to all authenticated users)
-  {
-    path: '/profile',
-    name: 'UserProfile',
-    component: UserProfile,
-    meta: { 
-      requiresAuth: true,
-      title: 'تەنیشت بەکارهێنەر'
-    }
-  },
+  { path: '/login',    name: 'Login',    component: Login,    meta: { guestOnly: true } },
+  { path: '/register', name: 'Register', component: Register, meta: { guestOnly: true } },
+  { path: '/oauth2/redirect', name: 'OAuth2Redirect', component: OAuth2Redirect, meta: { public: true } },
+  { path: '/profile',  name: 'UserProfile', component: UserProfile, meta: { requiresAuth: true, title: 'تەنیشت بەکارهێنەر' } },
 
   // ── Admin ─────────────────────────────────────────────────────
   {
@@ -140,6 +117,11 @@ const routes = [
       { path: 'about/new',      name: 'AdminAboutCreate', component: AdminAboutEditor },
       { path: 'about/:id/edit', name: 'AdminAboutEdit',   component: AdminAboutEditor, props: true },
 
+      // Contact
+      { path: 'contact',          name: 'AdminContactList',   component: ContactList },
+      { path: 'contact/new',      name: 'AdminContactCreate', component: ContactEditor },
+      { path: 'contact/:id/edit', name: 'AdminContactEdit',   component: ContactEditor, props: true },
+
       // Generic dynamic resources — MUST be last
       { path: ':resource',          name: 'AdminResourceList',   component: ResourceList },
       { path: ':resource/new',      name: 'AdminResourceCreate', component: ResourceEditor },
@@ -161,33 +143,24 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
 
-  // Update page title if available
   if (to.meta?.title) {
     document.title = `${to.meta.title} · KHI`
   } else {
     document.title = 'پەیمانگای کەلەپووری کوردی · KHI'
   }
 
-  // Allow public routes
   if (to.meta?.public) return true
 
-  // Handle guest-only routes (login/register)
   if (to.meta?.guestOnly && auth.isAuthenticated) {
     return auth.hasAdminAccess ? { path: '/admin' } : { path: '/' }
   }
 
-  // Allow non-auth routes
   if (!to.meta?.requiresAuth) return true
 
-  // Check authentication
   if (!auth.isAuthenticated) {
-    return { 
-      path: '/login', 
-      query: { redirect: to.fullPath } 
-    }
+    return { path: '/login', query: { redirect: to.fullPath } }
   }
 
-  // Check role authorization for admin routes
   const allowed = to.meta.roles || []
   if (allowed.length && !allowed.includes(auth.role)) {
     return { path: '/', query: { denied: '1' } }

@@ -79,11 +79,12 @@ const labelMap = {
   soundtracks:         'دەنگەکان',
   writings:            'نووسراوەکان',
   about:               'دەربارەکان',
+  contact:             'پەیوەندیەکان',
 }
 
 const resourceLabel = computed(() => labelMap[resource.value] || resource.value || 'بەش')
 
-// All dedicated list route names (no albums)
+// All dedicated list route names
 const customListRouteNames = {
   projects:            'AdminProjectList',
   news:                'AdminNewsList',
@@ -92,6 +93,7 @@ const customListRouteNames = {
   soundtracks:         'AdminSoundTrackList',
   writings:            'AdminWritingList',
   about:               'AdminAboutList',
+  contact:             'AdminContactList',
 }
 
 watch(

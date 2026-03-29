@@ -62,11 +62,13 @@ const labelMap = {
   'image-collections': 'کۆمەڵە وێنەکان',
   soundtracks:         'دەنگەکان',
   writings:            'نووسراوەکان',
+  about:               'دەربارەکان',
+  contact:             'پەیوەندیەکان',
 }
 
 const resourceLabel = computed(() => labelMap[resource.value] || resource.value || 'بەش')
 
-// All dedicated editor route names (no albums)
+// All dedicated editor route names
 const customEditorRouteNames = {
   projects:            { create: 'AdminProjectCreate',         edit: 'AdminProjectEdit' },
   news:                { create: 'AdminNewsCreate',            edit: 'AdminNewsEdit' },
@@ -74,6 +76,8 @@ const customEditorRouteNames = {
   'image-collections': { create: 'AdminImageCollectionCreate', edit: 'AdminImageCollectionEdit' },
   soundtracks:         { create: 'AdminSoundTrackCreate',      edit: 'AdminSoundTrackEdit' },
   writings:            { create: 'AdminWritingCreate',         edit: 'AdminWritingEdit' },
+  about:               { create: 'AdminAboutCreate',           edit: 'AdminAboutEdit' },
+  contact:             { create: 'AdminContactCreate',         edit: 'AdminContactEdit' },
 }
 
 watch(

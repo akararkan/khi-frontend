@@ -227,7 +227,7 @@
             </div>
           </section>
 
-          <!-- ══ IMAGE ALBUM BUILDER ══ -->
+          <!-- ══ IMAGE ALBUM BUILDER (WITH METADATA) ══ -->
           <section class="card card--album">
             <div class="card__hd">
               <span class="card__hd-ico">🖼️</span>
@@ -273,6 +273,12 @@
                       <span>{{ item.file ? item.file.name : 'وێنە هەڵبژێرە' }}</span>
                     </label>
                   </div>
+                  
+                  <!-- NEW: Metadata for newly selected file -->
+                  <div v-if="item.file && item.file.size" class="album-meta-new">
+                    <span class="meta-badge meta-badge--info">{{ formatFileSize(item.file.size) }}</span>
+                    <span class="meta-badge meta-badge--warn" v-if="item.file.size > 10 * 1024 * 1024">فایل گەورەیە ({{ (item.file.size / 1024 / 1024).toFixed(1) }} MB)</span>
+                  </div>
                 </div>
 
                 <!-- URL mode -->
@@ -293,6 +299,24 @@
                   </div>
                   <div class="url-preview" v-if="item.imageUrl || item.externalUrl">
                     <img :src="item.imageUrl || item.externalUrl" class="url-preview__img" @error="e => e.target.style.display='none'" />
+                  </div>
+                </div>
+
+                <!-- NEW: Metadata display bar for existing items -->
+                <div v-if="(item.widthPx || item.heightPx || item.fileSizeBytes || item.mimeType) && !item.file" class="album-meta-bar">
+                  <div class="meta-group">
+                    <span class="meta-badge meta-badge--primary" v-if="item.widthPx && item.heightPx">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+                      {{ item.widthPx }} × {{ item.heightPx }} px
+                      <small v-if="item.aspectRatio">({{ Number(item.aspectRatio).toFixed(2) }})</small>
+                    </span>
+                    <span class="meta-badge meta-badge--secondary" v-if="item.humanReadableSize || item.fileSizeBytes">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      {{ item.humanReadableSize || formatFileSize(item.fileSizeBytes) }}
+                    </span>
+                    <span class="meta-badge meta-badge--tertiary" v-if="item.mimeType">
+                      {{ item.mimeType.replace('image/', '').toUpperCase() }}
+                    </span>
                   </div>
                 </div>
 
@@ -539,7 +563,7 @@ const collectionTypes = [
   },
 ]
 
-// ── Form state — ImageContent fields: title, description, location, collectedBy ──
+// ── Form state ───────────────────────────────────────────────────────────────
 const form = reactive({
   collectionType:   '',
   contentLanguages: [],
@@ -556,6 +580,15 @@ const form = reactive({
   newTopic:   { nameCkb: '', nameKmr: '' },
   clearTopic: false,
 })
+
+// ── Utility: Format file size ──────────────────────────────────────────────────
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
 
 // ── Topic helpers ──────────────────────────────────────────────────────────────
 const currentTopicName = computed(() => {
@@ -592,14 +625,27 @@ const albumReqClass = computed(() => {
   return ok ? 'album-req--ok' : 'album-req--warn'
 })
 
-// ── Album item management ──────────────────────────────────────────────────────
+// ── Album item management (UPDATED with metadata fields) ─────────────────────────
 const makeItem = (useUrl = false) => ({
-  _key: ++_keyCounter, useUrl,
-  file: null, preview: '',
-  imageUrl: '', externalUrl: '', embedUrl: '',
-  captionCkb: '', captionKmr: '',
-  descriptionCkb: '', descriptionKmr: '',
+  _key: ++_keyCounter, 
+  useUrl,
+  file: null, 
+  preview: '',
+  imageUrl: '', 
+  externalUrl: '', 
+  embedUrl: '',
+  captionCkb: '', 
+  captionKmr: '',
+  descriptionCkb: '', 
+  descriptionKmr: '',
   sortOrder: form.album.length,
+  // Metadata fields (populated by API for existing, null for new)
+  fileSizeBytes: null,
+  widthPx: null,
+  heightPx: null,
+  mimeType: null,
+  aspectRatio: null,
+  humanReadableSize: null,
 })
 
 const addAlbumItem    = (useUrl = false) => { form.album.push(makeItem(useUrl)) }
@@ -615,6 +661,8 @@ const onAlbumFile = (e, idx) => {
   if (form.album[idx].preview) URL.revokeObjectURL(form.album[idx].preview)
   form.album[idx].file    = f
   form.album[idx].preview = URL.createObjectURL(f)
+  // Store size for immediate display
+  form.album[idx].fileSizeBytes = f.size
 }
 
 // ── Cover image handlers (3 slots) ────────────────────────────────────────────
@@ -645,7 +693,7 @@ const removeHover = () => {
   setPreview(hoverPreview, null); hoverFile.value = null; form.hoverCoverUrl = ''
 }
 
-// ── Load existing record ───────────────────────────────────────────────────────
+// ── Load existing record (UPDATED with metadata mapping) ─────────────────────
 const loadCollection = async () => {
   if (!isEdit.value) return
   fetching.value = true
@@ -677,7 +725,6 @@ const applyCollection = (c) => {
 
   form.publishmentDate = c.publishmentDate || ''
 
-  // ImageContent fields: title, description, location, collectedBy (no topic)
   if (c.ckbContent) Object.assign(form.ckbContent, {
     title:       c.ckbContent.title       || '',
     description: c.ckbContent.description || '',
@@ -706,6 +753,7 @@ const applyCollection = (c) => {
   form.clearTopic = false
   form.newTopic   = { nameCkb: '', nameKmr: '' }
 
+  // UPDATED: Map album items including metadata fields from API
   form.album = (c.imageAlbum || [])
     .slice()
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
@@ -722,6 +770,13 @@ const applyCollection = (c) => {
       descriptionCkb: i.descriptionCkb || '',
       descriptionKmr: i.descriptionKmr || '',
       sortOrder:      i.sortOrder ?? 0,
+      // Metadata fields from API
+      fileSizeBytes:     i.fileSizeBytes     || null,
+      widthPx:           i.widthPx           || null,
+      heightPx:          i.heightPx          || null,
+      mimeType:          i.mimeType          || null,
+      aspectRatio:       i.aspectRatio       || null,
+      humanReadableSize: i.humanReadableSize || null,
     }))
 }
 
@@ -778,9 +833,9 @@ const submit = async () => {
       imageUrl:       item.useUrl ? (item.imageUrl    || null) : null,
       externalUrl:    item.useUrl ? (item.externalUrl || null) : null,
       embedUrl:       item.useUrl ? (item.embedUrl    || null) : null,
+      // Note: metadata fields are NOT sent to API - they are auto-extracted by backend
     })
 
-    // ImageContent DTO — matches embeddable fields exactly (no topic field)
     const buildContentDto = (content) => ({
       title:       content.title       || null,
       description: content.description || null,
@@ -997,6 +1052,68 @@ onMounted(() => {
 .album-file-zone__label { display:flex; flex-direction:column; align-items:center; gap:.4rem; cursor:pointer; font-size:.82rem; color:var(--muted); padding:1rem; text-align:center; z-index:1; }
 .album-file-zone__label--overlay { position:absolute; inset:0; background:rgba(0,0,0,.55); color:rgba(255,255,255,.85); justify-content:center; border-radius:var(--radius-sm); opacity:0; transition:opacity .2s; }
 .album-file-zone:hover .album-file-zone__label--overlay { opacity:1; }
+
+/* NEW: Metadata display styles */
+.album-meta-bar { 
+  margin: 0.5rem 0.75rem 0.5rem; 
+  padding: 0.4rem 0.6rem; 
+  background: #f8fafc; 
+  border: 1px solid #e2e8f0; 
+  border-radius: 6px; 
+  display: flex; 
+  gap: 0.5rem; 
+  flex-wrap: wrap; 
+  align-items: center;
+}
+.album-meta-new {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0 0.85rem 0.5rem;
+}
+.meta-group { 
+  display: flex; 
+  gap: 0.5rem; 
+  flex-wrap: wrap; 
+  align-items: center; 
+}
+.meta-badge { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 4px; 
+  padding: 2px 8px; 
+  border-radius: 4px; 
+  font-size: 0.75rem; 
+  font-weight: 600; 
+}
+.meta-badge--primary { 
+  background: #dbeafe; 
+  color: #1e40af; 
+  border: 1px solid #bfdbfe;
+}
+.meta-badge--secondary { 
+  background: #f3f4f6; 
+  color: #4b5563; 
+  border: 1px solid #e5e7eb;
+}
+.meta-badge--tertiary { 
+  background: #fef3c7; 
+  color: #92400e; 
+  text-transform: uppercase; 
+  border: 1px solid #fde68a;
+}
+.meta-badge--info { 
+  background: #dbeafe; 
+  color: #1e40af; 
+  border: 1px solid #bfdbfe;
+}
+.meta-badge--warn { 
+  background: #fee2e2; 
+  color: #991b1b; 
+  border: 1px solid #fecaca;
+}
+.meta-badge small { opacity: 0.7; font-weight: 500; }
 
 .album-url-fields { display:flex; flex-direction:column; gap:.5rem; }
 .url-preview { margin-top:.6rem; border-radius:6px; overflow:hidden; border:1px solid var(--border); max-height:120px; display:flex; align-items:center; justify-content:center; background:#0a0a0a; }

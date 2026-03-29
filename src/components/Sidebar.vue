@@ -164,6 +164,18 @@
         <Transition name="label"><span v-if="!slim" class="nav-item__arrow"><ArrowIcon /></span></Transition>
       </RouterLink>
 
+      <!-- Contact -->
+      <RouterLink
+        class="nav-item"
+        :to="{ name: 'AdminContactList' }"
+        :class="{ 'nav-item--active': isActive('contact') }"
+        title="پەیوەندیەکان"
+      >
+        <span class="nav-item__ico" v-html="SVGs.contact"></span>
+        <Transition name="label"><span v-if="!slim" class="nav-item__label">پەیوەندیەکان</span></Transition>
+        <Transition name="label"><span v-if="!slim" class="nav-item__arrow"><ArrowIcon /></span></Transition>
+      </RouterLink>
+
     </nav>
 
     <!-- ═══ FOOTER ════════════════════════════════════════ -->
@@ -237,6 +249,7 @@ const SVGs = {
   sounds:   `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
   writings: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>`,
   about:    `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
+  contact:  `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.1 1.22 2 2 0 012.1 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>`,
 }
 
 const publicationItems = [
@@ -250,13 +263,14 @@ const isPublicationsActive = computed(() => publicationItems.some(i => isActive(
 
 const isActive = (key) => {
   const routeMap = {
-    projects:            { names: ['AdminProjectList','AdminProjectCreate','AdminProjectEdit'],               prefix: '/admin/projects' },
-    news:                { names: ['AdminNewsList','AdminNewsCreate','AdminNewsEdit'],                        prefix: '/admin/news' },
-    'image-collections': { names: ['AdminImageCollectionList','AdminImageCollectionCreate','AdminImageCollectionEdit'], prefix: '/admin/image-collections' },
-    soundtracks:         { names: ['AdminSoundTrackList','AdminSoundTrackCreate','AdminSoundTrackEdit'],      prefix: '/admin/soundtracks' },
-    videos:              { names: ['AdminVideoList','AdminVideoCreate','AdminVideoEdit'],                     prefix: '/admin/videos' },
-    writings:            { names: ['AdminWritingList','AdminWritingCreate','AdminWritingEdit'],               prefix: '/admin/writings' },
-    about:               { names: ['AdminAboutList','AdminAboutCreate','AdminAboutEdit'],                    prefix: '/admin/about' },
+    projects:            { names: ['AdminProjectList','AdminProjectCreate','AdminProjectEdit'],                           prefix: '/admin/projects' },
+    news:                { names: ['AdminNewsList','AdminNewsCreate','AdminNewsEdit'],                                    prefix: '/admin/news' },
+    'image-collections': { names: ['AdminImageCollectionList','AdminImageCollectionCreate','AdminImageCollectionEdit'],  prefix: '/admin/image-collections' },
+    soundtracks:         { names: ['AdminSoundTrackList','AdminSoundTrackCreate','AdminSoundTrackEdit'],                  prefix: '/admin/soundtracks' },
+    videos:              { names: ['AdminVideoList','AdminVideoCreate','AdminVideoEdit'],                                 prefix: '/admin/videos' },
+    writings:            { names: ['AdminWritingList','AdminWritingCreate','AdminWritingEdit'],                           prefix: '/admin/writings' },
+    about:               { names: ['AdminAboutList','AdminAboutCreate','AdminAboutEdit'],                                 prefix: '/admin/about' },
+    contact:             { names: ['AdminContactList','AdminContactCreate','AdminContactEdit'],                           prefix: '/admin/contact' },
   }
   const m = routeMap[key]
   return m ? m.names.includes(route.name || '') || (route.path || '').startsWith(m.prefix) : false
@@ -300,12 +314,6 @@ const doLogout = async () => {
   --s-trans:      .22s var(--s-ease);
   --s-trans-slow: .35s var(--s-ease);
 
-  /* ═══ LAYOUT FIX ═══════════════════════════════════════
-     height: 100vh + display:flex + overflow:hidden on the
-     aside itself. The .nav gets flex:1 + min-height:0 +
-     overflow-y:auto so it scrolls independently when the
-     nav items exceed the available space.
-  ═══════════════════════════════════════════════════════ */
   width: 276px;
   flex: 0 0 276px;
   height: 100vh;
@@ -313,14 +321,13 @@ const doLogout = async () => {
   top: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;        /* sidebar itself never scrolls — .nav does */
+  overflow: hidden;
   transition: width var(--s-trans-slow), flex-basis var(--s-trans-slow);
   z-index: 100;
   font-family: inherit;
 }
 .side--slim { width: 74px; flex: 0 0 74px; }
 
-/* Right-side luminous border */
 .side::after {
   content: '';
   position: absolute;
@@ -395,7 +402,6 @@ const doLogout = async () => {
 @keyframes orb2 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(16px,-20px) scale(.95)} }
 @keyframes orb3 { 0%{transform:translate(-50%,-50%) scale(.8); opacity:.4} 100%{transform:translate(-50%,-50%) scale(1.2); opacity:.8} }
 
-/* All direct children above background */
 .brand, .nav, .side-foot, .expand-fab { position: relative; z-index: 1; }
 
 /* ── BRAND ─────────────────────────────────────────────── */
@@ -520,15 +526,10 @@ const doLogout = async () => {
   box-shadow: 0 4px 20px rgba(254,221,0,.12), 0 2px 12px rgba(0,0,0,.35);
 }
 
-/* ═══ NAV — THE SCROLLABLE REGION ═══════════════════════
-   flex: 1      → take remaining space between brand & footer
-   min-height: 0 → CRITICAL: allows flex child to shrink
-                   below its content size (enables scrolling)
-   overflow-y: auto → scroll only when items exceed space
-═══════════════════════════════════════════════════════ */
+/* ═══ NAV ═══════════════════════════════════════════════ */
 .nav {
   flex: 1;
-  min-height: 0;           /* ← KEY FIX: without this, flex won't shrink below content */
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: .85rem .7rem;
@@ -575,7 +576,7 @@ const doLogout = async () => {
   color: var(--s-dim); text-decoration: none;
   border: 1px solid transparent; position: relative;
   min-height: 44px; white-space: nowrap; overflow: hidden;
-  flex-shrink: 0;       /* ← prevent items from squishing */
+  flex-shrink: 0;
   transition:
     color var(--s-trans),
     background var(--s-trans),
@@ -588,7 +589,6 @@ const doLogout = async () => {
   font-size: inherit; width: 100%; text-align: right;
 }
 
-/* Shimmer sweep on hover */
 .nav-item::after {
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.05), transparent 70%);
@@ -617,7 +617,6 @@ const doLogout = async () => {
     0 0 0 1px rgba(254,221,0,.06) inset !important;
 }
 
-/* Active left accent bar */
 .nav-item--active::before {
   content: ''; position: absolute;
   left: 0; top: 18%; bottom: 18%;
@@ -631,7 +630,6 @@ const doLogout = async () => {
   50%       { box-shadow: 0 0 16px rgba(254,221,0,.9), 0 0 6px rgba(254,221,0,1); }
 }
 
-/* Icon wrapper */
 .nav-item__ico {
   width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px;
   background: rgba(255,255,255,.065);
@@ -702,7 +700,6 @@ const doLogout = async () => {
   flex-shrink: 0;
 }
 
-/* Connector tick */
 .sub-item::before {
   content: ''; position: absolute;
   right: calc(100% + 6px); top: 50%;
@@ -765,7 +762,6 @@ const doLogout = async () => {
   position: relative;
 }
 
-/* Shimmer line at top of footer */
 .side-foot::before {
   content: '';
   position: absolute; top: 0; left: 16px; right: 16px;
