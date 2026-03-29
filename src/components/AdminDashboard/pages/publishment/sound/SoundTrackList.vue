@@ -643,14 +643,22 @@ const filtered = computed(() => {
 })
 
 const fetchAll = async () => {
-  loading.value   = true
+  loading.value    = true
   fetchError.value = ''
   try {
-    const { data } = await api.get('/api/v1/sound-tracks')
-    const arr = extractArray(data)
-    items.value = arr.map(normalize)
+    let page = 0, all = []
+    while (true) {
+      const { data } = await api.get('/api/v1/sound-tracks', {
+        params: { page, size: 100 }
+      })
+      const pageObj = data?.data          // Page<Response>
+      const content = pageObj?.content ?? []
+      all = [...all, ...content]
+      if (pageObj?.last || content.length === 0) break
+      page++
+    }
+    items.value = all.map(normalize)
   } catch (e) {
-    console.error('fetchAll error:', e)
     fetchError.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
   } finally {
     loading.value = false
