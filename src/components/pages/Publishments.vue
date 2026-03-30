@@ -2,9 +2,6 @@
   <main class="pub" :dir="lang.dir" :class="{ 'pub--ltr': lang.isKMR }">
     <transition name="page" mode="out-in">
  
-      <!-- ══════════════════════════════════════════════════════════
-           DETAIL VIEW  (highest priority)
-      ══════════════════════════════════════════════════════════ -->
       <div v-if="activeItem" key="detail" class="detail">
         <nav class="dnav">
           <div class="container dnav__inner">
@@ -41,69 +38,53 @@
                   <span class="dbadge" v-if="getItemDate(activeItem)">📅 {{ formatDate(getItemDate(activeItem)) }}</span>
                   <span class="dbadge dbadge--mem" v-if="activeItem.albumOfMemories">💫 {{ lbl('albumOfMemories') }}</span>
                   <span class="dbadge" v-if="activeItem.thisProjectOfInstitute">🏛️ {{ lbl('institute') }}</span>
+                  <span class="dbadge dbadge--topic" v-if="pTopicName(activeItem)">🏷️ {{ pTopicName(activeItem) }}</span>
                 </div>
                 <h1 class="dhero__title">{{ pTitle(activeItem) }}</h1>
                 <p class="dhero__desc" v-if="pDesc(activeItem)">{{ pDesc(activeItem) }}</p>
                 <div class="dhero__stats">
-                  <!-- SOUND stats (all fields) -->
                   <template v-if="activeItem._mediaType === 'sound'">
-                    <div class="dstat" v-if="activeItem.files?.length">
-                      <span class="dstat__ico">🎵</span><span class="dstat__val">{{ activeItem.files.length }}</span><span class="dstat__lbl">{{ lbl('tracks') }}</span>
-                    </div>
-                    <div class="dstat" v-if="activeItem.soundType">
-                      <span class="dstat__ico">🎼</span><span class="dstat__val">{{ activeItem.soundType }}</span>
-                    </div>
-                    <div class="dstat" v-if="activeItem.reader">
-                      <span class="dstat__ico">🎤</span><span class="dstat__val">{{ activeItem.reader }}</span>
-                    </div>
-                    <div class="dstat" v-if="activeItem.directors?.length">
-                      <span class="dstat__ico">🎬</span><span class="dstat__val">{{ activeItem.directors.join('، ') }}</span>
-                    </div>
-                    <div class="dstat" v-if="totalSoundDuration > 0">
-                      <span class="dstat__ico">⏱</span><span class="dstat__val">{{ formatTime(totalSoundDuration) }}</span>
-                    </div>
-                    <div class="dstat" v-if="activeItem.trackState === 'MULTI' && activeItem.albumName">
-                      <span class="dstat__ico">💿</span><span class="dstat__val">{{ activeItem.albumName }}</span>
-                    </div>
-                    <div class="dstat" v-if="activeItem.publishmentYear">
-                      <span class="dstat__ico">📅</span><span class="dstat__val">{{ activeItem.publishmentYear }}</span>
-                    </div>
-                    <div class="dstat" v-if="activeItem.terms">
-                      <span class="dstat__ico">🗣</span><span class="dstat__val">{{ activeItem.terms }}</span>
-                    </div>
+                    <div class="dstat" v-if="activeItem.files?.length"><span class="dstat__ico">🎵</span><span class="dstat__val">{{ activeItem.files.length }}</span><span class="dstat__lbl">{{ lbl('tracks') }}</span></div>
+                    <div class="dstat" v-if="activeItem.soundType"><span class="dstat__ico">🎼</span><span class="dstat__val">{{ activeItem.soundType }}</span></div>
+                    <div class="dstat" v-if="activeItem.reader"><span class="dstat__ico">🎤</span><span class="dstat__val">{{ activeItem.reader }}</span></div>
+                    <div class="dstat" v-if="activeItem.directors?.length"><span class="dstat__ico">🎬</span><span class="dstat__val">{{ activeItem.directors.join('، ') }}</span></div>
+                    <div class="dstat" v-if="totalSoundDuration > 0"><span class="dstat__ico">⏱</span><span class="dstat__val">{{ formatTime(totalSoundDuration) }}</span></div>
+                    <div class="dstat" v-if="activeItem.trackState === 'MULTI' && activeItem.albumName"><span class="dstat__ico">💿</span><span class="dstat__val">{{ activeItem.albumName }}</span></div>
+                    <div class="dstat" v-if="activeItem.publishmentYear"><span class="dstat__ico">📅</span><span class="dstat__val">{{ activeItem.publishmentYear }}</span></div>
+                    <div class="dstat" v-if="activeItem.terms"><span class="dstat__ico">🗣</span><span class="dstat__val">{{ activeItem.terms }}</span></div>
+                    <div class="dstat" v-if="activeItem.totalSizeBytes > 0"><span class="dstat__ico">💾</span><span class="dstat__val">{{ formatSize(activeItem.totalSizeBytes) }}</span></div>
                   </template>
-                  <!-- VIDEO stats -->
                   <template v-else-if="activeItem._mediaType === 'video'">
                     <div class="dstat" v-if="activeItem.durationSeconds"><span class="dstat__ico">⏱</span><span class="dstat__val">{{ formatTime(activeItem.durationSeconds) }}</span></div>
                     <div class="dstat" v-if="pDirector(activeItem)"><span class="dstat__ico">🎬</span><span class="dstat__val">{{ pDirector(activeItem) }}</span></div>
                     <div class="dstat" v-if="pProducer(activeItem)"><span class="dstat__ico">🎞</span><span class="dstat__val">{{ pProducer(activeItem) }}</span></div>
                     <div class="dstat" v-if="activeItem.resolution"><span class="dstat__ico">📺</span><span class="dstat__val">{{ activeItem.resolution }}</span></div>
+                    <div class="dstat" v-if="activeItem.fileFormat"><span class="dstat__ico">🎞</span><span class="dstat__val">{{ activeItem.fileFormat }}</span></div>
+                    <div class="dstat" v-if="activeItem.fileSizeMb"><span class="dstat__ico">💾</span><span class="dstat__val">{{ activeItem.fileSizeMb?.toFixed(1) }} MB</span></div>
+                    <div class="dstat" v-if="activeItem.videoClipItems?.length"><span class="dstat__ico">📹</span><span class="dstat__val">{{ activeItem.videoClipItems.length }}</span><span class="dstat__lbl">{{ lbl('clips') }}</span></div>
+                    <div class="dstat" v-if="pLocation(activeItem)"><span class="dstat__ico">📍</span><span class="dstat__val">{{ pLocation(activeItem) }}</span></div>
                   </template>
-                  <!-- WRITING stats -->
                   <template v-else-if="activeItem._mediaType === 'writing'">
                     <div class="dstat" v-if="pPageCount(activeItem)"><span class="dstat__ico">📄</span><span class="dstat__val">{{ pPageCount(activeItem) }}</span><span class="dstat__lbl">{{ lbl('pages') }}</span></div>
                     <div class="dstat" v-if="pWriter(activeItem)"><span class="dstat__ico">✍️</span><span class="dstat__val">{{ pWriter(activeItem) }}</span></div>
-                    <div class="dstat" v-if="pGenre(activeItem)"><span class="dstat__ico">📚</span><span class="dstat__val">{{ pGenre(activeItem) }}</span></div>
+                    <div class="dstat" v-if="activeItem.bookGenres?.length || activeItem.bookGenres?.size"><span class="dstat__ico">📚</span><span class="dstat__val">{{ [...(activeItem.bookGenres || [])].map(g => getGenreLabel(g)).join('، ') }}</span></div>
+                    <div class="dstat" v-if="pFileFormat(activeItem)"><span class="dstat__ico">💾</span><span class="dstat__val">{{ pFileFormat(activeItem) }}</span></div>
+                    <div class="dstat" v-if="pFileSizeBytes(activeItem)"><span class="dstat__ico">📁</span><span class="dstat__val">{{ formatSize(pFileSizeBytes(activeItem)) }}</span></div>
+                    <div class="dstat" v-if="activeItem.publishedByInstitute"><span class="dstat__ico">🏛️</span><span class="dstat__val">{{ lbl('institute') }}</span></div>
                   </template>
-                  <!-- IMAGE stats -->
                   <template v-else-if="activeItem._mediaType === 'image'">
                     <div class="dstat" v-if="activeItem.imageAlbum?.length"><span class="dstat__ico">🖼️</span><span class="dstat__val">{{ activeItem.imageAlbum.length }}</span><span class="dstat__lbl">{{ lbl('images') }}</span></div>
+                    <div class="dstat" v-if="activeItem.collectionType"><span class="dstat__ico">📷</span><span class="dstat__val">{{ activeItem.collectionType }}</span></div>
                     <div class="dstat" v-if="pLocation(activeItem)"><span class="dstat__ico">📍</span><span class="dstat__val">{{ pLocation(activeItem) }}</span></div>
                     <div class="dstat" v-if="pCollectedBy(activeItem)"><span class="dstat__ico">🏛️</span><span class="dstat__val">{{ pCollectedBy(activeItem) }}</span></div>
+                    <div class="dstat" v-if="activeItem.publishmentDate"><span class="dstat__ico">📅</span><span class="dstat__val">{{ formatDate(activeItem.publishmentDate) }}</span></div>
                   </template>
                 </div>
-                <!-- Clickable Tags (no keywords) -->
                 <div class="dhero__tags" v-if="pTags(activeItem).length">
-                  <span
-                    v-for="tag in pTags(activeItem)" :key="tag"
-                    class="dtag dtag--clickable"
-                    @click.stop="searchByTagGlobal(tag)"
-                    :title="`گەڕان بەدوای: #${tag}`"
-                  >#{{ tag }}</span>
+                  <span v-for="tag in pTags(activeItem)" :key="tag" class="dtag dtag--clickable" @click.stop="searchByTagGlobal(tag)" :title="`#${tag}`">#{{ tag }}</span>
                 </div>
               </div>
             </transition>
-            <!-- Media mockups -->
             <div class="dhero__right">
               <div class="mockup-sound" v-if="activeItem._mediaType === 'sound'">
                 <div class="msound__case"><div class="msound__spine"></div><div class="msound__front"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /><div class="msound__overlay"></div></div></div>
@@ -122,7 +103,7 @@
           </div>
         </header>
  
-        <!-- ══ SOUND — Player + Full Metadata ══ -->
+        <!-- ══ SOUND ══ -->
         <section class="stream-section" v-if="activeItem._mediaType === 'sound' && activeItem.files?.length">
           <div class="container">
             <div class="stream-layout">
@@ -154,18 +135,40 @@
                         <span v-if="file.genre" class="track__chip">{{ file.genre }}</span>
                         <span v-if="file.form" class="track__chip">{{ file.form }}</span>
                         <span v-if="file.audioChannel" class="track__chip">{{ file.audioChannel }}</span>
+                        <span v-if="file.publishmentYear" class="track__chip">{{ file.publishmentYear }}</span>
                       </div>
-                      <div class="track__extra-row" v-if="file.recordingVenue || file.publishmentYear || file.bitRate || file.sampleRate">
+                      <div class="track__extra-row" v-if="file.recordingVenue || file.bitRate || file.sampleRate">
                         <span v-if="file.recordingVenue" class="track__extra-item">📍 {{ file.recordingVenue }}</span>
-                        <span v-if="file.publishmentYear" class="track__extra-item">📅 {{ file.publishmentYear }}</span>
                         <span v-if="file.bitRate" class="track__extra-item">🔊 {{ file.bitRate }}</span>
                         <span v-if="file.sampleRate" class="track__extra-item">〰 {{ file.sampleRate }}</span>
                       </div>
-                    </div>
-                    <div class="track__waves">
-                      <div class="wave-wrap" :class="{ 'wave-wrap--live': currentTrackIdx === i && isAudioPlaying }">
-                        <span v-for="(h, bi) in getWaveform(file.id || i)" :key="bi" class="wbar" :style="{ '--h': h, '--bi': bi }"></span>
+                      <!-- Inline controls — only visible for the selected track -->
+                      <div class="track__inline-controls" v-if="currentTrackIdx === i" @click.stop>
+                        <button class="iabtn" @click.stop="prevTrack" :disabled="currentTrackIdx <= 0">⏮</button>
+                        <button class="iabtn iabtn--play" @click.stop="togglePlay">{{ isAudioPlaying ? '⏸' : '▶' }}</button>
+                        <button class="iabtn" @click.stop="nextTrack" :disabled="currentTrackIdx >= activeItem.files.length - 1">⏭</button>
+                        <span class="track__inline-time">
+                          <span class="itime__cur">{{ formatTime(audioCurrentTime) }}</span>
+                          <span class="itime__sep">/</span>
+                          <span class="itime__dur">{{ formatTime(audioDuration) }}</span>
+                        </span>
                       </div>
+                    </div>
+                    <div class="track__waves" @click.stop="seekByWave($event, i)">
+                      <div class="wave-wrap" :class="{ 'wave-wrap--live': currentTrackIdx === i && isAudioPlaying }">
+                        <span
+                          v-for="(h, bi) in getWaveform(file.id || i)"
+                          :key="bi"
+                          class="wbar"
+                          :class="{
+                            'wbar--played':  currentTrackIdx === i && bi < playedBars,
+                            'wbar--current': currentTrackIdx === i && bi === playedBars,
+                            'wbar--live':    currentTrackIdx === i && isAudioPlaying && bi > playedBars
+                          }"
+                          :style="{ '--h': h, '--bi': bi }"
+                        ></span>
+                      </div>
+                      <div class="wave-time" v-if="currentTrackIdx === i">{{ formatTime(audioCurrentTime) }} / {{ formatTime(audioDuration) }}</div>
                     </div>
                     <div class="track__right">
                       <span class="track__dur" v-if="file.durationSeconds">{{ formatTime(file.durationSeconds) }}</span>
@@ -183,29 +186,7 @@
                     </div>
                   </div>
                 </div>
-                <!-- Audio bar -->
-                <div class="audio-bar" v-if="currentTrack">
-                  <div class="audio-bar__cover">
-                    <img :src="pCover(activeItem)" alt="playing" @error="onImgError($event)" />
-                    <div class="audio-bar__vinyl" :class="{ 'audio-bar__vinyl--spin': isAudioPlaying }"></div>
-                  </div>
-                  <div class="audio-bar__info">
-                    <div class="audio-bar__title">{{ currentTrack.title || `${lbl('track')} ${currentTrackIdx + 1}` }}</div>
-                    <div class="audio-bar__album">{{ pTitle(activeItem) }}</div>
-                  </div>
-                  <div class="audio-bar__controls">
-                    <button class="abtn" @click="prevTrack" :disabled="currentTrackIdx <= 0">⏮</button>
-                    <button class="abtn abtn--play" @click="togglePlay">{{ isAudioPlaying ? '⏸' : '▶' }}</button>
-                    <button class="abtn" @click="nextTrack" :disabled="currentTrackIdx >= activeItem.files.length - 1">⏭</button>
-                  </div>
-                  <div class="audio-bar__prog-wrap" @click="seekAudio">
-                    <div class="audio-bar__prog-track">
-                      <div class="audio-bar__prog-fill" :style="{ width: audioProgress + '%' }"></div>
-                      <div class="audio-bar__prog-thumb" :style="{ left: audioProgress + '%' }"></div>
-                    </div>
-                  </div>
-                  <div class="audio-bar__time">{{ formatTime(audioCurrentTime) }} / {{ formatTime(audioDuration) }}</div>
-                </div>
+                <!-- Hidden audio element -->
                 <audio ref="audioPlayer" style="display:none" preload="auto"
                   @loadedmetadata="onAudioLoaded" @timeupdate="onAudioTimeUpdate"
                   @play="isAudioPlaying = true" @pause="isAudioPlaying = false"
@@ -221,11 +202,20 @@
                   </div>
                   <div class="side-meta">
                     <div class="side-meta__row" v-if="activeItem.soundType"><span class="side-meta__key">{{ lbl('type') }}</span><span class="side-meta__val">{{ activeItem.soundType }}</span></div>
+                    <div class="side-meta__row" v-if="activeItem.trackState"><span class="side-meta__key">دۆخ</span><span class="side-meta__val sfm-value--badge">{{ activeItem.trackState }}</span></div>
                     <div class="side-meta__row" v-if="activeItem.reader"><span class="side-meta__key">{{ lbl('reader') }}</span><span class="side-meta__val">{{ activeItem.reader }}</span></div>
                     <div class="side-meta__row" v-if="activeItem.directors?.length"><span class="side-meta__key">{{ lbl('director') }}</span><span class="side-meta__val">{{ activeItem.directors.join('، ') }}</span></div>
-                    <div class="side-meta__row" v-if="activeItem.trackState"><span class="side-meta__key">دۆخ</span><span class="side-meta__val">{{ activeItem.trackState }}</span></div>
                     <div class="side-meta__row" v-if="activeItem.terms"><span class="side-meta__key">زاراوە</span><span class="side-meta__val">{{ activeItem.terms }}</span></div>
-                    <div class="side-meta__row" v-for="loc in (activeItem.locations || []).slice(0, 2)" :key="loc"><span class="side-meta__key">📍</span><span class="side-meta__val">{{ loc }}</span></div>
+                    <div class="side-meta__row" v-if="activeItem.totalDurationSeconds > 0"><span class="side-meta__key">کاتی گشتی</span><span class="side-meta__val">{{ formatTime(activeItem.totalDurationSeconds) }}</span></div>
+                    <div class="side-meta__row" v-if="activeItem.totalSizeBytes > 0"><span class="side-meta__key">قەبارە</span><span class="side-meta__val">{{ formatSize(activeItem.totalSizeBytes) }}</span></div>
+                    <template v-for="loc in (activeItem.locations || []).slice(0, 3)" :key="loc">
+                      <div class="side-meta__row"><span class="side-meta__key">📍</span><span class="side-meta__val">{{ loc }}</span></div>
+                    </template>
+                  </div>
+                  <div class="side-covers-row" v-if="activeItem.ckbCoverUrl || activeItem.kmrCoverUrl || activeItem.hoverCoverUrl">
+                    <div class="cover-slot" v-if="activeItem.ckbCoverUrl" @click="openFullscreen(activeItem.ckbCoverUrl)"><img :src="activeItem.ckbCoverUrl" alt="CKB Cover" @error="onImgError($event)" /><span class="cover-slot__lbl">CKB</span></div>
+                    <div class="cover-slot" v-if="activeItem.kmrCoverUrl" @click="openFullscreen(activeItem.kmrCoverUrl)"><img :src="activeItem.kmrCoverUrl" alt="KMR Cover" @error="onImgError($event)" /><span class="cover-slot__lbl">KMR</span></div>
+                    <div class="cover-slot" v-if="activeItem.hoverCoverUrl" @click="openFullscreen(activeItem.hoverCoverUrl)"><img :src="activeItem.hoverCoverUrl" alt="Hover" @error="onImgError($event)" /><span class="cover-slot__lbl">HOVER</span></div>
                   </div>
                 </div>
               </div>
@@ -233,11 +223,9 @@
           </div>
         </section>
  
-        <!-- ══ SOUND — Full Metadata Grid ══ -->
+        <!-- ══ SOUND Full Metadata ══ -->
         <section class="sound-full-meta" v-if="activeItem._mediaType === 'sound'">
           <div class="container">
- 
-            <!-- Album Info (MULTI) -->
             <div class="sfm-block" v-if="activeItem.trackState === 'MULTI' && (activeItem.albumName || activeItem.publishmentYear || activeItem.cdNumber || activeItem.totalTracks)">
               <h3 class="sfm-block__title">زانیاری ئەلبووم</h3>
               <div class="sfm-grid">
@@ -247,8 +235,6 @@
                 <div class="sfm-item" v-if="activeItem.totalTracks"><span class="sfm-label">کۆی تراکەکان</span><span class="sfm-value">{{ activeItem.totalTracks }}</span></div>
               </div>
             </div>
- 
-            <!-- Technical Info -->
             <div class="sfm-block">
               <h3 class="sfm-block__title">زانیاری تەکنیکی</h3>
               <div class="sfm-grid">
@@ -257,89 +243,60 @@
                 <div class="sfm-item" v-if="activeItem.reader"><span class="sfm-label">خوێنەر</span><span class="sfm-value">{{ activeItem.reader }}</span></div>
                 <div class="sfm-item" v-if="activeItem.directors?.length"><span class="sfm-label">دەرهێنەران</span><span class="sfm-value">{{ activeItem.directors.join('، ') }}</span></div>
                 <div class="sfm-item" v-if="activeItem.terms"><span class="sfm-label">زاراوە / شێوەزار</span><span class="sfm-value">{{ activeItem.terms }}</span></div>
-                <div class="sfm-item" v-if="activeItem.thisProjectOfInstitute"><span class="sfm-label">پرۆژەی دامەزراوە</span><span class="sfm-value sfm-value--yes">بەڵێ</span></div>
+                <div class="sfm-item" v-if="activeItem.thisProjectOfInstitute"><span class="sfm-label">پرۆژەی دامەزراوە</span><span class="sfm-value sfm-value--yes">بەڵێ ✓</span></div>
                 <div class="sfm-item" v-if="activeItem.albumOfMemories"><span class="sfm-label">یادگاریەکان</span><span class="sfm-value sfm-value--yes">بەڵێ 💫</span></div>
                 <div class="sfm-item" v-if="activeItem.files?.length"><span class="sfm-label">ژمارەی فایلەکان</span><span class="sfm-value">{{ activeItem.files.length }}</span></div>
                 <div class="sfm-item" v-if="activeItem.totalDurationSeconds > 0"><span class="sfm-label">کاتی گشتی</span><span class="sfm-value">{{ formatTime(activeItem.totalDurationSeconds) }}</span></div>
                 <div class="sfm-item" v-if="activeItem.totalSizeBytes > 0"><span class="sfm-label">قەبارەی گشتی</span><span class="sfm-value">{{ formatSize(activeItem.totalSizeBytes) }}</span></div>
               </div>
             </div>
- 
-            <!-- Content (bilingual) -->
-            <div class="sfm-block" v-if="pDesc(activeItem)">
+            <div class="sfm-block" v-if="activeItem.ckbContent?.description || activeItem.kmrContent?.description">
               <h3 class="sfm-block__title">وەسف</h3>
               <div class="sfm-bilingual">
-                <div class="sfm-lang-col" v-if="activeItem.ckbContent?.description">
-                  <span class="sfm-lang-badge sfm-lang-badge--ckb">سۆرانی</span>
-                  <p class="sfm-desc">{{ activeItem.ckbContent.description }}</p>
-                </div>
-                <div class="sfm-lang-col" v-if="activeItem.kmrContent?.description">
-                  <span class="sfm-lang-badge sfm-lang-badge--kmr">کورمانجی</span>
-                  <p class="sfm-desc">{{ activeItem.kmrContent.description }}</p>
-                </div>
+                <div class="sfm-lang-col" v-if="activeItem.ckbContent?.description"><span class="sfm-lang-badge sfm-lang-badge--ckb">سۆرانی</span><p class="sfm-desc">{{ activeItem.ckbContent.description }}</p></div>
+                <div class="sfm-lang-col" v-if="activeItem.kmrContent?.description"><span class="sfm-lang-badge sfm-lang-badge--kmr">کورمانجی</span><p class="sfm-desc">{{ activeItem.kmrContent.description }}</p></div>
               </div>
             </div>
- 
-            <!-- Locations -->
             <div class="sfm-block" v-if="activeItem.locations?.length">
               <h3 class="sfm-block__title">شوێنەکان</h3>
-              <div class="sfm-chips">
-                <span v-for="loc in activeItem.locations" :key="loc" class="sfm-chip sfm-chip--loc">📍 {{ loc }}</span>
-              </div>
+              <div class="sfm-chips"><span v-for="loc in activeItem.locations" :key="loc" class="sfm-chip sfm-chip--loc">📍 {{ loc }}</span></div>
             </div>
- 
-            <!-- Languages -->
             <div class="sfm-block" v-if="activeItem.contentLanguages?.length">
               <h3 class="sfm-block__title">زمانی ناوەڕۆک</h3>
-              <div class="sfm-chips">
-                <span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">
-                  {{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}
-                </span>
+              <div class="sfm-chips"><span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">{{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}</span></div>
+            </div>
+            <div class="sfm-block" v-if="pTopicName(activeItem)">
+              <h3 class="sfm-block__title">بابەت</h3>
+              <div class="sfm-chips"><span class="sfm-chip sfm-chip--topic">🏷️ {{ pTopicName(activeItem) }}</span></div>
+            </div>
+            <div class="sfm-block" v-if="pTags(activeItem).length || pTagsOther(activeItem).length">
+              <h3 class="sfm-block__title">{{ lbl('tags') }}</h3>
+              <div class="sfm-bilingual-tags">
+                <div v-if="pTagsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsCkb(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div>
+                <div v-if="pTagsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsKmr(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div>
               </div>
             </div>
- 
-            <!-- Attachments -->
+            <div class="sfm-block" v-if="pKeywordsCkb(activeItem).length || pKeywordsKmr(activeItem).length">
+              <h3 class="sfm-block__title">{{ lbl('keywords') }}</h3>
+              <div class="sfm-bilingual-tags">
+                <div v-if="pKeywordsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsCkb(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div>
+                <div v-if="pKeywordsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsKmr(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div>
+              </div>
+            </div>
             <div class="sfm-block" v-if="activeItem.attachments?.length">
               <h3 class="sfm-block__title">هاوپێچەکان <span class="sfm-count">{{ activeItem.attachments.length }}</span></h3>
               <div class="sfm-attachments">
-                <a
-                  v-for="(att, ai) in activeItem.attachments" :key="att.id || ai"
-                  :href="att.fileUrl" target="_blank" rel="noopener"
-                  class="sfm-attachment"
-                >
+                <a v-for="(att, ai) in activeItem.attachments" :key="att.id || ai" :href="att.fileUrl" target="_blank" rel="noopener" class="sfm-attachment">
                   <span class="sfm-attachment__type">{{ att.attachmentType || 'FILE' }}</span>
                   <span class="sfm-attachment__title">{{ att.title || `هاوپێچ ${ai + 1}` }}</span>
-                  <span class="sfm-attachment__meta">
-                    <span v-if="att.mimeType">{{ att.mimeType }}</span>
-                    <span v-if="att.sizeBytes > 0">{{ formatSize(att.sizeBytes) }}</span>
-                  </span>
+                  <span class="sfm-attachment__meta"><span v-if="att.mimeType">{{ att.mimeType }}</span><span v-if="att.sizeBytes > 0">{{ formatSize(att.sizeBytes) }}</span></span>
                   <span class="sfm-attachment__arrow">↗</span>
                 </a>
               </div>
             </div>
- 
-            <!-- Tags (clickable) -->
-            <div class="sfm-block" v-if="pTags(activeItem).length">
-              <h3 class="sfm-block__title">{{ lbl('tags') }}</h3>
-              <div class="sfm-chips">
-                <span
-                  v-for="tag in pTags(activeItem)" :key="tag"
-                  class="sfm-chip sfm-chip--tag"
-                  @click="searchByTagGlobal(tag)"
-                >#{{ tag }}</span>
-              </div>
-            </div>
- 
-            <!-- Timestamps -->
             <div class="sfm-block sfm-block--timestamps">
-              <div class="sfm-ts" v-if="activeItem.createdAt">
-                <span class="sfm-ts__label">دروستکراوە:</span>
-                <span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span>
-              </div>
-              <div class="sfm-ts" v-if="activeItem.updatedAt">
-                <span class="sfm-ts__label">نوێکراوەتەوە:</span>
-                <span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span>
-              </div>
+              <div class="sfm-ts" v-if="activeItem.createdAt"><span class="sfm-ts__label">دروستکراوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span></div>
+              <div class="sfm-ts" v-if="activeItem.updatedAt"><span class="sfm-ts__label">نوێکراوەتەوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span></div>
             </div>
           </div>
         </section>
@@ -353,13 +310,29 @@
                   <div class="vplayer-wrap" v-if="getClipUrl(selectedClip)"><video class="vplayer-el" controls :poster="pCover(activeItem)" :key="getClipUrl(selectedClip)"><source :src="getClipUrl(selectedClip)" type="video/mp4" /></video></div>
                   <div class="vembed-wrap" v-else-if="getClipEmbedUrl(selectedClip)"><iframe :src="getClipEmbedUrl(selectedClip)" frameborder="0" allowfullscreen class="vembed"></iframe></div>
                   <div class="vno-source" v-else><div class="vno-source__icon">📹</div><div class="vno-source__text">{{ lbl('noSource') }}</div></div>
-                  <div class="clip-desc" v-if="lang.activeLang === 'CKB' ? selectedClip.descriptionCkb : selectedClip.descriptionKmr"><p>{{ lang.activeLang === 'CKB' ? selectedClip.descriptionCkb : selectedClip.descriptionKmr }}</p></div>
+                  <div class="clip-meta-full">
+                    <div class="clip-meta-full__chips">
+                      <span v-if="selectedClip.resolution" class="vchip">📺 {{ selectedClip.resolution }}</span>
+                      <span v-if="selectedClip.fileFormat" class="vchip">🎞 {{ selectedClip.fileFormat }}</span>
+                      <span v-if="selectedClip.durationSeconds" class="vchip">⏱ {{ formatTime(selectedClip.durationSeconds) }}</span>
+                      <span v-if="selectedClip.fileSizeMb" class="vchip">💾 {{ selectedClip.fileSizeMb?.toFixed(1) }}MB</span>
+                      <span v-if="selectedClip.clipNumber" class="vchip">🔢 #{{ selectedClip.clipNumber }}</span>
+                    </div>
+                    <div class="clip-desc" v-if="lang.activeLang === 'CKB' ? selectedClip.descriptionCkb : selectedClip.descriptionKmr"><p>{{ lang.activeLang === 'CKB' ? selectedClip.descriptionCkb : selectedClip.descriptionKmr }}</p></div>
+                    <div class="clip-titles" v-if="selectedClip.titleCkb || selectedClip.titleKmr">
+                      <div class="clip-title-row" v-if="selectedClip.titleCkb"><span class="sfm-lang-badge sfm-lang-badge--ckb">سۆرانی</span><span>{{ selectedClip.titleCkb }}</span></div>
+                      <div class="clip-title-row" v-if="selectedClip.titleKmr"><span class="sfm-lang-badge sfm-lang-badge--kmr">کورمانجی</span><span>{{ selectedClip.titleKmr }}</span></div>
+                    </div>
+                  </div>
                 </div>
                 <div class="clips-list">
                   <h4 class="clips-list__heading">{{ lbl('clips') }} ({{ activeItem.videoClipItems?.length }})</h4>
                   <div v-for="clip in activeItem.videoClipItems" :key="clip.id" class="clip-item" :class="{ 'clip-item--on': selectedClip?.id === clip.id }" @click="selectedClip = clip">
                     <div class="clip-item__num">{{ clip.clipNumber }}</div>
-                    <div class="clip-item__info"><div class="clip-item__title">{{ lang.activeLang === 'CKB' ? (clip.titleCkb || clip.titleKmr) : (clip.titleKmr || clip.titleCkb) || `Clip ${clip.clipNumber}` }}</div><div class="clip-item__meta"><span v-if="clip.durationSeconds">⏱ {{ formatTime(clip.durationSeconds) }}</span><span v-if="clip.resolution">{{ clip.resolution }}</span></div></div>
+                    <div class="clip-item__info">
+                      <div class="clip-item__title">{{ lang.activeLang === 'CKB' ? (clip.titleCkb || clip.titleKmr) : (clip.titleKmr || clip.titleCkb) || `Clip ${clip.clipNumber}` }}</div>
+                      <div class="clip-item__meta"><span v-if="clip.durationSeconds">⏱ {{ formatTime(clip.durationSeconds) }}</span><span v-if="clip.resolution">{{ clip.resolution }}</span><span v-if="clip.fileFormat">{{ clip.fileFormat }}</span><span v-if="clip.fileSizeMb">{{ clip.fileSizeMb?.toFixed(1) }}MB</span></div>
+                    </div>
                     <svg class="clip-item__play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                   </div>
                 </div>
@@ -378,6 +351,40 @@
                 </div></div>
               </div>
             </template>
+            <div class="video-full-meta">
+              <div class="sfm-block">
+                <h3 class="sfm-block__title">ناوەڕۆکی دووزمانەیی</h3>
+                <div class="sfm-bilingual">
+                  <div class="sfm-lang-col" v-if="activeItem.ckbContent"><span class="sfm-lang-badge sfm-lang-badge--ckb">سۆرانی</span><div class="content-detail-block"><div class="cdb-row" v-if="activeItem.ckbContent.title"><span class="cdb-key">ناونیشان</span><span class="cdb-val">{{ activeItem.ckbContent.title }}</span></div><div class="cdb-row" v-if="activeItem.ckbContent.description"><span class="cdb-key">وەسف</span><span class="cdb-val">{{ activeItem.ckbContent.description }}</span></div><div class="cdb-row" v-if="activeItem.ckbContent.location"><span class="cdb-key">شوێن</span><span class="cdb-val">{{ activeItem.ckbContent.location }}</span></div><div class="cdb-row" v-if="activeItem.ckbContent.director"><span class="cdb-key">دەرهێنەر</span><span class="cdb-val">{{ activeItem.ckbContent.director }}</span></div><div class="cdb-row" v-if="activeItem.ckbContent.producer"><span class="cdb-key">بەرهەمهێنەر</span><span class="cdb-val">{{ activeItem.ckbContent.producer }}</span></div></div></div>
+                  <div class="sfm-lang-col" v-if="activeItem.kmrContent"><span class="sfm-lang-badge sfm-lang-badge--kmr">کورمانجی</span><div class="content-detail-block"><div class="cdb-row" v-if="activeItem.kmrContent.title"><span class="cdb-key">Sernavê</span><span class="cdb-val">{{ activeItem.kmrContent.title }}</span></div><div class="cdb-row" v-if="activeItem.kmrContent.description"><span class="cdb-key">Danasîn</span><span class="cdb-val">{{ activeItem.kmrContent.description }}</span></div><div class="cdb-row" v-if="activeItem.kmrContent.location"><span class="cdb-key">Cih</span><span class="cdb-val">{{ activeItem.kmrContent.location }}</span></div><div class="cdb-row" v-if="activeItem.kmrContent.director"><span class="cdb-key">Derhêner</span><span class="cdb-val">{{ activeItem.kmrContent.director }}</span></div><div class="cdb-row" v-if="activeItem.kmrContent.producer"><span class="cdb-key">Hilberîner</span><span class="cdb-val">{{ activeItem.kmrContent.producer }}</span></div></div></div>
+                </div>
+              </div>
+              <div class="sfm-block">
+                <h3 class="sfm-block__title">زانیاری تەکنیکی</h3>
+                <div class="sfm-grid">
+                  <div class="sfm-item"><span class="sfm-label">جۆری ڤیدیۆ</span><span class="sfm-value sfm-value--badge">{{ activeItem.videoType }}</span></div>
+                  <div class="sfm-item" v-if="activeItem.publishmentDate"><span class="sfm-label">{{ lbl('publishmentDate') }}</span><span class="sfm-value">{{ formatDate(activeItem.publishmentDate) }}</span></div>
+                  <div class="sfm-item" v-if="activeItem.resolution"><span class="sfm-label">ریزۆلووشن</span><span class="sfm-value">{{ activeItem.resolution }}</span></div>
+                  <div class="sfm-item" v-if="activeItem.fileFormat"><span class="sfm-label">فۆرمات</span><span class="sfm-value">{{ activeItem.fileFormat }}</span></div>
+                  <div class="sfm-item" v-if="activeItem.durationSeconds"><span class="sfm-label">ماوە</span><span class="sfm-value">{{ formatTime(activeItem.durationSeconds) }}</span></div>
+                  <div class="sfm-item" v-if="activeItem.fileSizeMb"><span class="sfm-label">قەبارە</span><span class="sfm-value">{{ activeItem.fileSizeMb?.toFixed(2) }} MB</span></div>
+                  <div class="sfm-item" v-if="activeItem.albumOfMemories"><span class="sfm-label">یادگاریەکان</span><span class="sfm-value sfm-value--yes">بەڵێ 💫</span></div>
+                </div>
+              </div>
+              <div class="sfm-block" v-if="activeItem.sourceUrl || activeItem.sourceExternalUrl || activeItem.sourceEmbedUrl">
+                <h3 class="sfm-block__title">سەرچاوەی ڤیدیۆ</h3>
+                <div class="sfm-attachments">
+                  <a v-if="activeItem.sourceUrl" :href="activeItem.sourceUrl" target="_blank" class="sfm-attachment"><span class="sfm-attachment__type">S3/CDN</span><span class="sfm-attachment__title">فایلی ڤیدیۆ</span><span class="sfm-attachment__arrow">↗</span></a>
+                  <a v-if="activeItem.sourceExternalUrl" :href="activeItem.sourceExternalUrl" target="_blank" class="sfm-attachment"><span class="sfm-attachment__type">EXTERNAL</span><span class="sfm-attachment__title">لینکی دەرەکی</span><span class="sfm-attachment__arrow">↗</span></a>
+                  <a v-if="activeItem.sourceEmbedUrl" :href="activeItem.sourceEmbedUrl" target="_blank" class="sfm-attachment"><span class="sfm-attachment__type">EMBED</span><span class="sfm-attachment__title">لینکی ئەمبێد</span><span class="sfm-attachment__arrow">↗</span></a>
+                </div>
+              </div>
+              <div class="sfm-block" v-if="activeItem.contentLanguages?.length"><h3 class="sfm-block__title">زمانی ناوەڕۆک</h3><div class="sfm-chips"><span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">{{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}</span></div></div>
+              <div class="sfm-block" v-if="pTopicName(activeItem)"><h3 class="sfm-block__title">بابەت</h3><div class="sfm-chips"><span class="sfm-chip sfm-chip--topic">🏷️ {{ pTopicName(activeItem) }}</span></div></div>
+              <div class="sfm-block" v-if="pTagsCkb(activeItem).length || pTagsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('tags') }}</h3><div class="sfm-bilingual-tags"><div v-if="pTagsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsCkb(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div><div v-if="pTagsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsKmr(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div></div></div>
+              <div class="sfm-block" v-if="pKeywordsCkb(activeItem).length || pKeywordsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('keywords') }}</h3><div class="sfm-bilingual-tags"><div v-if="pKeywordsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsCkb(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div><div v-if="pKeywordsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsKmr(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div></div></div>
+              <div class="sfm-block sfm-block--timestamps"><div class="sfm-ts" v-if="activeItem.createdAt"><span class="sfm-ts__label">دروستکراوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span></div><div class="sfm-ts" v-if="activeItem.updatedAt"><span class="sfm-ts__label">نوێکراوەتەوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span></div></div>
+            </div>
           </div>
         </section>
  
@@ -386,17 +393,34 @@
           <div class="container">
             <div class="gallery-layout" v-if="activeItem.imageAlbum?.length">
               <div class="gallery-main">
-                <div class="gallery-preview" v-if="selectedImage"><img :src="selectedImage.imageUrl || selectedImage.externalUrl || selectedImage.embedUrl" :alt="lang.activeLang === 'CKB' ? selectedImage.captionCkb : selectedImage.captionKmr" class="gallery-preview__img" @click="openFullscreen(selectedImage.imageUrl || selectedImage.externalUrl)" @error="onImgError($event)" /><div class="gallery-zoom-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>{{ lbl('clickToExpand') }}</div></div>
-                <div class="gallery-caption" v-if="selectedImage"><div class="gallery-caption__title">{{ lang.activeLang === 'CKB' ? selectedImage.captionCkb : selectedImage.captionKmr }}</div><div class="gallery-caption__desc">{{ lang.activeLang === 'CKB' ? selectedImage.descriptionCkb : selectedImage.descriptionKmr }}</div></div>
+                <div class="gallery-preview" v-if="selectedImage">
+                  <img :src="selectedImage.imageUrl || selectedImage.externalUrl || selectedImage.embedUrl" :alt="lang.activeLang === 'CKB' ? selectedImage.captionCkb : selectedImage.captionKmr" class="gallery-preview__img" @click="openFullscreen(selectedImage.imageUrl || selectedImage.externalUrl)" @error="onImgError($event)" />
+                  <div class="gallery-zoom-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>{{ lbl('clickToExpand') }}</div>
+                  <div class="gallery-img-meta" v-if="selectedImage.widthPx || selectedImage.heightPx || selectedImage.mimeType"><span v-if="selectedImage.widthPx && selectedImage.heightPx">{{ selectedImage.widthPx }}×{{ selectedImage.heightPx }}</span><span v-if="selectedImage.mimeType">{{ selectedImage.mimeType }}</span><span v-if="selectedImage.humanReadableSize">{{ selectedImage.humanReadableSize }}</span></div>
+                </div>
+                <div class="gallery-caption" v-if="selectedImage">
+                  <div class="gallery-caption__title">{{ lang.activeLang === 'CKB' ? selectedImage.captionCkb : selectedImage.captionKmr }}</div>
+                  <div class="gallery-caption__desc">{{ lang.activeLang === 'CKB' ? selectedImage.descriptionCkb : selectedImage.descriptionKmr }}</div>
+                  <div class="gallery-caption__bilingual" v-if="selectedImage.captionCkb && selectedImage.captionKmr"><div class="gcap-row"><span class="sfm-lang-badge sfm-lang-badge--ckb">سۆرانی</span><span>{{ selectedImage.captionCkb }}</span></div><div class="gcap-row"><span class="sfm-lang-badge sfm-lang-badge--kmr">کورمانجی</span><span>{{ selectedImage.captionKmr }}</span></div></div>
+                  <div class="gallery-img-tech" v-if="selectedImage.fileSizeBytes || selectedImage.widthPx"><div class="git-row" v-if="selectedImage.widthPx && selectedImage.heightPx"><span class="git-key">ئەندازە</span><span class="git-val">{{ selectedImage.widthPx }} × {{ selectedImage.heightPx }} px</span></div><div class="git-row" v-if="selectedImage.aspectRatio"><span class="git-key">نسبەی ئەندازە</span><span class="git-val">{{ selectedImage.aspectRatio?.toFixed(2) }}</span></div><div class="git-row" v-if="selectedImage.mimeType"><span class="git-key">جۆری فایل</span><span class="git-val">{{ selectedImage.mimeType }}</span></div><div class="git-row" v-if="selectedImage.humanReadableSize"><span class="git-key">قەبارە</span><span class="git-val">{{ selectedImage.humanReadableSize }}</span></div><div class="git-row" v-if="selectedImage.sortOrder != null"><span class="git-key">ئۆردەر</span><span class="git-val">{{ selectedImage.sortOrder }}</span></div></div>
+                </div>
               </div>
-              <div class="gallery-strip"><button v-for="img in activeItem.imageAlbum" :key="img.id" class="gthumb" :class="{ 'gthumb--on': selectedImage?.id === img.id }" @click="selectedImage = img"><img :src="img.imageUrl || img.externalUrl" @error="onImgError($event)" /></button></div>
-              <div class="gallery-nav" v-if="activeItem.imageAlbum.length > 1">
-                <button class="gnav-btn" @click="prevImage" :disabled="!canPrevImage">{{ lbl('prev') }}</button>
-                <span class="gnav-pos">{{ currentImageIdx + 1 }} / {{ activeItem.imageAlbum.length }}</span>
-                <button class="gnav-btn" @click="nextImage" :disabled="!canNextImage">{{ lbl('next') }}</button>
+              <div class="gallery-strip">
+                <button v-for="img in activeItem.imageAlbum" :key="img.id" class="gthumb" :class="{ 'gthumb--on': selectedImage?.id === img.id }" @click="selectedImage = img"><img :src="img.imageUrl || img.externalUrl" @error="onImgError($event)" /><div class="gthumb__meta" v-if="img.widthPx">{{ img.widthPx }}×{{ img.heightPx }}</div></button>
               </div>
+              <div class="gallery-nav" v-if="activeItem.imageAlbum.length > 1"><button class="gnav-btn" @click="prevImage" :disabled="!canPrevImage">{{ lbl('prev') }}</button><span class="gnav-pos">{{ currentImageIdx + 1 }} / {{ activeItem.imageAlbum.length }}</span><button class="gnav-btn" @click="nextImage" :disabled="!canNextImage">{{ lbl('next') }}</button></div>
             </div>
             <div class="gallery-empty" v-else><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" class="gallery-single" @error="onImgError($event)" /></div>
+            <div class="image-full-meta">
+              <div class="sfm-block"><h3 class="sfm-block__title">ناوەڕۆکی دووزمانەیی</h3><div class="sfm-bilingual"><div class="sfm-lang-col" v-if="activeItem.ckbContent"><span class="sfm-lang-badge sfm-lang-badge--ckb">سۆرانی</span><div class="content-detail-block"><div class="cdb-row" v-if="activeItem.ckbContent.title"><span class="cdb-key">ناونیشان</span><span class="cdb-val">{{ activeItem.ckbContent.title }}</span></div><div class="cdb-row" v-if="activeItem.ckbContent.description"><span class="cdb-key">وەسف</span><span class="cdb-val">{{ activeItem.ckbContent.description }}</span></div><div class="cdb-row" v-if="activeItem.ckbContent.location"><span class="cdb-key">شوێن</span><span class="cdb-val">{{ activeItem.ckbContent.location }}</span></div><div class="cdb-row" v-if="activeItem.ckbContent.collectedBy"><span class="cdb-key">کۆکردنەوەکار</span><span class="cdb-val">{{ activeItem.ckbContent.collectedBy }}</span></div></div></div><div class="sfm-lang-col" v-if="activeItem.kmrContent"><span class="sfm-lang-badge sfm-lang-badge--kmr">کورمانجی</span><div class="content-detail-block"><div class="cdb-row" v-if="activeItem.kmrContent.title"><span class="cdb-key">Sernavê</span><span class="cdb-val">{{ activeItem.kmrContent.title }}</span></div><div class="cdb-row" v-if="activeItem.kmrContent.description"><span class="cdb-key">Danasîn</span><span class="cdb-val">{{ activeItem.kmrContent.description }}</span></div><div class="cdb-row" v-if="activeItem.kmrContent.location"><span class="cdb-key">Cih</span><span class="cdb-val">{{ activeItem.kmrContent.location }}</span></div><div class="cdb-row" v-if="activeItem.kmrContent.collectedBy"><span class="cdb-key">Berhevkar</span><span class="cdb-val">{{ activeItem.kmrContent.collectedBy }}</span></div></div></div></div></div>
+              <div class="sfm-block"><h3 class="sfm-block__title">زانیاری کۆلێکشن</h3><div class="sfm-grid"><div class="sfm-item"><span class="sfm-label">جۆری کۆلێکشن</span><span class="sfm-value sfm-value--badge">{{ activeItem.collectionType }}</span></div><div class="sfm-item" v-if="activeItem.publishmentDate"><span class="sfm-label">{{ lbl('publishmentDate') }}</span><span class="sfm-value">{{ formatDate(activeItem.publishmentDate) }}</span></div><div class="sfm-item" v-if="activeItem.imageAlbum?.length"><span class="sfm-label">ژمارەی وێنەکان</span><span class="sfm-value">{{ activeItem.imageAlbum.length }}</span></div></div></div>
+              <div class="sfm-block" v-if="activeItem.ckbCoverUrl || activeItem.kmrCoverUrl || activeItem.hoverCoverUrl"><h3 class="sfm-block__title">کڤەرەکان</h3><div class="cover-slots-grid"><div class="cover-slot-full" v-if="activeItem.ckbCoverUrl" @click="openFullscreen(activeItem.ckbCoverUrl)"><img :src="activeItem.ckbCoverUrl" alt="CKB" @error="onImgError($event)" /><span class="cover-slot-full__lbl">سۆرانی (CKB)</span></div><div class="cover-slot-full" v-if="activeItem.kmrCoverUrl" @click="openFullscreen(activeItem.kmrCoverUrl)"><img :src="activeItem.kmrCoverUrl" alt="KMR" @error="onImgError($event)" /><span class="cover-slot-full__lbl">کورمانجی (KMR)</span></div><div class="cover-slot-full" v-if="activeItem.hoverCoverUrl" @click="openFullscreen(activeItem.hoverCoverUrl)"><img :src="activeItem.hoverCoverUrl" alt="Hover" @error="onImgError($event)" /><span class="cover-slot-full__lbl">هۆڤەر</span></div></div></div>
+              <div class="sfm-block" v-if="activeItem.contentLanguages?.length"><h3 class="sfm-block__title">زمانی ناوەڕۆک</h3><div class="sfm-chips"><span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">{{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}</span></div></div>
+              <div class="sfm-block" v-if="pTopicName(activeItem)"><h3 class="sfm-block__title">بابەت</h3><div class="sfm-chips"><span class="sfm-chip sfm-chip--topic">🏷️ {{ pTopicName(activeItem) }}</span></div></div>
+              <div class="sfm-block" v-if="pTagsCkb(activeItem).length || pTagsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('tags') }}</h3><div class="sfm-bilingual-tags"><div v-if="pTagsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsCkb(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div><div v-if="pTagsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsKmr(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div></div></div>
+              <div class="sfm-block" v-if="pKeywordsCkb(activeItem).length || pKeywordsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('keywords') }}</h3><div class="sfm-bilingual-tags"><div v-if="pKeywordsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsCkb(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div><div v-if="pKeywordsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsKmr(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div></div></div>
+              <div class="sfm-block sfm-block--timestamps"><div class="sfm-ts" v-if="activeItem.createdAt"><span class="sfm-ts__label">دروستکراوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span></div><div class="sfm-ts" v-if="activeItem.updatedAt"><span class="sfm-ts__label">نوێکراوەتەوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span></div></div>
+            </div>
           </div>
         </section>
  
@@ -404,34 +428,39 @@
         <section class="writing-section" v-if="activeItem._mediaType === 'writing'">
           <div class="container">
             <div class="writing-layout">
+              <div class="writing-genres" v-if="activeItem.bookGenres?.length || (activeItem.bookGenres && [...activeItem.bookGenres].length)"><span class="wg-label">{{ lbl('genre') }}:</span><div class="wg-chips"><span v-for="g in [...(activeItem.bookGenres || [])]" :key="g" class="wg-chip">{{ getGenreLabel(g) }}</span></div></div>
+              <div class="writing-bilingual-content">
+                <div class="wbc-col" v-if="activeItem.ckbContent">
+                  <div class="wbc-header"><span class="sfm-lang-badge sfm-lang-badge--ckb">سۆرانی CKB</span></div>
+                  <div class="winfo-card" v-if="activeItem.ckbContent.writer"><div class="winfo-card__ico">✍️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('writer') }}</div><div class="winfo-card__val">{{ activeItem.ckbContent.writer }}</div></div></div>
+                  <div class="winfo-card" v-if="activeItem.ckbContent.genre"><div class="winfo-card__ico">🎭</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('genre') }}</div><div class="winfo-card__val">{{ activeItem.ckbContent.genre }}</div></div></div>
+                  <div class="winfo-card" v-if="activeItem.ckbContent.pageCount"><div class="winfo-card__ico">📄</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('pages') }}</div><div class="winfo-card__val">{{ activeItem.ckbContent.pageCount }}</div></div></div>
+                  <div class="winfo-card" v-if="activeItem.ckbContent.fileFormat"><div class="winfo-card__ico">💾</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('format') }}</div><div class="winfo-card__val">{{ activeItem.ckbContent.fileFormat }}</div></div></div>
+                  <div class="winfo-card" v-if="activeItem.ckbContent.fileSizeBytes"><div class="winfo-card__ico">📁</div><div class="winfo-card__content"><div class="winfo-card__lbl">قەبارە</div><div class="winfo-card__val">{{ formatSize(activeItem.ckbContent.fileSizeBytes) }}</div></div></div>
+                  <div class="wdesc" v-if="activeItem.ckbContent.description"><p>{{ activeItem.ckbContent.description }}</p></div>
+                  <a v-if="activeItem.ckbContent.fileUrl" :href="activeItem.ckbContent.fileUrl" target="_blank" class="wdownload-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>داونلۆدی نسخەی سۆرانی</a>
+                </div>
+                <div class="wbc-col" v-if="activeItem.kmrContent">
+                  <div class="wbc-header"><span class="sfm-lang-badge sfm-lang-badge--kmr">کورمانجی KMR</span></div>
+                  <div class="winfo-card" v-if="activeItem.kmrContent.writer"><div class="winfo-card__ico">✍️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('writer') }}</div><div class="winfo-card__val">{{ activeItem.kmrContent.writer }}</div></div></div>
+                  <div class="winfo-card" v-if="activeItem.kmrContent.genre"><div class="winfo-card__ico">🎭</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('genre') }}</div><div class="winfo-card__val">{{ activeItem.kmrContent.genre }}</div></div></div>
+                  <div class="winfo-card" v-if="activeItem.kmrContent.pageCount"><div class="winfo-card__ico">📄</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('pages') }}</div><div class="winfo-card__val">{{ activeItem.kmrContent.pageCount }}</div></div></div>
+                  <div class="winfo-card" v-if="activeItem.kmrContent.fileFormat"><div class="winfo-card__ico">💾</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('format') }}</div><div class="winfo-card__val">{{ activeItem.kmrContent.fileFormat }}</div></div></div>
+                  <div class="winfo-card" v-if="activeItem.kmrContent.fileSizeBytes"><div class="winfo-card__ico">📁</div><div class="winfo-card__content"><div class="winfo-card__lbl">قەبارە</div><div class="winfo-card__val">{{ formatSize(activeItem.kmrContent.fileSizeBytes) }}</div></div></div>
+                  <div class="wdesc" v-if="activeItem.kmrContent.description"><p>{{ activeItem.kmrContent.description }}</p></div>
+                  <a v-if="activeItem.kmrContent.fileUrl" :href="activeItem.kmrContent.fileUrl" target="_blank" class="wdownload-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Daxistina Nusxeya Kurmancî</a>
+                </div>
+              </div>
               <div class="writing-info-grid">
-                <div class="winfo-card" v-if="pWriter(activeItem)"><div class="winfo-card__ico">✍️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('writer') }}</div><div class="winfo-card__val">{{ pWriter(activeItem) }}</div></div></div>
-                <div class="winfo-card" v-if="pGenre(activeItem)"><div class="winfo-card__ico">🎭</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('genre') }}</div><div class="winfo-card__val">{{ pGenre(activeItem) }}</div></div></div>
-                <div class="winfo-card" v-if="pPageCount(activeItem)"><div class="winfo-card__ico">📄</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('pages') }}</div><div class="winfo-card__val">{{ pPageCount(activeItem) }}</div></div></div>
-                <div class="winfo-card" v-if="activeItem.writingTopic"><div class="winfo-card__ico">🏷️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('category') }}</div><div class="winfo-card__val">{{ activeItem.writingTopic }}</div></div></div>
-                <div class="winfo-card" v-if="pFileFormat(activeItem)"><div class="winfo-card__ico">💾</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('format') }}</div><div class="winfo-card__val">{{ pFileFormat(activeItem) }}</div></div></div>
                 <div class="winfo-card" v-if="activeItem.publishedByInstitute"><div class="winfo-card__ico">🏛️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('publisher') }}</div><div class="winfo-card__val">{{ lbl('institute') }}</div></div></div>
+                <div class="winfo-card" v-if="pTopicName(activeItem)"><div class="winfo-card__ico">🏷️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('category') }}</div><div class="winfo-card__val">{{ pTopicName(activeItem) }}</div></div></div>
               </div>
-              <div class="series-block" v-if="activeItem.seriesName || activeItem.seriesId">
-                <div class="series-block__ico">📚</div>
-                <div class="series-block__info"><div class="series-block__lbl">{{ lbl('series') }}</div><div class="series-block__name">{{ activeItem.seriesName || activeItem.seriesId }}</div><div class="series-block__order" v-if="activeItem.seriesOrder">Vol. {{ activeItem.seriesOrder }}</div></div>
-              </div>
-            </div>
-          </div>
-        </section>
- 
-        <!-- Tags (clickable) — for all non-sound types -->
-        <section class="chips-section" v-if="activeItem._mediaType !== 'sound' && pTags(activeItem).length">
-          <div class="container">
-            <div class="chips-block">
-              <h3 class="chips-block__heading">{{ lbl('tags') }}</h3>
-              <div class="chips-row">
-                <span
-                  v-for="tag in pTags(activeItem)" :key="tag"
-                  class="chip chip--tag chip--clickable"
-                  @click="searchByTagGlobal(tag)"
-                >#{{ tag }}</span>
-              </div>
+              <div class="series-block" v-if="activeItem.seriesInfo || activeItem.seriesName || activeItem.seriesId"><div class="series-block__ico">📚</div><div class="series-block__info"><div class="series-block__lbl">{{ lbl('series') }}</div><div class="series-block__name">{{ activeItem.seriesInfo?.seriesName || activeItem.seriesName || activeItem.seriesInfo?.seriesId || activeItem.seriesId }}</div><div class="series-block__meta"><span v-if="activeItem.seriesInfo?.seriesOrder || activeItem.seriesOrder">Vol. {{ activeItem.seriesInfo?.seriesOrder || activeItem.seriesOrder }}</span><span v-if="activeItem.seriesInfo?.totalBooks || activeItem.seriesTotalBooks"> · {{ activeItem.seriesInfo?.totalBooks || activeItem.seriesTotalBooks }} کتێب</span><span v-if="activeItem.seriesInfo?.isParent" class="series-parent-badge">📖 سەرەکی</span></div></div></div>
+              <div class="sfm-block" v-if="activeItem.contentLanguages?.length"><h3 class="sfm-block__title">زمانی ناوەڕۆک</h3><div class="sfm-chips"><span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">{{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}</span></div></div>
+              <div class="sfm-block" v-if="activeItem.ckbCoverUrl || activeItem.kmrCoverUrl || activeItem.hoverCoverUrl"><h3 class="sfm-block__title">کڤەرەکان</h3><div class="cover-slots-grid"><div class="cover-slot-full" v-if="activeItem.ckbCoverUrl" @click="openFullscreen(activeItem.ckbCoverUrl)"><img :src="activeItem.ckbCoverUrl" alt="CKB" @error="onImgError($event)" /><span class="cover-slot-full__lbl">سۆرانی</span></div><div class="cover-slot-full" v-if="activeItem.kmrCoverUrl" @click="openFullscreen(activeItem.kmrCoverUrl)"><img :src="activeItem.kmrCoverUrl" alt="KMR" @error="onImgError($event)" /><span class="cover-slot-full__lbl">کورمانجی</span></div><div class="cover-slot-full" v-if="activeItem.hoverCoverUrl" @click="openFullscreen(activeItem.hoverCoverUrl)"><img :src="activeItem.hoverCoverUrl" alt="Hover" @error="onImgError($event)" /><span class="cover-slot-full__lbl">هۆڤەر</span></div></div></div>
+              <div class="sfm-block" v-if="pTagsCkb(activeItem).length || pTagsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('tags') }}</h3><div class="sfm-bilingual-tags"><div v-if="pTagsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsCkb(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div><div v-if="pTagsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsKmr(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div></div></div>
+              <div class="sfm-block" v-if="pKeywordsCkb(activeItem).length || pKeywordsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('keywords') }}</h3><div class="sfm-bilingual-tags"><div v-if="pKeywordsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsCkb(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div><div v-if="pKeywordsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsKmr(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div></div></div>
+              <div class="sfm-block sfm-block--timestamps"><div class="sfm-ts" v-if="activeItem.createdAt"><span class="sfm-ts__label">دروستکراوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span></div><div class="sfm-ts" v-if="activeItem.updatedAt"><span class="sfm-ts__label">نوێکراوەتەوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span></div></div>
             </div>
           </div>
         </section>
@@ -443,328 +472,66 @@
             <div class="related__grid">
               <article v-for="rp in relatedItems" :key="`rel-${rp._mediaType}-${rp.id}`" class="rcard" tabindex="0" @click="openItem(rp)" @keyup.enter="openItem(rp)">
                 <div class="rcard__img"><img :src="pCover(rp)" :alt="pTitle(rp)" loading="lazy" class="rcard__img-main" @error="onImgError($event)" /><img v-if="pHoverCover(rp)" :src="pHoverCover(rp)" :alt="pTitle(rp)" loading="lazy" class="rcard__img-hover" @error="onImgError($event)" /><div class="rcard__overlay"></div><span class="rcard__typebadge">{{ getMediaIcon(rp._mediaType) }}</span></div>
-                <div class="rcard__body">
-                  <h3 class="rcard__title">{{ pTitle(rp) }}</h3>
-                  <p class="rcard__desc">{{ truncate(pDesc(rp), 90) }}</p>
-                  <div class="rcard__tags" v-if="pTags(rp).length">
-                    <span v-for="t in pTags(rp).slice(0, 2)" :key="t" class="rtag rtag--clickable" @click.stop="searchByTagGlobal(t)">#{{ t }}</span>
-                  </div>
-                </div>
+                <div class="rcard__body"><h3 class="rcard__title">{{ pTitle(rp) }}</h3><p class="rcard__desc">{{ truncate(pDesc(rp), 90) }}</p><div class="rcard__tags" v-if="pTags(rp).length"><span v-for="t in pTags(rp).slice(0, 2)" :key="t" class="rtag rtag--clickable" @click.stop="searchByTagGlobal(t)">#{{ t }}</span></div></div>
               </article>
             </div>
           </div>
         </section>
       </div>
  
-      <!-- ══════════════════════════════════════════════════════════
-           TAG SEARCH VIEW
-      ══════════════════════════════════════════════════════════ -->
+      <!-- TAG SEARCH VIEW -->
       <div v-else-if="tagSearchMode" key="tag-search" class="listing tag-search-page">
-        <!-- Tag search header -->
         <div class="ts-hero">
           <div class="container">
-            <button class="back-btn ts-back" @click="clearTagSearch">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              <span>{{ lbl('back') }}</span>
-            </button>
-            <div class="ts-title">
-              <span class="ts-hash">#</span><span class="ts-query">{{ tagSearchQuery }}</span>
-            </div>
-            <div class="ts-total" v-if="!isTagSearchLoading">
-              {{ totalTagResults }} {{ lbl('results') }}
-            </div>
+            <button class="back-btn ts-back" @click="clearTagSearch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg><span>{{ lbl('back') }}</span></button>
+            <div class="ts-title"><span class="ts-hash">#</span><span class="ts-query">{{ tagSearchQuery }}</span></div>
+            <div class="ts-total" v-if="!isTagSearchLoading">{{ totalTagResults }} {{ lbl('results') }}</div>
           </div>
         </div>
- 
         <div class="container ts-body">
- 
-          <!-- Loading -->
-          <div v-if="isTagSearchLoading" class="grid">
-            <div v-for="i in 8" :key="`tsk-${i}`" class="skel" :style="{ '--d': `${(i-1)*0.07}s` }">
-              <div class="skel__thumb shimmer"></div>
-              <div class="skel__body">
-                <div class="skel__line shimmer" style="width:55%"></div>
-                <div class="skel__line shimmer" style="width:100%;margin-top:.5rem"></div>
-                <div class="skel__line shimmer" style="width:75%"></div>
-              </div>
-            </div>
-          </div>
- 
+          <div v-if="isTagSearchLoading" class="grid"><div v-for="i in 8" :key="`tsk-${i}`" class="skel" :style="{ '--d': `${(i-1)*0.07}s` }"><div class="skel__thumb shimmer"></div><div class="skel__body"><div class="skel__line shimmer" style="width:55%"></div><div class="skel__line shimmer" style="width:100%;margin-top:.5rem"></div><div class="skel__line shimmer" style="width:75%"></div></div></div></div>
           <template v-else>
-            <!-- Empty state -->
-            <div v-if="totalTagResults === 0" class="empty">
-              <div class="empty__icon">🔍</div>
-              <h3 class="empty__title">{{ lbl('noResults') }}</h3>
-              <p class="empty__hint">#{{ tagSearchQuery }}</p>
-              <button class="btn-primary" @click="clearTagSearch">{{ lbl('resetFilter') }}</button>
-            </div>
- 
-            <!-- SOUNDS -->
-            <div class="ts-section" v-if="tagSearchResults.sounds.filter(s => !s.albumOfMemories).length">
-              <div class="ts-section-head">
-                <h3 class="ts-section-title">{{ lbl('sound') }}</h3>
-                <span class="ts-section-count">{{ tagSearchResults.sounds.filter(s => !s.albumOfMemories).length }}</span>
-              </div>
-              <div class="grid">
-                <article
-                  v-for="(item, i) in tagSearchResults.sounds.filter(s => !s.albumOfMemories)"
-                  :key="`ts-snd-${item.id}`"
-                  class="card card--sound"
-                  :style="{ '--d': `${i * 0.04}s` }"
-                  tabindex="0"
-                  @click="openItem(item)"
-                  @keyup.enter="openItem(item)"
-                >
-                  <div class="card__thumb">
-                    <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
-                    <img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" />
-                    <div class="card__film"></div><div class="card__scrim"></div>
-                    <div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div>
-                    <div class="card__countbadge" v-if="item.files?.length">🎵 {{ item.files.length }}</div>
-                    <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-                    <div class="card__accent"></div>
-                  </div>
-                  <div class="card__body">
-                    <div class="card__meta">
-                      <span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span>
-                    </div>
-                    <h3 class="card__title">{{ pTitle(item) }}</h3>
-                    <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
-                    <div class="card__extra" v-if="item.soundType"><span class="card__extra-val">{{ item.soundType }}</span></div>
-                    <div class="card__tags" v-if="pTags(item).length">
-                      <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span>
-                      <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
-                    </div>
-                  </div>
-                  <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
-                </article>
-              </div>
-            </div>
- 
+            <div v-if="totalTagResults === 0" class="empty"><div class="empty__icon">🔍</div><h3 class="empty__title">{{ lbl('noResults') }}</h3><p class="empty__hint">#{{ tagSearchQuery }}</p><button class="btn-primary" @click="clearTagSearch">{{ lbl('resetFilter') }}</button></div>
+            <div class="ts-section" v-if="tagSearchResults.sounds.filter(s => !s.albumOfMemories).length"><div class="ts-section-head"><span class="ts-section-icon">🎵</span><h3 class="ts-section-title">{{ lbl('sound') }}</h3><span class="ts-section-count">{{ tagSearchResults.sounds.filter(s => !s.albumOfMemories).length }}</span></div><div class="grid"><article v-for="(item, i) in tagSearchResults.sounds.filter(s => !s.albumOfMemories)" :key="`ts-snd-${item.id}`" class="card card--sound" :style="{ '--d': `${i * 0.04}s` }" tabindex="0" @click="openItem(item)" @keyup.enter="openItem(item)"><div class="card__thumb"><img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" /><img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" /><div class="card__film"></div><div class="card__scrim"></div><div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div><div class="card__countbadge" v-if="item.files?.length">🎵 {{ item.files.length }}</div><div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}</span></div><div class="card__accent"></div></div><div class="card__body"><div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div><h3 class="card__title">{{ pTitle(item) }}</h3><p class="card__desc">{{ truncate(pDesc(item), 100) }}</p><div class="card__extra" v-if="item.soundType"><span class="card__extra-val">{{ item.soundType }}</span></div><div class="card__tags" v-if="pTags(item).length"><span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span><span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span></div></div><div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div></article></div></div>
             <hr v-if="tagSearchResults.sounds.filter(s=>!s.albumOfMemories).length && tagSearchResults.images.length" class="ts-divider">
- 
-            <!-- IMAGES -->
-            <div class="ts-section" v-if="tagSearchResults.images.length">
-              <div class="ts-section-head">
-                <h3 class="ts-section-title">{{ lbl('images') }}</h3>
-                <span class="ts-section-count">{{ tagSearchResults.images.length }}</span>
-              </div>
-              <div class="grid">
-                <article
-                  v-for="(item, i) in tagSearchResults.images"
-                  :key="`ts-img-${item.id}`"
-                  class="card card--image"
-                  :style="{ '--d': `${i * 0.04}s` }"
-                  tabindex="0"
-                  @click="openItem(item)"
-                  @keyup.enter="openItem(item)"
-                >
-                  <div class="card__thumb">
-                    <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
-                    <img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" />
-                    <div class="card__film"></div><div class="card__scrim"></div>
-                    <div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div>
-                    <div class="card__countbadge" v-if="item.imageAlbum?.length">🖼️ {{ item.imageAlbum.length }}</div>
-                    <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-                    <div class="card__accent"></div>
-                  </div>
-                  <div class="card__body">
-                    <div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div>
-                    <h3 class="card__title">{{ pTitle(item) }}</h3>
-                    <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
-                    <div class="card__tags" v-if="pTags(item).length">
-                      <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span>
-                      <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
-                    </div>
-                  </div>
-                  <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
-                </article>
-              </div>
-            </div>
- 
+            <div class="ts-section" v-if="tagSearchResults.images.length"><div class="ts-section-head"><span class="ts-section-icon">🖼️</span><h3 class="ts-section-title">{{ lbl('images') }}</h3><span class="ts-section-count">{{ tagSearchResults.images.length }}</span></div><div class="grid"><article v-for="(item, i) in tagSearchResults.images" :key="`ts-img-${item.id}`" class="card card--image" :style="{ '--d': `${i * 0.04}s` }" tabindex="0" @click="openItem(item)" @keyup.enter="openItem(item)"><div class="card__thumb"><img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" /><img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" /><div class="card__film"></div><div class="card__scrim"></div><div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div><div class="card__countbadge" v-if="item.imageAlbum?.length">🖼️ {{ item.imageAlbum.length }}</div><div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}</span></div><div class="card__accent"></div></div><div class="card__body"><div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div><h3 class="card__title">{{ pTitle(item) }}</h3><p class="card__desc">{{ truncate(pDesc(item), 100) }}</p><div class="card__tags" v-if="pTags(item).length"><span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span><span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span></div></div><div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div></article></div></div>
             <hr v-if="tagSearchResults.images.length && tagSearchResults.videos.filter(v=>!v.albumOfMemories).length" class="ts-divider">
- 
-            <!-- VIDEOS (non-memory) -->
-            <div class="ts-section" v-if="tagSearchResults.videos.filter(v => !v.albumOfMemories).length">
-              <div class="ts-section-head">
-                <h3 class="ts-section-title">{{ lbl('video') }}</h3>
-                <span class="ts-section-count">{{ tagSearchResults.videos.filter(v => !v.albumOfMemories).length }}</span>
-              </div>
-              <div class="grid">
-                <article
-                  v-for="(item, i) in tagSearchResults.videos.filter(v => !v.albumOfMemories)"
-                  :key="`ts-vid-${item.id}`"
-                  class="card card--video"
-                  :style="{ '--d': `${i * 0.04}s` }"
-                  tabindex="0"
-                  @click="openItem(item)"
-                  @keyup.enter="openItem(item)"
-                >
-                  <div class="card__thumb">
-                    <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
-                    <div class="card__film"></div><div class="card__scrim"></div>
-                    <div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div>
-                    <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-                    <div class="card__accent"></div>
-                  </div>
-                  <div class="card__body">
-                    <div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div>
-                    <h3 class="card__title">{{ pTitle(item) }}</h3>
-                    <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
-                    <div class="card__tags" v-if="pTags(item).length">
-                      <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span>
-                      <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
-                    </div>
-                  </div>
-                  <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
-                </article>
-              </div>
-            </div>
- 
-            <hr v-if="(tagSearchResults.videos.filter(v=>!v.albumOfMemories).length || tagSearchResults.images.length || tagSearchResults.sounds.filter(s=>!s.albumOfMemories).length) && tagSearchMemories.length" class="ts-divider">
- 
-            <!-- ALBUM OF MEMORIES -->
-            <div class="ts-section" v-if="tagSearchMemories.length">
-              <div class="ts-section-head">
-                <h3 class="ts-section-title">{{ lbl('memories') }}</h3>
-                <span class="ts-section-count">{{ tagSearchMemories.length }}</span>
-              </div>
-              <div class="grid">
-                <article
-                  v-for="(item, i) in tagSearchMemories"
-                  :key="`ts-mem-${item._mediaType}-${item.id}`"
-                  class="card"
-                  :class="`card--${item._mediaType}`"
-                  :style="{ '--d': `${i * 0.04}s` }"
-                  tabindex="0"
-                  @click="openItem(item)"
-                  @keyup.enter="openItem(item)"
-                >
-                  <div class="card__thumb">
-                    <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
-                    <div class="card__film"></div><div class="card__scrim"></div>
-                    <div class="card__badges">
-                      <div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div>
-                      <div class="card__mediabadge">{{ getMediaIcon(item._mediaType) }}</div>
-                    </div>
-                    <div class="card__memorybadge">💫</div>
-                    <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-                    <div class="card__accent"></div>
-                  </div>
-                  <div class="card__body">
-                    <div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div>
-                    <h3 class="card__title">{{ pTitle(item) }}</h3>
-                    <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
-                    <div class="card__tags" v-if="pTags(item).length">
-                      <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span>
-                      <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
-                    </div>
-                  </div>
-                  <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
-                </article>
-              </div>
-            </div>
+            <div class="ts-section" v-if="tagSearchResults.videos.filter(v => !v.albumOfMemories).length"><div class="ts-section-head"><span class="ts-section-icon">🎬</span><h3 class="ts-section-title">{{ lbl('video') }}</h3><span class="ts-section-count">{{ tagSearchResults.videos.filter(v => !v.albumOfMemories).length }}</span></div><div class="grid"><article v-for="(item, i) in tagSearchResults.videos.filter(v => !v.albumOfMemories)" :key="`ts-vid-${item.id}`" class="card card--video" :style="{ '--d': `${i * 0.04}s` }" tabindex="0" @click="openItem(item)" @keyup.enter="openItem(item)"><div class="card__thumb"><img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" /><div class="card__film"></div><div class="card__scrim"></div><div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div><div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}</span></div><div class="card__accent"></div></div><div class="card__body"><div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div><h3 class="card__title">{{ pTitle(item) }}</h3><p class="card__desc">{{ truncate(pDesc(item), 100) }}</p><div class="card__tags" v-if="pTags(item).length"><span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span><span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span></div></div><div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div></article></div></div>
+            <hr v-if="tagSearchResults.writings.length" class="ts-divider">
+            <div class="ts-section" v-if="tagSearchResults.writings.length"><div class="ts-section-head"><span class="ts-section-icon">📚</span><h3 class="ts-section-title">{{ lbl('writings') }}</h3><span class="ts-section-count">{{ tagSearchResults.writings.length }}</span></div><div class="grid"><article v-for="(item, i) in tagSearchResults.writings" :key="`ts-wrt-${item.id}`" class="card card--writing" :style="{ '--d': `${i * 0.04}s` }" tabindex="0" @click="openItem(item)" @keyup.enter="openItem(item)"><div class="card__thumb"><img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" /><img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" /><div class="card__film"></div><div class="card__scrim"></div><div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div><div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}</span></div><div class="card__accent"></div></div><div class="card__body"><div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div><h3 class="card__title">{{ pTitle(item) }}</h3><p class="card__desc">{{ truncate(pDesc(item), 100) }}</p><div class="card__extra" v-if="pWriter(item)"><span class="card__extra-val">✍️ {{ pWriter(item) }}</span></div><div class="card__tags" v-if="pTags(item).length"><span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span><span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span></div></div><div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div></article></div></div>
+            <hr v-if="tagSearchMemories.length" class="ts-divider">
+            <div class="ts-section" v-if="tagSearchMemories.length"><div class="ts-section-head"><span class="ts-section-icon">💫</span><h3 class="ts-section-title">{{ lbl('memories') }}</h3><span class="ts-section-count">{{ tagSearchMemories.length }}</span></div><div class="grid"><article v-for="(item, i) in tagSearchMemories" :key="`ts-mem-${item._mediaType}-${item.id}`" class="card" :class="`card--${item._mediaType}`" :style="{ '--d': `${i * 0.04}s` }" tabindex="0" @click="openItem(item)" @keyup.enter="openItem(item)"><div class="card__thumb"><img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" /><div class="card__film"></div><div class="card__scrim"></div><div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div><div class="card__mediabadge">{{ getMediaIcon(item._mediaType) }}</div></div><div class="card__memorybadge">💫</div><div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}</span></div><div class="card__accent"></div></div><div class="card__body"><div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div><h3 class="card__title">{{ pTitle(item) }}</h3><p class="card__desc">{{ truncate(pDesc(item), 100) }}</p><div class="card__tags" v-if="pTags(item).length"><span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span><span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span></div></div><div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div></article></div></div>
           </template>
         </div>
       </div>
  
-      <!-- ══════════════════════════════════════════════════════════
-           LISTING VIEW
-      ══════════════════════════════════════════════════════════ -->
+      <!-- LISTING VIEW -->
       <div v-else key="listing" class="listing">
-        <!-- Hero -->
         <header class="hero">
           <div class="hero__canvas">
-            <div class="hero__slides">
-              <div v-for="(slide, si) in heroSlides" :key="slide.url + si" class="hero__slide" :class="{ 'hero__slide--active': si === heroSlideIndex, 'hero__slide--prev': si === heroPrevIndex, 'hero__slide--kb-a': si % 2 === 0, 'hero__slide--kb-b': si % 2 !== 0 }" :style="{ backgroundImage: `url(${slide.url})` }"></div>
-              <div v-if="!heroSlides.length" class="hero__slide hero__slide--active hero__slide--gradient" :class="`hero__slide--grad-${activeTab}`"></div>
-            </div>
-            <div class="hero__dots" v-if="heroSlides.length > 1">
-              <button v-for="(_, di) in heroSlides" :key="di" class="hero__dot" :class="{ 'hero__dot--on': di === heroSlideIndex }" @click.stop="jumpSlide(di)"></button>
-            </div>
-            <div class="hero__overlay hero__overlay--base"></div>
-            <div class="hero__overlay hero__overlay--vignette"></div>
-            <div class="hero__overlay hero__overlay--bottom"></div>
-            <div class="hero__overlay hero__overlay--top"></div>
-            <div class="hero__film"></div>
-            <div class="hero__grain"></div>
-            <div class="hero__scanlines"></div>
-            <div class="hero__filigree hero__filigree--h1"></div>
-            <div class="hero__filigree hero__filigree--h2"></div>
-            <div class="hero__filigree hero__filigree--v1"></div>
-            <div class="hero__filigree hero__filigree--v2"></div>
+            <div class="hero__slides"><div v-for="(slide, si) in heroSlides" :key="slide.url + si" class="hero__slide" :class="{ 'hero__slide--active': si === heroSlideIndex, 'hero__slide--prev': si === heroPrevIndex, 'hero__slide--kb-a': si % 2 === 0, 'hero__slide--kb-b': si % 2 !== 0 }" :style="{ backgroundImage: `url(${slide.url})` }"></div><div v-if="!heroSlides.length" class="hero__slide hero__slide--active hero__slide--gradient" :class="`hero__slide--grad-${activeTab}`"></div></div>
+            <div class="hero__dots" v-if="heroSlides.length > 1"><button v-for="(_, di) in heroSlides" :key="di" class="hero__dot" :class="{ 'hero__dot--on': di === heroSlideIndex }" @click.stop="jumpSlide(di)"></button></div>
+            <div class="hero__overlay hero__overlay--base"></div><div class="hero__overlay hero__overlay--vignette"></div><div class="hero__overlay hero__overlay--bottom"></div><div class="hero__overlay hero__overlay--top"></div>
+            <div class="hero__film"></div><div class="hero__grain"></div><div class="hero__scanlines"></div>
+            <div class="hero__filigree hero__filigree--h1"></div><div class="hero__filigree hero__filigree--h2"></div><div class="hero__filigree hero__filigree--v1"></div><div class="hero__filigree hero__filigree--v2"></div>
             <div class="hero__particles"><span v-for="i in 22" :key="i" class="hparticle" :style="particleStyle(i)"></span></div>
-            <div class="hero__corner hero__corner--tl"></div>
-            <div class="hero__corner hero__corner--tr"></div>
-            <div class="hero__corner hero__corner--bl"></div>
-            <div class="hero__corner hero__corner--br"></div>
-            <div class="hero__orb orb--a"></div>
-            <div class="hero__orb orb--b"></div>
-            <div class="hero__orb orb--c"></div>
-            <div class="hero__orb orb--gold"></div>
+            <div class="hero__corner hero__corner--tl"></div><div class="hero__corner hero__corner--tr"></div><div class="hero__corner hero__corner--bl"></div><div class="hero__corner hero__corner--br"></div>
+            <div class="hero__orb orb--a"></div><div class="hero__orb orb--b"></div><div class="hero__orb orb--c"></div><div class="hero__orb orb--gold"></div>
           </div>
           <div class="hero__inner container">
-            <div class="hero__eyebrow">
-              <div class="hero__stamp">
-                <div class="stamp__ring">
-                  <div class="stamp__inner">
-                    <span class="stamp__text">{{ lbl('archive') }}</span>
-                    <span class="stamp__year">{{ currentYear }}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="hero__kicker">
-                <span class="kicker__rule"></span>
-                <span class="kicker__diamond">◆</span>
-                <span class="kicker__text">{{ lbl('heroDeco') }}</span>
-                <span class="kicker__diamond">◆</span>
-                <span class="kicker__rule"></span>
-              </div>
-            </div>
-            <h1 class="hero__headline">
-              <span class="headline__line headline__line--main">{{ lbl('heroMain') }}</span>
-              <span class="headline__line headline__line--sub">
-                <span class="headline__word" v-for="(word, wi) in lbl('heroSub').split(' · ')" :key="wi">
-                  <span class="headline__word-text">{{ word }}</span>
-                  <span class="headline__separator" v-if="wi < lbl('heroSub').split(' · ').length - 1"> · </span>
-                </span>
-              </span>
-            </h1>
-            <div class="hero__divider">
-              <span class="hdiv__line"></span>
-              <span class="hdiv__ornament">✦</span>
-              <span class="hdiv__line"></span>
-            </div>
-            <div class="hero__stats">
-              <div class="hstat" v-for="(s, i) in heroStats" :key="i" :style="{ '--i': i }">
-                <div class="hstat__inner">
-                  <div class="hstat__num"><span class="hstat__num-val">{{ s.value }}</span></div>
-                  <div class="hstat__lbl">{{ s.label }}</div>
-                </div>
-                <div class="hstat__sep" v-if="i < heroStats.length - 1"></div>
-              </div>
-            </div>
+            <div class="hero__eyebrow"><div class="hero__stamp"><div class="stamp__ring"><div class="stamp__inner"><span class="stamp__text">{{ lbl('archive') }}</span><span class="stamp__year">{{ currentYear }}</span></div></div></div><div class="hero__kicker"><span class="kicker__rule"></span><span class="kicker__diamond">◆</span><span class="kicker__text">{{ lbl('heroDeco') }}</span><span class="kicker__diamond">◆</span><span class="kicker__rule"></span></div></div>
+            <h1 class="hero__headline"><span class="headline__line headline__line--main">{{ lbl('heroMain') }}</span><span class="headline__line headline__line--sub"><span class="headline__word" v-for="(word, wi) in lbl('heroSub').split(' · ')" :key="wi"><span class="headline__word-text">{{ word }}</span><span class="headline__separator" v-if="wi < lbl('heroSub').split(' · ').length - 1"> · </span></span></span></h1>
+            <div class="hero__divider"><span class="hdiv__line"></span><span class="hdiv__ornament">✦</span><span class="hdiv__line"></span></div>
+            <div class="hero__stats"><div class="hstat" v-for="(s, i) in heroStats" :key="i" :style="{ '--i': i }"><div class="hstat__inner"><div class="hstat__num"><span class="hstat__num-val">{{ s.value }}</span></div><div class="hstat__lbl">{{ s.label }}</div></div><div class="hstat__sep" v-if="i < heroStats.length - 1"></div></div></div>
           </div>
-          <button class="hero__scroll" @click="scrollToContent">
-            <span class="scroll__label">{{ lbl('explore') }}</span>
-            <div class="scroll__arrow">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-            </div>
-          </button>
+          <button class="hero__scroll" @click="scrollToContent"><span class="scroll__label">{{ lbl('explore') }}</span><div class="scroll__arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div></button>
         </header>
  
-        <!-- Tabnav — no icons, separator lines between items -->
         <nav class="tabnav" ref="tabNavRef">
           <div class="container">
             <div class="tabnav__row">
               <template v-for="(tab, ti) in tabDefs" :key="tab.key">
-                <div
-                  class="tabnav__item"
-                  :class="{ 'tabnav__item--on': activeTab === tab.key }"
-                  @mouseenter="onTabEnter(tab.key)"
-                  @mouseleave="scheduleDropClose"
-                  @click="switchTab(tab.key)"
-                >
+                <div class="tabnav__item" :class="{ 'tabnav__item--on': activeTab === tab.key }" @mouseenter="onTabEnter(tab.key)" @mouseleave="scheduleDropClose" @click="switchTab(tab.key)">
                   <button class="tabtn" :class="{ 'tabtn--on': activeTab === tab.key }">
                     <span class="tabtn__lbl">{{ tab.label }}</span>
                     <svg class="tabtn__chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -776,155 +543,49 @@
                         <template v-if="tab.key !== 'memories'">
                           <div class="tabdrop__header"><span class="tabdrop__header-lbl">{{ tab.label }}</span></div>
                           <div class="tabdrop__divider"></div>
-                          <button class="tabdrop__item" :class="{ 'tabdrop__item--on': !activeTopicFilter }" @click.stop="setTopicFilter(null)">
-                            <span class="tabdrop__item-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
-                            <span class="tabdrop__item-name">{{ lbl('allTopics') }}</span>
-                            <span class="tabdrop__item-count">{{ tabCount(tab.key) }}</span>
-                          </button>
-                          <div class="tabdrop__topics-list">
-                            <button v-for="topic in getTopicsFor(tab.key)" :key="topic.id" class="tabdrop__item" :class="{ 'tabdrop__item--on': activeTopicFilter === topic.id }" @click.stop="setTopicFilter(topic.id)">
-                              <span class="tabdrop__item-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
-                              <span class="tabdrop__item-name">{{ topicName(topic) }}</span>
-                            </button>
-                            <div v-if="!getTopicsFor(tab.key).length" class="tabdrop__empty"><span>{{ lbl('noTopics') }}</span></div>
-                          </div>
+                          <button class="tabdrop__item" :class="{ 'tabdrop__item--on': !activeTopicFilter }" @click.stop="setTopicFilter(null)"><span class="tabdrop__item-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span><span class="tabdrop__item-name">{{ lbl('allTopics') }}</span><span class="tabdrop__item-count">{{ tabCount(tab.key) }}</span></button>
+                          <div class="tabdrop__topics-list"><button v-for="topic in getTopicsFor(tab.key)" :key="topic.id" class="tabdrop__item" :class="{ 'tabdrop__item--on': activeTopicFilter === topic.id }" @click.stop="setTopicFilter(topic.id)"><span class="tabdrop__item-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><span class="tabdrop__item-name">{{ topicName(topic) }}</span><span class="tabdrop__item-count">{{ getCountForTopic(tab.key, topic.id) }}</span></button><div v-if="!getTopicsFor(tab.key).length" class="tabdrop__empty"><span>{{ lbl('noTopics') }}</span></div></div>
                         </template>
                         <template v-else>
                           <div class="tabdrop__header"><span class="tabdrop__header-lbl">{{ lbl('memories') }}</span></div>
                           <div class="tabdrop__divider"></div>
-                          <div v-if="memorySounds.length" class="tabdrop__mem-section">
-                            <div class="tabdrop__mem-section-title">{{ lbl('sound') }}<span class="tabdrop__sec-count">{{ memorySounds.length }}</span></div>
-                            <button v-for="mem in memorySounds.slice(0, 6)" :key="`ms-${mem.id}`" class="tabdrop__item tabdrop__item--mem" @click.stop="openMemoryFromDropdown(mem)"><span class="tabdrop__mem-cover"><img :src="pCover(mem)" @error="onImgError($event)" /><span class="tabdrop__mem-play">▶</span></span><span class="tabdrop__item-name">{{ truncate(pTitle(mem), 30) }}</span><span class="tabdrop__mem-badge">💫</span></button>
-                          </div>
-                          <div v-if="memoryVideos.length" class="tabdrop__mem-section">
-                            <div class="tabdrop__mem-section-title">{{ lbl('video') }}<span class="tabdrop__sec-count">{{ memoryVideos.length }}</span></div>
-                            <button v-for="mem in memoryVideos.slice(0, 6)" :key="`mv-${mem.id}`" class="tabdrop__item tabdrop__item--mem" @click.stop="openMemoryFromDropdown(mem)"><span class="tabdrop__mem-cover"><img :src="pCover(mem)" @error="onImgError($event)" /><span class="tabdrop__mem-play">▶</span></span><span class="tabdrop__item-name">{{ truncate(pTitle(mem), 30) }}</span><span class="tabdrop__mem-badge">💫</span></button>
-                          </div>
+                          <div v-if="memorySounds.length" class="tabdrop__mem-section"><div class="tabdrop__mem-section-title">{{ lbl('sound') }}<span class="tabdrop__sec-count">{{ memorySounds.length }}</span></div><button v-for="mem in memorySounds.slice(0, 6)" :key="`ms-${mem.id}`" class="tabdrop__item tabdrop__item--mem" @click.stop="openMemoryFromDropdown(mem)"><span class="tabdrop__mem-cover"><img :src="pCover(mem)" @error="onImgError($event)" /><span class="tabdrop__mem-play">▶</span></span><span class="tabdrop__item-name">{{ truncate(pTitle(mem), 30) }}</span><span class="tabdrop__mem-badge">💫</span></button></div>
+                          <div v-if="memoryVideos.length" class="tabdrop__mem-section"><div class="tabdrop__mem-section-title">{{ lbl('video') }}<span class="tabdrop__sec-count">{{ memoryVideos.length }}</span></div><button v-for="mem in memoryVideos.slice(0, 6)" :key="`mv-${mem.id}`" class="tabdrop__item tabdrop__item--mem" @click.stop="openMemoryFromDropdown(mem)"><span class="tabdrop__mem-cover"><img :src="pCover(mem)" @error="onImgError($event)" /><span class="tabdrop__mem-play">▶</span></span><span class="tabdrop__item-name">{{ truncate(pTitle(mem), 30) }}</span><span class="tabdrop__mem-badge">💫</span></button></div>
                           <div v-if="!memorySounds.length && !memoryVideos.length" class="tabdrop__empty"><span>💫 {{ lbl('noMemories') }}</span></div>
                         </template>
                       </div>
                     </div>
                   </transition>
                 </div>
-                <!-- Separator line between tabs (not after last) -->
                 <span v-if="ti < tabDefs.length - 1" class="tabnav__sep" aria-hidden="true"></span>
               </template>
             </div>
           </div>
         </nav>
  
-        <!-- Content body -->
         <section class="body" ref="gridSection">
           <div class="container">
-            <transition name="pill">
-              <div class="active-filter" v-if="activeTopicFilter">
-                <div class="afilt">
-                  <span class="afilt__dot"></span>
-                  <span class="afilt__label">{{ activeTopicName }}</span>
-                  <button class="afilt__x" @click="clearTopicFilter">✕</button>
-                </div>
-              </div>
-            </transition>
+            <transition name="pill"><div class="active-filter" v-if="activeTopicFilter"><div class="afilt"><span class="afilt__dot"></span><span class="afilt__label">{{ activeTopicName }}</span><button class="afilt__x" @click="clearTopicFilter">✕</button></div></div></transition>
             <div class="toolbar" v-if="!isLoading">
-              <div class="toolbar__left">
-                <span class="toolbar__indicator ind--ok"></span>
-                <span class="toolbar__label"><strong>{{ displayedItems.length }}</strong>&nbsp;{{ lbl('results') }}</span>
-              </div>
-              <div class="toolbar__right">
-                <div class="tsort">
-                  <select v-model="sortBy" class="tsort__sel">
-                    <option value="newest">{{ lbl('sortNewest') }}</option>
-                    <option value="oldest">{{ lbl('sortOldest') }}</option>
-                    <option value="title">{{ lbl('sortTitle') }}</option>
-                  </select>
-                  <svg class="tsort__ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-              </div>
+              <div class="toolbar__left"><span class="toolbar__indicator ind--ok"></span><span class="toolbar__label"><strong>{{ displayedItems.length }}</strong>&nbsp;{{ lbl('results') }}</span></div>
+              <div class="toolbar__right"><div class="tsort"><select v-model="sortBy" class="tsort__sel"><option value="newest">{{ lbl('sortNewest') }}</option><option value="oldest">{{ lbl('sortOldest') }}</option><option value="title">{{ lbl('sortTitle') }}</option></select><svg class="tsort__ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div></div>
             </div>
-            <!-- Loading skeletons -->
-            <div v-if="isLoading" class="grid">
-              <div v-for="i in 8" :key="`sk-${i}`" class="skel" :style="{ '--d': `${(i-1)*0.07}s` }">
-                <div class="skel__thumb shimmer"></div>
-                <div class="skel__body">
-                  <div class="skel__line shimmer" style="width:55%"></div>
-                  <div class="skel__line shimmer" style="width:100%;margin-top:.5rem"></div>
-                  <div class="skel__line shimmer" style="width:75%"></div>
-                  <div class="skel__pills"><div class="skel__pill shimmer"></div><div class="skel__pill shimmer"></div></div>
-                </div>
-              </div>
-            </div>
-            <!-- Empty -->
-            <div v-else-if="!paginatedItems.length" class="empty">
-              <div class="empty__icon">{{ tabDefs.find(t => t.key === activeTab)?.icon || '📂' }}</div>
-              <h3 class="empty__title">{{ lbl('noResults') }}</h3>
-              <p class="empty__hint">{{ lbl('noResultsHint') }}</p>
-              <button class="btn-primary" @click="clearFilters">{{ lbl('resetFilter') }}</button>
-            </div>
-            <!-- Cards grid -->
+            <div v-if="isLoading" class="grid"><div v-for="i in 8" :key="`sk-${i}`" class="skel" :style="{ '--d': `${(i-1)*0.07}s` }"><div class="skel__thumb shimmer"></div><div class="skel__body"><div class="skel__line shimmer" style="width:55%"></div><div class="skel__line shimmer" style="width:100%;margin-top:.5rem"></div><div class="skel__line shimmer" style="width:75%"></div><div class="skel__pills"><div class="skel__pill shimmer"></div><div class="skel__pill shimmer"></div></div></div></div></div>
+            <div v-else-if="!paginatedItems.length" class="empty"><div class="empty__icon">{{ tabDefs.find(t => t.key === activeTab)?.icon || '📂' }}</div><h3 class="empty__title">{{ lbl('noResults') }}</h3><p class="empty__hint">{{ lbl('noResultsHint') }}</p><button class="btn-primary" @click="clearFilters">{{ lbl('resetFilter') }}</button></div>
             <div v-else class="grid">
-              <article
-                v-for="(item, i) in paginatedItems"
-                :key="`${item._mediaType}-${item.id}`"
-                class="card"
-                :class="[`card--${item._mediaType}`, { 'card--featured': i === 0 && clientPage === 0 && !activeTopicFilter }]"
-                :style="{ '--d': `${i * 0.05}s` }"
-                tabindex="0"
-                @click="openItem(item)"
-                @keyup.enter="openItem(item)"
-              >
-                <div class="card__thumb">
-                  <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
-                  <img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" />
-                  <div class="card__film"></div>
-                  <div class="card__scrim"></div>
-                  <div class="card__badges">
-                    <div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div>
-                    <div class="card__mediabadge" v-if="activeTab === 'memories'">{{ getMediaIcon(item._mediaType) }}</div>
-                  </div>
-                  <div class="card__countbadge" v-if="getCountBadge(item)">{{ getCountBadge(item) }}</div>
-                  <div class="card__memorybadge" v-if="item.albumOfMemories">💫</div>
-                  <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
-                  <div class="card__accent"></div>
-                </div>
-                <div class="card__body">
-                  <div class="card__meta">
-                    <span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span>
-                    <span class="card__lang" v-for="l in (item.contentLanguages || [])" :key="l">{{ l }}</span>
-                  </div>
-                  <h3 class="card__title">{{ pTitle(item) }}</h3>
-                  <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
-                  <div class="card__extra" v-if="getExtraLine(item)"><span class="card__extra-val">{{ getExtraLine(item) }}</span></div>
-                  <!-- Tags only (no keywords), clickable -->
-                  <div class="card__tags" v-if="pTags(item).length">
-                    <span
-                      v-for="tag in pTags(item).slice(0, 3)" :key="tag"
-                      class="ctag ctag--clickable"
-                      @click.stop="searchByTagGlobal(tag)"
-                    >#{{ tag }}</span>
-                    <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
-                  </div>
-                </div>
-                <div class="card__foot">
-                  <span class="card__cta">{{ lbl('viewItem') }}</span>
-                  <span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span>
-                </div>
+              <article v-for="(item, i) in paginatedItems" :key="`${item._mediaType}-${item.id}`" class="card" :class="[`card--${item._mediaType}`, { 'card--featured': i === 0 && clientPage === 0 && !activeTopicFilter }]" :style="{ '--d': `${i * 0.05}s` }" tabindex="0" @click="openItem(item)" @keyup.enter="openItem(item)">
+                <div class="card__thumb"><img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" /><img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" /><div class="card__film"></div><div class="card__scrim"></div><div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div><div class="card__mediabadge" v-if="activeTab === 'memories'">{{ getMediaIcon(item._mediaType) }}</div></div><div class="card__countbadge" v-if="getCountBadge(item)">{{ getCountBadge(item) }}</div><div class="card__memorybadge" v-if="item.albumOfMemories">💫</div><div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div><div class="card__accent"></div></div>
+                <div class="card__body"><div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span><span class="card__lang" v-for="l in (item.contentLanguages || [])" :key="l">{{ l }}</span></div><h3 class="card__title">{{ pTitle(item) }}</h3><p class="card__desc">{{ truncate(pDesc(item), 100) }}</p><div class="card__extra" v-if="getExtraLine(item)"><span class="card__extra-val">{{ getExtraLine(item) }}</span></div><div class="card__tags" v-if="pTags(item).length"><span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span><span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span></div></div>
+                <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
               </article>
             </div>
-            <!-- Pager -->
-            <nav class="pager" v-if="totalClientPages > 1 && !isLoading">
-              <button class="pager__btn" :disabled="clientPage === 0" @click="goPrev">{{ lbl('prev') }}</button>
-              <div class="pager__dots">
-                <span v-for="p in Math.min(totalClientPages, 7)" :key="p" class="pager__dot" :class="{ 'pager__dot--on': clientPage === p - 1 }" @click="clientPage = p - 1; scrollToContent()"></span>
-              </div>
-              <button class="pager__btn" :disabled="clientPage + 1 >= totalClientPages" @click="goNext">{{ lbl('next') }}</button>
-            </nav>
+            <nav class="pager" v-if="totalClientPages > 1 && !isLoading"><button class="pager__btn" :disabled="clientPage === 0" @click="goPrev">{{ lbl('prev') }}</button><div class="pager__dots"><span v-for="p in Math.min(totalClientPages, 7)" :key="p" class="pager__dot" :class="{ 'pager__dot--on': clientPage === p - 1 }" @click="clientPage = p - 1; scrollToContent()"></span></div><button class="pager__btn" :disabled="clientPage + 1 >= totalClientPages" @click="goNext">{{ lbl('next') }}</button></nav>
           </div>
         </section>
       </div>
  
     </transition>
  
-    <!-- Fullscreen overlay -->
     <transition name="fs">
       <div v-if="isFullscreen" class="fsoverlay" @click="isFullscreen = false">
         <button class="fsoverlay__x" @click.stop="isFullscreen = false">✕</button>
@@ -957,10 +618,12 @@ const i18n = {
     yourStream: 'گۆرانیەکان', featured: 'تایبەتمەند', type: 'جۆر', director: 'دەرهێنەر',
     reader: 'خوێنەر', writer: 'نووسەر', genre: 'جۆری نووسین', category: 'پۆل',
     format: 'فۆرمات', publisher: 'بڵاوکەرەوە', institute: 'ڕێکخراو', series: 'زنجیرە',
-    tags: 'تاگەکان', related: 'پەیوەندیدار', sortNewest: 'نوێترین', sortOldest: 'کۆنترین',
-    sortTitle: 'ناوی', prev: 'پێشتر', next: 'دواتر', noSource: 'سەرچاوەیەک نییە',
+    tags: 'تاگەکان', keywords: 'کلیلەوشەکان', related: 'پەیوەندیدار',
+    sortNewest: 'نوێترین', sortOldest: 'کۆنترین', sortTitle: 'ناوی',
+    prev: 'پێشتر', next: 'دواتر', noSource: 'سەرچاوەیەک نییە',
     clickToExpand: 'کلیک بکە بۆ گەورەکردن', totalItems: 'کۆی بابەتەکان',
-    noTopics: 'بابەتێک نییە', noMemories: 'یادگاریەک نییە'
+    noTopics: 'بابەتێک نییە', noMemories: 'یادگاریەک نییە',
+    publishmentDate: 'بەرواری بڵاوکردنەوە'
   },
   KMR: {
     archive: 'Arşîv', heroDeco: 'Lîbrariya KHI', heroMain: 'Weşandin',
@@ -973,19 +636,30 @@ const i18n = {
     yourStream: 'Stranên Te', featured: 'Taybet', type: 'Cûre', director: 'Derhêner',
     reader: 'Xwendekar', writer: 'Nivîskar', genre: 'Cûre', category: 'Kategorî',
     format: 'Format', publisher: 'Weşanger', institute: 'Dezgeh', series: 'Rêze',
-    tags: 'Etiket', related: 'Girêdayî', sortNewest: 'Herî nû', sortOldest: 'Herî kevn',
-    sortTitle: 'Sernavê', prev: 'Berî', next: 'Paş', noSource: 'Çavkanî tune',
+    tags: 'Etiket', keywords: 'Peyvên Sereke', related: 'Girêdayî',
+    sortNewest: 'Herî nû', sortOldest: 'Herî kevn', sortTitle: 'Sernavê',
+    prev: 'Berî', next: 'Paş', noSource: 'Çavkanî tune',
     clickToExpand: 'Klikê bike mezin bike', totalItems: 'Giştî',
-    noTopics: 'Mijar tune', noMemories: 'Bîranîn tune'
+    noTopics: 'Mijar tune', noMemories: 'Bîranîn tune',
+    publishmentDate: 'Dîroka Weşandinê'
   }
 }
 function lbl(key) { const al = lang?.activeLang || 'CKB'; return i18n[al]?.[key] || i18n['CKB']?.[key] || key }
  
+const bookGenreLabels = {
+  NOVEL: { CKB: 'ڕۆمان', KMR: 'Roman' }, SHORT_STORY: { CKB: 'چیرۆکی کورت', KMR: 'Çîroka Kurt' },
+  POETRY: { CKB: 'شیعر', KMR: 'Helbest' }, HISTORY: { CKB: 'مێژوو', KMR: 'Dîrok' },
+  BIOGRAPHY: { CKB: 'بیۆگرافی', KMR: 'Biyografî' }, RELIGION: { CKB: 'ئایین', KMR: 'Ol' },
+  CHILDREN: { CKB: 'منداڵان', KMR: 'Zarok' }, SCIENCE: { CKB: 'زانست', KMR: 'Zanist' },
+  PHILOSOPHY: { CKB: 'فەلسەفە', KMR: 'Felseffe' }, LANGUAGE: { CKB: 'زمان', KMR: 'Ziman' },
+  FOLKLORE: { CKB: 'فۆلکلۆر', KMR: 'Folklor' }, GEOGRAPHY: { CKB: 'جوگرافیا', KMR: 'Erdnîgarî' },
+  ART: { CKB: 'هونەر', KMR: 'Huner' }, ESSAY: { CKB: 'وتار', KMR: 'Gotar' },
+  OTHER: { CKB: 'ترازانیاری', KMR: 'Din' },
+}
+function getGenreLabel(g) { const al = lang?.activeLang || 'CKB'; return bookGenreLabels[g]?.[al] || g }
+ 
 const api = axios.create({ baseURL: API_BASE_URL, timeout: 15000 })
  
-// ────────────────────────────────────────────────────────────────
-// API Response unwrapper
-// ────────────────────────────────────────────────────────────────
 function toArray(raw) {
   if (!raw) return []
   const inner = raw?.data !== undefined ? raw.data : raw
@@ -996,9 +670,6 @@ function toArray(raw) {
   return []
 }
  
-// ────────────────────────────────────────────────────────────────
-// State
-// ────────────────────────────────────────────────────────────────
 const images = ref([]), sounds = ref([]), videos = ref([]), writings = ref([])
 const imageTopics = ref([]), soundTopics = ref([]), videoTopics = ref([]), writingTopics = ref([])
 const isLoading = ref(false)
@@ -1019,7 +690,6 @@ const isFullscreen = ref(false), fullscreenUrl = ref('')
 const heroSlideIndex = ref(0), heroPrevIndex = ref(-1)
 let slideTimer = null
  
-// ── Tag search ────────────────────────────────────────────────
 const tagSearchMode = ref(false)
 const tagSearchQuery = ref('')
 const tagSearchResults = ref({ sounds: [], images: [], videos: [], writings: [] })
@@ -1030,10 +700,8 @@ const tagSearchMemories = computed(() => [
   ...tagSearchResults.value.videos.filter(v => v.albumOfMemories),
 ])
 const totalTagResults = computed(() =>
-  tagSearchResults.value.sounds.length +
-  tagSearchResults.value.images.length +
-  tagSearchResults.value.videos.length +
-  tagSearchResults.value.writings.length
+  tagSearchResults.value.sounds.length + tagSearchResults.value.images.length +
+  tagSearchResults.value.videos.length + tagSearchResults.value.writings.length
 )
  
 async function searchByTagGlobal(tag) {
@@ -1045,43 +713,31 @@ async function searchByTagGlobal(tag) {
   isTagSearchLoading.value = true
   tagSearchResults.value = { sounds: [], images: [], videos: [], writings: [] }
   window.scrollTo({ top: 0, behavior: 'smooth' })
- 
   const [snd, img, vid, wrt] = await Promise.allSettled([
-    api.get('/soundtracks/search/tag',      { params: { tag,   page: 0, size: 200 } }),
-    api.get('/image-collections/search/tag', { params: { tag,   page: 0, size: 200 } }),
-    api.get('/videos/search/tag',            { params: { value: tag, page: 0, size: 200 } }),
-    api.get('/writings/search/tag',          { params: { tag,   page: 0, size: 200 } }),
+    api.get('/soundtracks/search/tag', { params: { tag, page: 0, size: 200 } }),
+    api.get('/image-collections/search/tag', { params: { tag, page: 0, size: 200 } }),
+    api.get('/videos/search/tag', { params: { value: tag, page: 0, size: 200 } }),
+    api.get('/writings/search/tag', { params: { tag, page: 0, size: 200 } }),
   ])
-  if (snd.status === 'fulfilled') tagSearchResults.value.sounds   = toArray(snd.value.data).map(s => ({ ...s, _mediaType: 'sound'   }))
-  if (img.status === 'fulfilled') tagSearchResults.value.images   = toArray(img.value.data).map(i => ({ ...i, _mediaType: 'image'   }))
-  if (vid.status === 'fulfilled') tagSearchResults.value.videos   = toArray(vid.value.data).map(v => ({ ...v, _mediaType: 'video'   }))
+  if (snd.status === 'fulfilled') tagSearchResults.value.sounds = toArray(snd.value.data).map(s => ({ ...s, _mediaType: 'sound' }))
+  if (img.status === 'fulfilled') tagSearchResults.value.images = toArray(img.value.data).map(i => ({ ...i, _mediaType: 'image' }))
+  if (vid.status === 'fulfilled') tagSearchResults.value.videos = toArray(vid.value.data).map(v => ({ ...v, _mediaType: 'video' }))
   if (wrt.status === 'fulfilled') tagSearchResults.value.writings = toArray(wrt.value.data).map(w => ({ ...w, _mediaType: 'writing' }))
- 
   isTagSearchLoading.value = false
 }
+function clearTagSearch() { tagSearchMode.value = false; tagSearchQuery.value = ''; tagSearchResults.value = { sounds: [], images: [], videos: [], writings: [] } }
  
-function clearTagSearch() {
-  tagSearchMode.value = false
-  tagSearchQuery.value = ''
-  tagSearchResults.value = { sounds: [], images: [], videos: [], writings: [] }
-}
- 
-// ────────────────────────────────────────────────────────────────
-// Computed
-// ────────────────────────────────────────────────────────────────
 const memorySounds = computed(() => sounds.value.filter(s => s.albumOfMemories).map(s => ({ ...s, _mediaType: 'sound' })))
 const memoryVideos  = computed(() => videos.value.filter(v => v.albumOfMemories).map(v => ({ ...v, _mediaType: 'video' })))
+const playedBars    = computed(() => Math.floor((audioProgress.value / 100) * 40))
  
 const heroSlides = computed(() => {
   const seen = new Set(), urls = []
   const addUrl = (u) => { if (!u || seen.has(u) || !u.startsWith('http')) return; seen.add(u); urls.push({ url: u }) }
-  ;[...images.value, ...sounds.value, ...videos.value, ...writings.value].forEach(x => {
-    addUrl(x.ckbCoverUrl); addUrl(x.kmrCoverUrl); addUrl(x.hoverCoverUrl)
-  })
+  ;[...images.value, ...sounds.value, ...videos.value, ...writings.value].forEach(x => { addUrl(x.ckbCoverUrl); addUrl(x.kmrCoverUrl); addUrl(x.hoverCoverUrl) })
   for (let i = urls.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [urls[i], urls[j]] = [urls[j], urls[i]] }
   return urls.slice(0, 14)
 })
- 
 function jumpSlide(idx) { heroPrevIndex.value = heroSlideIndex.value; heroSlideIndex.value = idx; restartSlideTimer() }
 function advanceSlide() { if (!heroSlides.value.length) return; heroPrevIndex.value = heroSlideIndex.value; heroSlideIndex.value = (heroSlideIndex.value + 1) % heroSlides.value.length }
 function restartSlideTimer() { if (slideTimer) clearInterval(slideTimer); slideTimer = setInterval(advanceSlide, 4800) }
@@ -1090,41 +746,36 @@ watch(heroSlides, (slides) => { if (slides.length > 1) restartSlideTimer() })
 const waveformCache = new Map()
 function getWaveform(seed) {
   const key = String(seed)
-  if (!waveformCache.has(key)) {
-    waveformCache.set(key, Array.from({ length: 40 }, (_, i) => {
-      const x = Math.sin(Number(seed || 1) * 9301 + i * 49297 + 233) * 233
-      return (x - Math.floor(x)) * 0.7 + 0.3
-    }))
-  }
+  if (!waveformCache.has(key)) { waveformCache.set(key, Array.from({ length: 40 }, (_, i) => { const x = Math.sin(Number(seed || 1) * 9301 + i * 49297 + 233) * 233; return (x - Math.floor(x)) * 0.7 + 0.3 })) }
   return waveformCache.get(key)
 }
 function particleStyle(i) { const seed = i * 137.508; return { '--x': `${seed % 100}%`, '--y': `${(seed * 1.618) % 100}%`, '--dur': `${14 + (i * 3.2) % 20}s`, '--del': `${(i * 1.1) % 5}s`, '--sz': `${1.5 + (i % 3)}px` } }
  
 const tabDefs = computed(() => [
-  { key: 'image',    label: lbl('images'),   icon: '🖼️' },
-  { key: 'sound',    label: lbl('sound'),    icon: '🎵' },
-  { key: 'video',    label: lbl('video'),    icon: '🎬' },
-  { key: 'writing',  label: lbl('writings'), icon: '📚' },
+  { key: 'image', label: lbl('images'), icon: '🖼️' },
+  { key: 'sound', label: lbl('sound'), icon: '🎵' },
+  { key: 'video', label: lbl('video'), icon: '🎬' },
+  { key: 'writing', label: lbl('writings'), icon: '📚' },
   { key: 'memories', label: lbl('memories'), icon: '💫' },
 ])
  
 const displayedItems = computed(() => {
   let list = []
   switch (activeTab.value) {
-    case 'image':    list = [...images.value];   break
-    case 'sound':    list = [...sounds.value];   break
-    case 'video':    list = [...videos.value];   break
-    case 'writing':  list = [...writings.value]; break
+    case 'image': list = [...images.value]; break
+    case 'sound': list = [...sounds.value]; break
+    case 'video': list = [...videos.value]; break
+    case 'writing': list = [...writings.value]; break
     case 'memories': list = [...memorySounds.value, ...memoryVideos.value]; break
   }
-  if (activeTopicFilter.value && activeTab.value !== 'memories') {
+  if (activeTopicFilter.value != null && activeTab.value !== 'memories') {
     const fid = String(activeTopicFilter.value)
-    list = list.filter(item => { const tid = item.topicId ?? item.topic?.id; return tid != null && String(tid) === fid })
+    list = list.filter(item => { const tid = item.topicId != null ? item.topicId : (item.topic?.id != null ? item.topic.id : null); return tid != null && String(tid) === fid })
   }
   switch (sortBy.value) {
     case 'newest': list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')); break
     case 'oldest': list.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')); break
-    case 'title':  list.sort((a, b) => pTitle(a).localeCompare(pTitle(b))); break
+    case 'title': list.sort((a, b) => pTitle(a).localeCompare(pTitle(b))); break
   }
   return list
 })
@@ -1138,65 +789,68 @@ const currentImageIdx  = computed(() => { if (!selectedImage.value || !activeIte
 const canPrevImage     = computed(() => currentImageIdx.value > 0)
 const canNextImage     = computed(() => currentImageIdx.value < (activeItem.value?.imageAlbum?.length || 0) - 1)
  
-// ────────────────────────────────────────────────────────────────
-// Field extractors
-// ────────────────────────────────────────────────────────────────
-function pTitle(item)       { if (!item) return ''; const c = lang.activeLang === 'CKB'; return (c ? item.ckbContent?.title : item.kmrContent?.title) || (c ? item.kmrContent?.title : item.ckbContent?.title) || '' }
-function pDesc(item)        { if (!item) return ''; const c = lang.activeLang === 'CKB'; return (c ? item.ckbContent?.description : item.kmrContent?.description) || (c ? item.kmrContent?.description : item.ckbContent?.description) || '' }
-function pCover(item)       { if (!item) return fallbackCover; const c = lang.activeLang === 'CKB'; return (c ? item.ckbCoverUrl : item.kmrCoverUrl) || (c ? item.kmrCoverUrl : item.ckbCoverUrl) || item.hoverCoverUrl || fallbackCover }
-function pHoverCover(item)  { if (!item) return null; const cover = pCover(item); const hover = item.hoverCoverUrl; if (!hover || hover === cover || hover === fallbackCover) return null; return hover }
-function pTags(item)        { if (!item) return []; const c = lang.activeLang === 'CKB'; const ckb = item.tagsCkb || item.tags?.ckb || []; const kmr = item.tagsKmr || item.tags?.kmr || []; return [...(c ? ckb : kmr)] }
-function pLocation(item)    { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.location : item.kmrContent?.location) || '' }
-function pCollectedBy(item) { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.collectedBy : item.kmrContent?.collectedBy) || '' }
-function pDirector(item)    { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.director : item.kmrContent?.director) || '' }
-function pProducer(item)    { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.producer : item.kmrContent?.producer) || '' }
-function pWriter(item)      { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.writer : item.kmrContent?.writer) || '' }
-function pGenre(item)       { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.genre : item.kmrContent?.genre) || '' }
-function pPageCount(item)   { return !item ? null : item.ckbContent?.pageCount || item.kmrContent?.pageCount || null }
-function pFileFormat(item)  { return !item ? '' : item.ckbContent?.fileFormat || item.kmrContent?.fileFormat || '' }
+function pTitle(item)        { if (!item) return ''; const c = lang.activeLang === 'CKB'; return (c ? item.ckbContent?.title : item.kmrContent?.title) || (c ? item.kmrContent?.title : item.ckbContent?.title) || '' }
+function pDesc(item)         { if (!item) return ''; const c = lang.activeLang === 'CKB'; return (c ? item.ckbContent?.description : item.kmrContent?.description) || (c ? item.kmrContent?.description : item.ckbContent?.description) || '' }
+function pCover(item)        { if (!item) return fallbackCover; const c = lang.activeLang === 'CKB'; return (c ? item.ckbCoverUrl : item.kmrCoverUrl) || (c ? item.kmrCoverUrl : item.ckbCoverUrl) || item.hoverCoverUrl || fallbackCover }
+function pHoverCover(item)   { if (!item) return null; const cover = pCover(item); const hover = item.hoverCoverUrl; if (!hover || hover === cover || hover === fallbackCover) return null; return hover }
+function pTagsCkb(item)      { if (!item) return []; return [...(item.tagsCkb || item.tags?.ckb || [])] }
+function pTagsKmr(item)      { if (!item) return []; return [...(item.tagsKmr || item.tags?.kmr || [])] }
+function pTags(item)         { const c = lang.activeLang === 'CKB'; return c ? pTagsCkb(item) : pTagsKmr(item) }
+function pTagsOther(item)    { const c = lang.activeLang === 'CKB'; return c ? pTagsKmr(item) : pTagsCkb(item) }
+function pKeywordsCkb(item)  { if (!item) return []; return [...(item.keywordsCkb || item.keywords?.ckb || [])] }
+function pKeywordsKmr(item)  { if (!item) return []; return [...(item.keywordsKmr || item.keywords?.kmr || [])] }
+function pLocation(item)     { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.location : item.kmrContent?.location) || '' }
+function pCollectedBy(item)  { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.collectedBy : item.kmrContent?.collectedBy) || '' }
+function pDirector(item)     { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.director : item.kmrContent?.director) || '' }
+function pProducer(item)     { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.producer : item.kmrContent?.producer) || '' }
+function pWriter(item)       { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.writer : item.kmrContent?.writer) || '' }
+function pPageCount(item)    { return !item ? null : item.ckbContent?.pageCount || item.kmrContent?.pageCount || null }
+function pFileFormat(item)   { return !item ? '' : item.ckbContent?.fileFormat || item.kmrContent?.fileFormat || '' }
+function pFileSizeBytes(item){ return !item ? null : item.ckbContent?.fileSizeBytes || item.kmrContent?.fileSizeBytes || null }
  
-function topicName(topic)   { if (!topic) return ''; return (lang.activeLang === 'CKB' ? topic.nameCkb : topic.nameKmr) || topic.nameCkb || topic.nameKmr || '' }
-function getMediaIcon(type) { return { image: '🖼️', sound: '🎵', video: '🎬', writing: '📚' }[type] || '📎' }
+function pTopicName(item) {
+  if (!item) return ''
+  const al = lang.activeLang
+  if (al === 'CKB' && item.topicNameCkb) return item.topicNameCkb
+  if (al === 'KMR' && item.topicNameKmr) return item.topicNameKmr
+  if (item.topicNameCkb) return item.topicNameCkb
+  if (item.topic) { if (al === 'CKB' && item.topic.nameCkb) return item.topic.nameCkb; if (al === 'KMR' && item.topic.nameKmr) return item.topic.nameKmr; return item.topic.nameCkb || item.topic.nameKmr || '' }
+  return ''
+}
+ 
+function topicName(topic)    { if (!topic) return ''; return (lang.activeLang === 'CKB' ? topic.nameCkb : topic.nameKmr) || topic.nameCkb || topic.nameKmr || '' }
+function getMediaIcon(type)  { return { image: '🖼️', sound: '🎵', video: '🎬', writing: '📚' }[type] || '📎' }
 function getMediaTypeLabel(type) { return { image: lbl('images'), sound: lbl('sound'), video: lbl('video'), writing: lbl('writings') }[type] || type }
-function getTypeEmoji(item) { if (!item) return '📎'; if (item._mediaType === 'sound') return item.trackState === 'MULTI' ? '💿' : '🎵'; if (item._mediaType === 'video') return item.videoType === 'FILM' ? '🎞' : '📹'; if (item._mediaType === 'image') return item.collectionType === 'SINGLE' ? '🖼️' : '📷'; if (item._mediaType === 'writing') return '📖'; return '📎' }
-function getTypeLabel(item) { if (!item) return ''; if (item._mediaType === 'sound') return item.trackState || 'SOUND'; if (item._mediaType === 'video') return item.videoType || 'VIDEO'; if (item._mediaType === 'image') return item.collectionType || 'IMAGE'; if (item._mediaType === 'writing') return item.writingTopic || 'WRITING'; return item._mediaType?.toUpperCase() || '' }
-function getItemDate(item)  { return item?.publishmentDate || item?.createdAt || null }
-function getCountBadge(item){ if (!item) return null; if (item._mediaType === 'sound' && item.files?.length) return `🎵 ${item.files.length}`; if (item._mediaType === 'image' && item.imageAlbum?.length) return `🖼️ ${item.imageAlbum.length}`; if (item._mediaType === 'video' && item.videoClipItems?.length) return `📹 ${item.videoClipItems.length}`; return null }
-function getExtraLine(item) { if (!item) return ''; if (item._mediaType === 'writing') return pWriter(item); if (item._mediaType === 'sound') return item.reader || item.soundType || ''; if (item._mediaType === 'video') return pDirector(item); if (item._mediaType === 'image') return pLocation(item); return '' }
-function tabCount(key)      { if (key === 'image') return images.value.length; if (key === 'sound') return sounds.value.length; if (key === 'video') return videos.value.length; if (key === 'writing') return writings.value.length; if (key === 'memories') return memorySounds.value.length + memoryVideos.value.length; return 0 }
-function getTopicsFor(key)  { if (key === 'image') return imageTopics.value; if (key === 'sound') return soundTopics.value; if (key === 'video') return videoTopics.value; if (key === 'writing') return writingTopics.value; return [] }
-function getVideoSourceUrl(item){ if (!item) return ''; const c = lang.activeLang === 'CKB'; return item.sourceUrl || item.videoUrl || item.fileUrl || (c ? item.ckbContent?.sourceUrl : item.kmrContent?.sourceUrl) || (c ? item.kmrContent?.sourceUrl : item.ckbContent?.sourceUrl) || '' }
-function getVideoEmbedUrl(item) { if (!item) return ''; const c = lang.activeLang === 'CKB'; return item.sourceEmbedUrl || item.embedUrl || (c ? item.ckbContent?.sourceEmbedUrl : item.kmrContent?.sourceEmbedUrl) || (c ? item.kmrContent?.sourceEmbedUrl : item.ckbContent?.sourceEmbedUrl) || '' }
-function getClipUrl(clip)       { return !clip ? '' : clip.url || clip.sourceUrl || clip.videoUrl || clip.fileUrl || '' }
-function getClipEmbedUrl(clip)  { return !clip ? '' : clip.embedUrl || clip.sourceEmbedUrl || '' }
-function truncate(text, max)    { if (!text) return ''; return text.length > max ? text.slice(0, max) + '…' : text }
-function formatDate(v)          { if (!v) return ''; try { const d = new Date(v); if (isNaN(d.getTime())) return String(v); return d.toLocaleDateString(lang.activeLang === 'CKB' ? 'ckb' : 'ku', { year: 'numeric', month: 'long', day: 'numeric' }) } catch { return String(v) } }
-function formatTime(s)          { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60); const sec = Math.floor(s % 60).toString().padStart(2, '0'); if (m >= 60) return `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}:${sec}`; return `${m}:${sec}` }
-function formatSize(bytes)      { if (!bytes) return ''; return bytes < 1048576 ? `${(bytes/1024).toFixed(0)} KB` : `${(bytes/1048576).toFixed(1)} MB` }
-function onImgError(e)          { e.target.src = fallbackCover }
+function getTypeEmoji(item)  { if (!item) return '📎'; if (item._mediaType === 'sound') return item.trackState === 'MULTI' ? '💿' : '🎵'; if (item._mediaType === 'video') return item.videoType === 'FILM' ? '🎞' : '📹'; if (item._mediaType === 'image') return item.collectionType === 'SINGLE' ? '🖼️' : '📷'; if (item._mediaType === 'writing') return '📖'; return '📎' }
+function getTypeLabel(item)  { if (!item) return ''; if (item._mediaType === 'sound') return item.trackState || 'SOUND'; if (item._mediaType === 'video') return item.videoType || 'VIDEO'; if (item._mediaType === 'image') return item.collectionType || 'IMAGE'; if (item._mediaType === 'writing') return [...(item.bookGenres || [])].map(g => getGenreLabel(g)).slice(0, 1).join('') || 'WRITING'; return item._mediaType?.toUpperCase() || '' }
+function getItemDate(item)   { return item?.publishmentDate || item?.createdAt || null }
+function getCountBadge(item) { if (!item) return null; if (item._mediaType === 'sound' && item.files?.length) return `🎵 ${item.files.length}`; if (item._mediaType === 'image' && item.imageAlbum?.length) return `🖼️ ${item.imageAlbum.length}`; if (item._mediaType === 'video' && item.videoClipItems?.length) return `📹 ${item.videoClipItems.length}`; return null }
+function getExtraLine(item)  { if (!item) return ''; if (item._mediaType === 'writing') return pWriter(item); if (item._mediaType === 'sound') return item.reader || item.soundType || ''; if (item._mediaType === 'video') return pDirector(item); if (item._mediaType === 'image') return pLocation(item); return '' }
+function tabCount(key)       { if (key === 'image') return images.value.length; if (key === 'sound') return sounds.value.length; if (key === 'video') return videos.value.length; if (key === 'writing') return writings.value.length; if (key === 'memories') return memorySounds.value.length + memoryVideos.value.length; return 0 }
+function getTopicsFor(key)   { if (key === 'image') return imageTopics.value; if (key === 'sound') return soundTopics.value; if (key === 'video') return videoTopics.value; if (key === 'writing') return writingTopics.value; return [] }
+function getCountForTopic(tabKey, topicId) { const fid = String(topicId); let list = []; if (tabKey === 'image') list = images.value; else if (tabKey === 'sound') list = sounds.value; else if (tabKey === 'video') list = videos.value; else if (tabKey === 'writing') list = writings.value; return list.filter(item => { const tid = item.topicId != null ? item.topicId : (item.topic?.id != null ? item.topic.id : null); return tid != null && String(tid) === fid }).length }
+function getVideoSourceUrl(item) { if (!item) return ''; return item.sourceUrl || '' }
+function getVideoEmbedUrl(item)  { if (!item) return ''; return item.sourceEmbedUrl || '' }
+function getClipUrl(clip)        { return !clip ? '' : clip.url || clip.sourceUrl || '' }
+function getClipEmbedUrl(clip)   { return !clip ? '' : clip.embedUrl || clip.sourceEmbedUrl || '' }
+function truncate(text, max)     { if (!text) return ''; return text.length > max ? text.slice(0, max) + '…' : text }
+function formatDate(v)           { if (!v) return ''; try { const d = new Date(v); if (isNaN(d.getTime())) return String(v); return d.toLocaleDateString(lang.activeLang === 'CKB' ? 'ckb' : 'ku', { year: 'numeric', month: 'long', day: 'numeric' }) } catch { return String(v) } }
+function formatTime(s)           { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60); const sec = Math.floor(s % 60).toString().padStart(2, '0'); if (m >= 60) return `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}:${sec}`; return `${m}:${sec}` }
+function formatSize(bytes)       { if (!bytes) return ''; return bytes < 1048576 ? `${(bytes/1024).toFixed(0)} KB` : `${(bytes/1048576).toFixed(1)} MB` }
+function onImgError(e)           { e.target.src = fallbackCover }
  
-// ────────────────────────────────────────────────────────────────
-// Data fetching
-// ────────────────────────────────────────────────────────────────
 async function fetchAll() {
   isLoading.value = true
   try { await Promise.allSettled([fetchImages(), fetchSounds(), fetchVideos(), fetchWritings(), fetchTopics()]) }
   finally { isLoading.value = false }
 }
- 
-async function fetchImages()   { try { const { data } = await api.get('/image-collections');                              images.value   = toArray(data).map(i => ({ ...i, _mediaType: 'image'   })) } catch (e) { console.warn('images:', e.message) } }
-async function fetchSounds()   { try { const { data } = await api.get('/soundtracks', { params: { page: 0, size: 1000 } }); sounds.value   = toArray(data).map(s => ({ ...s, _mediaType: 'sound'   })) } catch (e) { console.warn('sounds:', e.message) } }
-async function fetchVideos()   { try { const { data } = await api.get('/videos',      { params: { page: 0, size: 200  } }); videos.value   = toArray(data).map(v => ({ ...v, _mediaType: 'video'   })) } catch (e) { console.warn('videos:', e.message) } }
-async function fetchWritings() { try { const { data } = await api.get('/writings',    { params: { page: 0, size: 200  } }); writings.value = toArray(data).map(w => ({ ...w, _mediaType: 'writing' })) } catch (e) { console.warn('writings:', e.message) } }
- 
+async function fetchImages()   { try { const { data } = await api.get('/image-collections', { params: { page: 0, size: 1000 } }); images.value   = toArray(data).map(i => ({ ...i, _mediaType: 'image'   })) } catch (e) { console.warn('images:', e.message) } }
+async function fetchSounds()   { try { const { data } = await api.get('/soundtracks',        { params: { page: 0, size: 1000 } }); sounds.value   = toArray(data).map(s => ({ ...s, _mediaType: 'sound'   })) } catch (e) { console.warn('sounds:', e.message) } }
+async function fetchVideos()   { try { const { data } = await api.get('/videos',             { params: { page: 0, size: 200  } }); videos.value   = toArray(data).map(v => ({ ...v, _mediaType: 'video'   })) } catch (e) { console.warn('videos:', e.message) } }
+async function fetchWritings() { try { const { data } = await api.get('/writings',           { params: { page: 0, size: 200  } }); writings.value = toArray(data).map(w => ({ ...w, _mediaType: 'writing' })) } catch (e) { console.warn('writings:', e.message) } }
 async function fetchTopics() {
   try {
-    const [imgT, sndT, vidT, wrtT] = await Promise.allSettled([
-      api.get('/image-collections/topics'),
-      api.get('/soundtracks/topics'),
-      api.get('/videos/topics'),
-      api.get('/writings/topics'),
-    ])
+    const [imgT, sndT, vidT, wrtT] = await Promise.allSettled([api.get('/image-collections/topics'), api.get('/soundtracks/topics'), api.get('/videos/topics'), api.get('/writings/topics')])
     if (imgT.status === 'fulfilled') imageTopics.value   = toArray(imgT.value.data)
     if (sndT.status === 'fulfilled') soundTopics.value   = toArray(sndT.value.data)
     if (vidT.status === 'fulfilled') videoTopics.value   = toArray(vidT.value.data)
@@ -1204,19 +858,16 @@ async function fetchTopics() {
   } catch (e) { console.warn('topics:', e.message) }
 }
  
-// ────────────────────────────────────────────────────────────────
-// Navigation
-// ────────────────────────────────────────────────────────────────
-function switchTab(key)       { activeTab.value = key; activeTopicFilter.value = null; clientPage.value = 0; openDropdownKey.value = null }
-function setTopicFilter(id)   { activeTopicFilter.value = id; clientPage.value = 0; openDropdownKey.value = null }
-function clearTopicFilter()   { activeTopicFilter.value = null; clientPage.value = 0 }
-function clearFilters()       { activeTopicFilter.value = null; clientPage.value = 0 }
-function onTabEnter(key)      { cancelDropClose(); openDropdownKey.value = key }
-function scheduleDropClose()  { cancelDropClose(); dropCloseTimer = setTimeout(() => { openDropdownKey.value = null }, 220) }
-function cancelDropClose()    { if (dropCloseTimer) { clearTimeout(dropCloseTimer); dropCloseTimer = null } }
-function goPrev()             { if (clientPage.value > 0) { clientPage.value--; scrollToContent() } }
-function goNext()             { if (clientPage.value + 1 < totalClientPages.value) { clientPage.value++; scrollToContent() } }
-function scrollToContent()    { gridSection.value?.scrollIntoView({ behavior: 'smooth' }) }
+function switchTab(key)      { activeTab.value = key; activeTopicFilter.value = null; clientPage.value = 0; openDropdownKey.value = null }
+function setTopicFilter(id)  { activeTopicFilter.value = id; clientPage.value = 0; openDropdownKey.value = null; nextTick(() => scrollToContent()) }
+function clearTopicFilter()  { activeTopicFilter.value = null; clientPage.value = 0 }
+function clearFilters()      { activeTopicFilter.value = null; clientPage.value = 0 }
+function onTabEnter(key)     { cancelDropClose(); openDropdownKey.value = key }
+function scheduleDropClose() { cancelDropClose(); dropCloseTimer = setTimeout(() => { openDropdownKey.value = null }, 220) }
+function cancelDropClose()   { if (dropCloseTimer) { clearTimeout(dropCloseTimer); dropCloseTimer = null } }
+function goPrev()            { if (clientPage.value > 0) { clientPage.value--; scrollToContent() } }
+function goNext()            { if (clientPage.value + 1 < totalClientPages.value) { clientPage.value++; scrollToContent() } }
+function scrollToContent()   { gridSection.value?.scrollIntoView({ behavior: 'smooth' }) }
  
 function openItem(item) {
   stopAudio()
@@ -1233,11 +884,7 @@ function closeItem() {
 }
 function openMemoryFromDropdown(item) { openDropdownKey.value = null; activeTab.value = 'memories'; openItem(item) }
  
-// ────────────────────────────────────────────────────────────────
-// Audio
-// ────────────────────────────────────────────────────────────────
-function getAudioUrl(file) { if (!file) return ''; return file.fileUrl || file.externalUrl || file.url || file.audioUrl || file.src || file.path || '' }
- 
+function getAudioUrl(file) { if (!file) return ''; return file.fileUrl || file.externalUrl || file.url || file.audioUrl || '' }
 async function playTrack(file, idx) {
   const url = getAudioUrl(file)
   if (!url) { audioError.value = 'Audio file not available'; return }
@@ -1248,43 +895,88 @@ async function playTrack(file, idx) {
   audioPlayer.value.src = url; audioPlayer.value.load()
   try { await audioPlayer.value.play() } catch (err) { audioError.value = 'Failed to play audio: ' + (err.message || 'Unknown error'); isAudioPlaying.value = false }
 }
-function togglePlay() { if (!audioPlayer.value) return; if (audioPlayer.value.paused) { audioPlayer.value.play().catch(() => { audioError.value = 'Failed to resume playback' }) } else { audioPlayer.value.pause() } }
-function prevTrack()  { if (currentTrackIdx.value > 0 && activeItem.value?.files) playTrack(activeItem.value.files[currentTrackIdx.value - 1], currentTrackIdx.value - 1) }
-function nextTrack()  { if (activeItem.value?.files && currentTrackIdx.value < activeItem.value.files.length - 1) playTrack(activeItem.value.files[currentTrackIdx.value + 1], currentTrackIdx.value + 1) }
-function onTrackEnded()     { isAudioPlaying.value = false; nextTrack() }
-function onAudioLoaded()    { if (audioPlayer.value) audioDuration.value = audioPlayer.value.duration || 0 }
-function onAudioTimeUpdate(){ if (!audioPlayer.value) return; audioCurrentTime.value = audioPlayer.value.currentTime || 0; const dur = audioPlayer.value.duration; audioProgress.value = dur ? (audioCurrentTime.value / dur) * 100 : 0 }
-function onAudioError()     { const me = audioPlayer.value?.error; let msg = 'Error loading audio file'; if (me) { switch (me.code) { case 1: msg = 'Audio loading was aborted'; break; case 2: msg = 'Network error while loading audio'; break; case 3: msg = 'Audio decoding error'; break; case 4: msg = 'Audio format not supported'; break } } audioError.value = msg; isAudioPlaying.value = false }
-function seekAudio(e)       { if (!audioPlayer.value?.duration) return; const r = e.currentTarget.getBoundingClientRect(); audioPlayer.value.currentTime = ((e.clientX - r.left) / r.width) * audioPlayer.value.duration }
-function stopAudio()        { if (audioPlayer.value) { audioPlayer.value.pause(); audioPlayer.value.removeAttribute('src'); audioPlayer.value.load() }; isAudioPlaying.value = false; audioCurrentTime.value = 0; audioDuration.value = 0; audioProgress.value = 0; currentTrackIdx.value = -1; currentTrack.value = null }
+function togglePlay()     { if (!audioPlayer.value) return; if (audioPlayer.value.paused) { audioPlayer.value.play().catch(() => { audioError.value = 'Failed to resume playback' }) } else { audioPlayer.value.pause() } }
+function prevTrack()      { if (currentTrackIdx.value > 0 && activeItem.value?.files) playTrack(activeItem.value.files[currentTrackIdx.value - 1], currentTrackIdx.value - 1) }
+function nextTrack()      { if (activeItem.value?.files && currentTrackIdx.value < activeItem.value.files.length - 1) playTrack(activeItem.value.files[currentTrackIdx.value + 1], currentTrackIdx.value + 1) }
+function onTrackEnded()   { isAudioPlaying.value = false; nextTrack() }
+function onAudioLoaded()  { if (audioPlayer.value) audioDuration.value = audioPlayer.value.duration || 0 }
+function onAudioTimeUpdate() { if (!audioPlayer.value) return; audioCurrentTime.value = audioPlayer.value.currentTime || 0; const dur = audioPlayer.value.duration; audioProgress.value = dur ? (audioCurrentTime.value / dur) * 100 : 0 }
+function onAudioError()   { const me = audioPlayer.value?.error; let msg = 'Error loading audio file'; if (me) { switch (me.code) { case 1: msg = 'Audio loading was aborted'; break; case 2: msg = 'Network error while loading audio'; break; case 3: msg = 'Audio decoding error'; break; case 4: msg = 'Audio format not supported'; break } } audioError.value = msg; isAudioPlaying.value = false }
+function seekByWave(e, trackIdx) { if (currentTrackIdx.value !== trackIdx || !audioPlayer.value?.duration) return; const rect = e.currentTarget.getBoundingClientRect(); const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)); audioPlayer.value.currentTime = ratio * audioPlayer.value.duration }
+function stopAudio() { if (audioPlayer.value) { audioPlayer.value.pause(); audioPlayer.value.removeAttribute('src'); audioPlayer.value.load() }; isAudioPlaying.value = false; audioCurrentTime.value = 0; audioDuration.value = 0; audioProgress.value = 0; currentTrackIdx.value = -1; currentTrack.value = null }
  
-// ────────────────────────────────────────────────────────────────
-// Gallery
-// ────────────────────────────────────────────────────────────────
-function prevImage()    { if (canPrevImage.value) selectedImage.value = activeItem.value.imageAlbum[currentImageIdx.value - 1] }
-function nextImage()    { if (canNextImage.value) selectedImage.value = activeItem.value.imageAlbum[currentImageIdx.value + 1] }
+function prevImage()       { if (canPrevImage.value) selectedImage.value = activeItem.value.imageAlbum[currentImageIdx.value - 1] }
+function nextImage()       { if (canNextImage.value) selectedImage.value = activeItem.value.imageAlbum[currentImageIdx.value + 1] }
 function openFullscreen(url) { if (!url) return; fullscreenUrl.value = url; isFullscreen.value = true }
  
-// ────────────────────────────────────────────────────────────────
-// Keyboard & click-outside
-// ────────────────────────────────────────────────────────────────
 function handleKeydown(e) {
-  if (e.key === 'Escape') {
-    if (isFullscreen.value) { isFullscreen.value = false; return }
-    if (activeItem.value) { closeItem(); return }
-    if (tagSearchMode.value) { clearTagSearch(); return }
-  }
+  if (e.key === 'Escape') { if (isFullscreen.value) { isFullscreen.value = false; return }; if (activeItem.value) { closeItem(); return }; if (tagSearchMode.value) { clearTagSearch(); return } }
   if (!activeItem.value) return
   if (activeItem.value._mediaType === 'image') { if (e.key === 'ArrowLeft') prevImage(); if (e.key === 'ArrowRight') nextImage() }
+  if (activeItem.value._mediaType === 'sound' && currentTrack.value) { if (e.key === 'ArrowLeft') prevTrack(); if (e.key === 'ArrowRight') nextTrack(); if (e.key === ' ') { e.preventDefault(); togglePlay() } }
 }
 function handleClickOutside(e) { if (!e.target.closest('.tabnav__item')) openDropdownKey.value = null }
 watch(() => lang.activeLang, () => { if (isFullscreen.value) isFullscreen.value = false })
- 
 onMounted(() => { fetchAll(); window.addEventListener('keydown', handleKeydown); document.addEventListener('click', handleClickOutside) })
 onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (dropCloseTimer) clearTimeout(dropCloseTimer); window.removeEventListener('keydown', handleKeydown); document.removeEventListener('click', handleClickOutside) })
 </script>
 
 <style scoped>
+/* ─── INLINE TRACK CONTROLS (replaces audio-bar) ──────────────── */
+.track__inline-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  animation: fadeInControls 0.2s ease both;
+}
+@keyframes fadeInControls {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.iabtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: all 0.18s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+.iabtn:hover:not(:disabled) {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+  transform: scale(1.1);
+}
+.iabtn:disabled { opacity: 0.28; cursor: not-allowed; }
+.iabtn--play {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+  width: 38px;
+  height: 38px;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(140,21,21,0.35);
+}
+.iabtn--play:hover { background: var(--brand-dark); }
+.track__inline-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: monospace;
+  font-size: 13px;
+  margin-inline-start: 4px;
+}
+.itime__cur  { font-weight: 700; color: var(--brand); }
+.itime__sep  { color: var(--border); }
+.itime__dur  { color: var(--text-muted); }
 .pub {
   --brand: #8C1515; --brand-light: rgba(140,21,21,.09); --brand-dark: #6b0f0f;
   --accent: #c9a84c; --accent-light: rgba(201,168,76,.22);
@@ -1303,7 +995,7 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .pub[dir="ltr"] { direction: ltr; text-align: left; }
 .container { max-width: var(--container); margin: 0 auto; padding: 0 24px; }
 
-/* HERO */
+/* ─── HERO ─────────────────────────────────────────────────────── */
 .hero { position: relative; min-height: 85vh; overflow: hidden; display: grid; place-items: center; background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%); }
 .hero__canvas { position: absolute; inset: 0; overflow: hidden; }
 .hero__slides { position: absolute; inset: 0; }
@@ -1319,7 +1011,7 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .hero__overlay--vignette { background: radial-gradient(ellipse at center, transparent 40%, rgba(15,46,36,0.6) 100%); }
 .hero__overlay--bottom { background: linear-gradient(to top, var(--brand-dark) 0%, transparent 40%); opacity: 0.9; }
 .hero__overlay--top { background: linear-gradient(to bottom, rgba(15,46,36,0.6) 0%, transparent 30%); }
-.hero__grain { position: absolute; inset: 0; opacity: 0.05; z-index: 4; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); pointer-events: none; }
+.hero__grain { position: absolute; inset: 0; opacity: 0.05; z-index: 4; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); pointer-events: none; }
 .hero__scanlines { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.1) 50%); background-size: 100% 4px; opacity: 0.1; z-index: 4; pointer-events: none; }
 .hero__filigree { position: absolute; z-index: 5; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.3; }
 .hero__filigree--h1 { top: 15%; left: 10%; right: 10%; height: 1px; }
@@ -1340,7 +1032,7 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .hero__dot--on { background: var(--accent); border-color: var(--accent); transform: scale(1.3); }
 .hero__inner { position: relative; z-index: 10; text-align: center; color: white; padding: 120px 24px 80px; }
 .hero__eyebrow { display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 32px; }
-.hero__stamp { width: 100px; height: 100px; position: relative; }
+.hero__stamp { width: 100px; height: 100px; }
 .stamp__ring { width: 100%; height: 100%; border: 3px solid var(--accent); border-radius: 50%; display: grid; place-items: center; position: relative; animation: rotateStamp 20s linear infinite; }
 .stamp__ring::before { content: ''; position: absolute; inset: 8px; border: 1px solid rgba(201,162,39,0.5); border-radius: 50%; }
 @keyframes rotateStamp { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -1369,18 +1061,29 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .scroll__label { font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; }
 .scroll__arrow { animation: bounceArrow 2s infinite; }
 @keyframes bounceArrow { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(10px); } 60% { transform: translateY(5px); } }
+.hero__orb { position: absolute; border-radius: 50%; pointer-events: none; z-index: 2; }
+.orb--a { width: 400px; height: 400px; top: -100px; left: -100px; background: radial-gradient(circle, rgba(140,21,21,0.3) 0%, transparent 70%); animation: orbFloat 18s ease-in-out infinite; }
+.orb--b { width: 300px; height: 300px; bottom: -80px; right: -80px; background: radial-gradient(circle, rgba(201,162,39,0.2) 0%, transparent 70%); animation: orbFloat 22s ease-in-out infinite reverse; }
+.orb--c { width: 200px; height: 200px; top: 40%; left: 55%; background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%); animation: orbFloat 14s ease-in-out infinite 4s; }
+.orb--gold { width: 500px; height: 500px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: radial-gradient(ellipse, rgba(201,162,39,0.06) 0%, transparent 65%); animation: orbPulse 10s ease-in-out infinite; }
+@keyframes orbFloat { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(30px, -20px) scale(1.05); } 66% { transform: translate(-20px, 30px) scale(0.95); } }
+@keyframes orbPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.7; } }
+.hero__slide--gradient { opacity: 1; transform: none; }
+.hero__slide--grad-image { background: linear-gradient(135deg, #1a3a2a 0%, #2d5a42 50%, #1a3a2a 100%); }
+.hero__slide--grad-sound { background: linear-gradient(135deg, #3a1a2a 0%, #5a2d42 50%, #3a1a2a 100%); }
+.hero__slide--grad-video { background: linear-gradient(135deg, #1a2a3a 0%, #2d425a 50%, #1a2a3a 100%); }
+.hero__slide--grad-writing { background: linear-gradient(135deg, #2a2a1a 0%, #4a4a2d 50%, #2a2a1a 100%); }
+.hero__slide--grad-memories { background: linear-gradient(135deg, #2a1a3a 0%, #422d5a 50%, #2a1a3a 100%); }
 
 .audio-error { background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3); color: #dc2626; padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; font-weight: 600; text-align: center; }
 
-/* TAB NAV */
+/* ─── TAB NAV ─────────────────────────────────────────────────── */
 .tabnav { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-sm); }
-.tabnav__row { display: flex; gap: 8px; padding: 8px 0; position: relative; }
+.tabnav__row { display: flex; gap: 8px; padding: 8px 0; position: relative; align-items: center; }
 .tabnav__item { position: relative; flex: 1; max-width: 200px; }
 .tabtn { width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 20px; background: transparent; border: 1px solid transparent; border-radius: var(--radius); cursor: pointer; transition: all 0.2s ease; font-size: 15px; font-weight: 600; color: var(--text-muted); position: relative; }
 .tabtn:hover { background: var(--bg); color: var(--brand); }
 .tabtn--on { background: var(--brand); color: white; border-color: var(--brand); box-shadow: var(--shadow); }
-.tabtn__ico { width: 20px; height: 20px; display: grid; place-items: center; }
-.tabtn__ico svg { width: 100%; height: 100%; stroke-width: 2; }
 .tabtn__lbl { flex: 1; text-align: start; }
 .tabtn__chevron { transition: transform 0.3s ease; opacity: 0.5; }
 .tabnav__item:hover .tabtn__chevron { transform: rotate(180deg); opacity: 1; }
@@ -1393,10 +1096,11 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .tabdrop__item { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-sm); border: none; background: transparent; cursor: pointer; transition: all 0.2s ease; text-align: start; font-size: 14px; color: var(--text); }
 .tabdrop__item:hover { background: var(--bg); transform: translateX(4px); }
 .pub[dir="rtl"] .tabdrop__item:hover { transform: translateX(-4px); }
-.tabdrop__item--on { background: rgba(27,77,62,0.08); color: var(--brand); font-weight: 600; }
+.tabdrop__item--on { background: rgba(140,21,21,0.08); color: var(--brand); font-weight: 600; }
 .tabdrop__item-ico { width: 18px; height: 18px; opacity: 0.6; flex-shrink: 0; }
 .tabdrop__item-name { flex: 1; }
-.tabdrop__item-count { background: var(--bg); color: var(--text-muted); font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+.tabdrop__item-count { background: var(--bg); color: var(--text-muted); font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; min-width: 24px; text-align: center; }
+.tabdrop__topics-list { max-height: 300px; overflow-y: auto; }
 .tabdrop__mem-section { margin-top: 8px; }
 .tabdrop__mem-section-title { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .tabdrop__sec-count { margin-inline-start: auto; background: var(--accent); color: var(--brand-dark); padding: 2px 6px; border-radius: 999px; font-size: 11px; }
@@ -1407,11 +1111,12 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .tabdrop__item:hover .tabdrop__mem-play { opacity: 1; }
 .tabdrop__mem-badge { font-size: 12px; }
 .tabdrop__empty { padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.tabnav__sep { display: inline-block; width: 1px; height: 1.4em; background: currentColor; opacity: 0.18; flex-shrink: 0; margin: 0 2px; }
 
-/* BODY */
+/* ─── BODY / TOOLBAR ───────────────────────────────────────────── */
 .body { padding: 40px 0 80px; }
 .active-filter { margin-bottom: 24px; }
-.afilt { display: inline-flex; align-items: center; gap: 10px; background: rgba(27,77,62,0.08); border: 1px solid var(--border); padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--brand); animation: fadeIn 0.3s ease; }
+.afilt { display: inline-flex; align-items: center; gap: 10px; background: rgba(140,21,21,0.08); border: 1px solid var(--border); padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--brand); animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 .afilt__dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 8px var(--accent); }
 .afilt__x { width: 20px; height: 20px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: grid; place-items: center; color: var(--text-muted); transition: all 0.2s; margin-inline-start: 4px; }
@@ -1427,14 +1132,15 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .tsort__sel { appearance: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 40px 12px 16px; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; min-width: 160px; transition: all 0.2s; }
 .pub[dir="rtl"] .tsort__sel { padding: 12px 16px 12px 40px; }
 .tsort__sel:hover { border-color: var(--brand-light); box-shadow: var(--shadow-sm); }
-.tsort__sel:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(27,77,62,0.1); }
+.tsort__sel:focus { outline: none; border-color: var(--brand); }
 .tsort__ico { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); }
 .pub[dir="rtl"] .tsort__ico { right: auto; left: 16px; }
 
-/* GRID & CARDS */
+/* ─── GRID & CARDS ─────────────────────────────────────────────── */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
 .skel { background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-light); animation: fadeIn 0.5s ease both; animation-delay: var(--d, 0s); }
-.skel__thumb { aspect-ratio: 16/10; background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+.skel__thumb { aspect-ratio: 16/10; }
+.shimmer { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 .skel__body { padding: 20px; }
 .skel__line { height: 12px; background: #f0f0f0; border-radius: 6px; margin-bottom: 8px; }
@@ -1451,13 +1157,12 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .card__img--hover { position: absolute; inset: 0; opacity: 0; transition: opacity 0.4s ease; }
 .card:hover .card__img--main { transform: scale(1.1); }
 .card:hover .card__img--hover { opacity: 1; transform: scale(1.1); }
-.card__film { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.3s; mix-blend-mode: overlay; }
-.card:hover .card__film { opacity: 0.03; }
-.card__scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%); opacity: 0; transition: opacity 0.3s; }
+.card__film,.card__scrim { position: absolute; inset: 0; pointer-events: none; }
+.card__scrim { background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%); opacity: 0; transition: opacity 0.3s; }
 .card:hover .card__scrim { opacity: 1; }
 .card__badges { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; z-index: 3; }
 .pub[dir="rtl"] .card__badges { flex-direction: row-reverse; }
-.card__typebadge, .card__mediabadge { background: rgba(255,255,255,0.95); color: var(--brand-dark); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; backdrop-filter: blur(10px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.3); }
+.card__typebadge,.card__mediabadge { background: rgba(255,255,255,0.95); color: var(--brand-dark); padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; backdrop-filter: blur(10px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.3); }
 .card__mediabadge { background: var(--accent); color: var(--brand-dark); }
 .card__countbadge { position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); color: white; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; backdrop-filter: blur(4px); }
 .pub[dir="rtl"] .card__countbadge { right: auto; left: 12px; }
@@ -1476,26 +1181,27 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .card__title { font-family: var(--font-serif); font-size: 20px; font-weight: 700; line-height: 1.3; margin: 0 0 10px; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card__desc { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card__extra { margin-bottom: 12px; }
-.card__extra-val { font-size: 13px; color: var(--brand); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.card__extra-val { font-size: 13px; color: var(--brand); font-weight: 600; }
 .card__tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .ctag { font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border-light); transition: all 0.2s; }
-.ctag:hover { background: var(--brand); color: white; border-color: var(--brand); }
+.ctag--clickable { cursor: pointer; }
+.ctag--clickable:hover { background: var(--brand); color: white; border-color: var(--brand); }
 .ctag--more { background: var(--accent); color: var(--brand-dark); font-weight: 700; }
-.card__foot { padding: 16px 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; background: linear-gradient(to bottom, transparent, rgba(27,77,62,0.02)); }
+.card__foot { padding: 16px 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; }
 .card__cta { font-size: 14px; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: 0.05em; }
 .card__arrow { color: var(--brand); transition: transform 0.3s; }
 .card:hover .card__arrow { transform: translateX(4px); }
 .pub[dir="rtl"] .card:hover .card__arrow { transform: translateX(-4px); }
 
-/* DETAIL */
+/* ─── DETAIL ───────────────────────────────────────────────────── */
 .detail { min-height: 100vh; background: var(--bg); }
-.dnav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 0; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); background: rgba(255,255,255,0.95); }
+.dnav { background: rgba(255,255,255,0.95); border-bottom: 1px solid var(--border); padding: 16px 0; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
 .dnav__inner { display: flex; justify-content: space-between; align-items: center; }
 .back-btn { display: flex; align-items: center; gap: 10px; padding: 10px 20px; border: 1px solid var(--border); border-radius: 999px; background: transparent; cursor: pointer; font-size: 15px; font-weight: 600; color: var(--text); transition: all 0.2s; }
 .back-btn:hover { background: var(--brand); color: white; border-color: var(--brand); transform: translateX(-4px); }
 .pub[dir="rtl"] .back-btn:hover { transform: translateX(4px); }
 .dnav__right { display: flex; align-items: center; gap: 16px; }
-.dtype-pill { background: var(--brand); color: white; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.dtype-pill { background: var(--brand); color: white; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; }
 .langpills { display: flex; gap: 8px; }
 .langpill { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); }
 .langpill--on { background: var(--accent); color: var(--brand-dark); border-color: var(--accent); }
@@ -1505,7 +1211,7 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .dhero__bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.3; filter: blur(10px); transform: scale(1.1); }
 .dhero__gradient { position: absolute; inset: 0; background: linear-gradient(to right, var(--brand-dark) 0%, transparent 50%, var(--brand-dark) 100%); opacity: 0.9; }
 .dhero__gradient--side { background: linear-gradient(to top, var(--brand-dark) 0%, transparent 60%); }
-.dhero__grain, .dhero__scanlines { position: absolute; inset: 0; pointer-events: none; opacity: 0.05; }
+.dhero__grain,.dhero__scanlines { position: absolute; inset: 0; pointer-events: none; opacity: 0.05; }
 .dhero__scanlines { background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.1) 50%); background-size: 100% 4px; }
 .dhero__frame { position: absolute; width: 80px; height: 80px; border: 2px solid var(--accent); opacity: 0.3; }
 .dhero__frame--tl { top: 40px; left: 40px; border-right: 0; border-bottom: 0; }
@@ -1519,6 +1225,7 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .dbadge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; backdrop-filter: blur(10px); }
 .dbadge--type { background: var(--accent); color: var(--brand-dark); border-color: var(--accent); }
 .dbadge--mem { background: rgba(201,162,39,0.2); border-color: var(--accent); color: var(--accent); }
+.dbadge--topic { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
 .dhero__title { font-family: var(--font-display); font-size: clamp(32px, 5vw, 56px); font-weight: 700; line-height: 1.2; margin: 0 0 20px; text-shadow: 0 4px 20px rgba(0,0,0,0.3); }
 .dhero__desc { font-size: 18px; line-height: 1.7; opacity: 0.9; margin-bottom: 32px; max-width: 600px; }
 .dhero__stats { display: flex; gap: 24px; flex-wrap: wrap; }
@@ -1527,553 +1234,440 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
 .dstat__val { font-weight: 700; font-size: 16px; }
 .dstat__lbl { font-size: 13px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.05em; }
 .dhero__tags { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
-.dtag { background: transparent; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; transition: all 0.2s; }
-.dtag:hover { background: var(--accent); border-color: var(--accent); color: var(--brand-dark); }
-.dhero__right { display: grid; place-items: center; }
+.dtag { background: transparent; border: 1px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.85); padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+.dtag--clickable { cursor: pointer; }
+.dtag--clickable:hover { background: var(--accent); color: var(--brand-dark); border-color: var(--accent); transform: translateY(-2px); }
 
-.mockup-sound { position: relative; width: 300px; height: 300px; perspective: 1000px; }
-.msound__case { position: relative; width: 260px; height: 260px; background: linear-gradient(145deg, #2a2a2a, #1a1a1a); border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); overflow: hidden; }
-.msound__spine { position: absolute; left: 0; top: 0; bottom: 0; width: 20px; background: linear-gradient(to right, #111, #333); border-radius: 8px 0 0 8px; }
-.msound__front { position: absolute; left: 20px; top: 0; right: 0; bottom: 0; overflow: hidden; border-radius: 0 8px 8px 0; }
+/* ─── MOCKUPS ──────────────────────────────────────────────────── */
+.dhero__right { display: flex; align-items: center; justify-content: center; }
+
+/* Sound / CD mockup */
+.mockup-sound { position: relative; width: 220px; height: 220px; }
+.msound__case { position: absolute; left: 0; top: 0; width: 160px; height: 160px; z-index: 2; }
+.msound__spine { position: absolute; left: 0; top: 0; bottom: 0; width: 18px; background: linear-gradient(to right, #1a1a1a, #3a3a3a); border-radius: 4px 0 0 4px; }
+.msound__front { position: absolute; left: 18px; top: 0; right: 0; bottom: 0; border-radius: 0 4px 4px 0; overflow: hidden; box-shadow: var(--shadow-lg); }
 .msound__front img { width: 100%; height: 100%; object-fit: cover; }
-.msound__overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.15) 100%); }
-.msound__disc { position: absolute; right: -60px; top: 50%; transform: translateY(-50%); width: 220px; height: 220px; border-radius: 50%; background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #111 100%); box-shadow: 0 10px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05); display: grid; place-items: center; }
-.msound__disc-ring { position: absolute; inset: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.05); background: repeating-conic-gradient(rgba(255,255,255,0.015) 0deg, transparent 1deg, transparent 2deg); }
-.msound__disc-art { position: absolute; inset: 40px; border-radius: 50%; overflow: hidden; }
-.msound__disc-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; opacity: 0.85; }
-.msound__disc-hole { position: absolute; width: 20px; height: 20px; background: #111; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); z-index: 2; }
+.msound__overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 60%); }
+.msound__disc { position: absolute; right: 0; bottom: 0; width: 130px; height: 130px; z-index: 3; animation: spinDisc 8s linear infinite; }
+.msound__disc-ring { position: absolute; inset: 0; border-radius: 50%; background: linear-gradient(135deg, #222 0%, #444 50%, #222 100%); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+.msound__disc-art { position: absolute; inset: 14px; border-radius: 50%; overflow: hidden; }
+.msound__disc-art img { width: 100%; height: 100%; object-fit: cover; }
+.msound__disc-hole { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 20px; height: 20px; border-radius: 50%; background: #111; box-shadow: inset 0 0 4px rgba(0,0,0,0.8); z-index: 4; }
+@keyframes spinDisc { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-/* BOOK MOCKUP */
-.mockup-book { position: relative; width: 220px; height: 300px; perspective: 1200px; }
-.mbook__cover { position: absolute; left: 30px; top: 0; right: 0; bottom: 0; border-radius: 0 4px 4px 0; overflow: hidden; box-shadow: 6px 12px 40px rgba(0,0,0,0.5); transform: rotateY(-8deg); transform-origin: left center; transition: transform 0.4s ease; }
-.mockup-book:hover .mbook__cover { transform: rotateY(-18deg); }
+/* Book mockup */
+.mockup-book { position: relative; width: 180px; height: 240px; transform: perspective(800px) rotateY(-12deg); transition: transform 0.4s ease; }
+.mockup-book:hover { transform: perspective(800px) rotateY(-4deg); }
+.mbook__spine { position: absolute; left: 0; top: 0; bottom: 0; width: 24px; background: linear-gradient(to right, var(--brand-dark), var(--brand)); border-radius: 4px 0 0 4px; }
+.mbook__cover { position: absolute; left: 24px; top: 0; right: 0; bottom: 0; border-radius: 0 6px 6px 0; overflow: hidden; box-shadow: var(--shadow-lg); }
 .mbook__cover img { width: 100%; height: 100%; object-fit: cover; }
-.mbook__sheen { position: absolute; inset: 0; background: linear-gradient(105deg, rgba(255,255,255,0.12) 0%, transparent 40%, rgba(255,255,255,0.04) 100%); pointer-events: none; }
-.mbook__spine { position: absolute; left: 0; top: 0; bottom: 0; width: 30px; background: linear-gradient(to right, #1a0f0f, #3b1515, #2a1010); border-radius: 4px 0 0 4px; box-shadow: inset -4px 0 10px rgba(0,0,0,0.4); }
-.mbook__pages { position: absolute; right: -6px; top: 4px; bottom: 4px; width: 10px; background: repeating-linear-gradient(to bottom, #f5f0e8 0px, #e8e0d0 1px, #f5f0e8 2px); border-radius: 0 2px 2px 0; box-shadow: 2px 0 6px rgba(0,0,0,0.2); }
+.mbook__sheen { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 55%); pointer-events: none; }
+.mbook__pages { position: absolute; right: -6px; top: 4px; bottom: 4px; width: 10px; background: repeating-linear-gradient(to bottom, #f0f0ee 0px, #e8e8e5 2px, #f0f0ee 3px); border-radius: 0 3px 3px 0; box-shadow: 3px 0 6px rgba(0,0,0,0.15); }
 
-/* VIDEO MOCKUP */
-.mockup-video { position: relative; width: 280px; display: flex; flex-direction: column; align-items: center; gap: 0; }
-.mvideo__frame { width: 100%; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 3px solid rgba(255,255,255,0.08); background: #000; aspect-ratio: 16/10; }
-.mvideo__frame img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; }
-.mvideo__play-ico { position: absolute; inset: 0; display: grid; place-items: center; font-size: 40px; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.5); opacity: 0.9; transition: opacity 0.3s, transform 0.3s; }
-.mockup-video:hover .mvideo__play-ico { opacity: 1; transform: scale(1.15); }
-.mvideo__stand { width: 60px; height: 8px; background: rgba(255,255,255,0.12); border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+/* Video mockup */
+.mockup-video { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.mvideo__frame { width: 260px; background: #111; border-radius: 10px 10px 4px 4px; overflow: hidden; position: relative; border: 6px solid #222; box-shadow: var(--shadow-lg); }
+.mvideo__frame img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+.mvideo__play-ico { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,0.3); color: white; font-size: 40px; opacity: 0; transition: opacity 0.3s; }
+.mockup-video:hover .mvideo__play-ico { opacity: 1; }
+.mvideo__stand { width: 60px; height: 8px; background: #333; border-radius: 0 0 4px 4px; margin: 0 auto; }
 
-/* IMAGE MOCKUP */
-.mockup-image { position: relative; }
-.mimage__frame { background: linear-gradient(135deg, #f0ece4, #e8e0d4); border-radius: 4px; padding: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3); }
-.mimage__mat { position: absolute; inset: 8px; border: 1px solid rgba(0,0,0,0.1); pointer-events: none; z-index: 1; }
-.mimage__photo { width: 240px; height: 200px; overflow: hidden; border-radius: 2px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.15); }
-.mimage__photo img { width: 100%; height: 100%; object-fit: cover; }
+/* Image mockup */
+.mockup-image { display: flex; align-items: center; justify-content: center; }
+.mimage__frame { background: white; padding: 16px 16px 40px; box-shadow: var(--shadow-lg); border-radius: 2px; transform: rotate(-2deg); transition: transform 0.4s ease; }
+.mimage__frame:hover { transform: rotate(0deg); }
+.mimage__mat { width: 200px; height: 200px; background: #f8f8f8; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.mimage__photo { position: absolute; }
+.mimage__mat img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* ORB ANIMATIONS */
-.hero__orb { position: absolute; border-radius: 50%; pointer-events: none; z-index: 2; }
-.orb--a { width: 400px; height: 400px; top: -100px; left: -100px; background: radial-gradient(circle, rgba(140,21,21,0.3) 0%, transparent 70%); animation: orbFloat 18s ease-in-out infinite; }
-.orb--b { width: 300px; height: 300px; bottom: -80px; right: -80px; background: radial-gradient(circle, rgba(201,162,39,0.2) 0%, transparent 70%); animation: orbFloat 22s ease-in-out infinite reverse; }
-.orb--c { width: 200px; height: 200px; top: 40%; left: 55%; background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%); animation: orbFloat 14s ease-in-out infinite 4s; }
-.orb--gold { width: 500px; height: 500px; top: 50%; left: 50%; transform: translate(-50%, -50%); background: radial-gradient(ellipse, rgba(201,162,39,0.06) 0%, transparent 65%); animation: orbPulse 10s ease-in-out infinite; }
-@keyframes orbFloat { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(30px, -20px) scale(1.05); } 66% { transform: translate(-20px, 30px) scale(0.95); } }
-@keyframes orbPulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.7; } }
+/* lang-swap transition */
+.lang-swap-enter-active,.lang-swap-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.lang-swap-enter-from { opacity: 0; transform: translateY(10px); }
+.lang-swap-leave-to { opacity: 0; transform: translateY(-10px); }
 
-/* GRADIENT FALLBACK SLIDES */
-.hero__slide--gradient { opacity: 1; transform: none; }
-.hero__slide--grad-image { background: linear-gradient(135deg, #1a3a2a 0%, #2d5a42 50%, #1a3a2a 100%); }
-.hero__slide--grad-sound { background: linear-gradient(135deg, #3a1a2a 0%, #5a2d42 50%, #3a1a2a 100%); }
-.hero__slide--grad-video { background: linear-gradient(135deg, #1a2a3a 0%, #2d425a 50%, #1a2a3a 100%); }
-.hero__slide--grad-writing { background: linear-gradient(135deg, #2a2a1a 0%, #4a4a2d 50%, #2a2a1a 100%); }
-.hero__slide--grad-memories { background: linear-gradient(135deg, #2a1a3a 0%, #422d5a 50%, #2a1a3a 100%); }
+/* ─── STREAM / AUDIO ───────────────────────────────────────────── */
+.stream-section { padding: 60px 0; background: var(--surface); border-bottom: 1px solid var(--border-light); }
+.stream-layout { display: grid; grid-template-columns: 1fr 300px; gap: 40px; align-items: start; }
+@media (max-width: 1024px) { .stream-layout { grid-template-columns: 1fr; } }
+.stream-main { display: flex; flex-direction: column; gap: 24px; }
+.stream-head { display: flex; justify-content: space-between; align-items: center; }
+.section-heading { font-family: var(--font-serif); font-size: 24px; font-weight: 700; color: var(--text); margin: 0; position: relative; }
+.section-heading::after { content: ''; position: absolute; bottom: -6px; left: 0; width: 40px; height: 3px; background: linear-gradient(90deg, var(--brand), var(--accent)); border-radius: 2px; }
+.pub[dir="rtl"] .section-heading::after { left: auto; right: 0; }
+.stream-count { font-size: 13px; font-weight: 600; color: var(--text-muted); background: var(--bg); padding: 6px 16px; border-radius: 999px; border: 1px solid var(--border-light); }
 
-/* STREAM SECTION */
-.stream-section { padding: 60px 0; background: var(--bg); }
-.stream-layout { display: grid; grid-template-columns: 1fr 320px; gap: 40px; align-items: start; }
-@media (max-width: 968px) { .stream-layout { grid-template-columns: 1fr; } }
-.stream-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.section-heading { font-family: var(--font-serif); font-size: 26px; font-weight: 700; color: var(--text); margin: 0; }
-.stream-count { background: var(--brand-light); color: var(--brand); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; border: 1px solid rgba(140,21,21,0.12); }
-
-/* TRACK LIST */
-.track-list { display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); overflow: hidden; }
-.track { display: flex; align-items: center; gap: 16px; padding: 16px 20px; cursor: pointer; transition: all 0.25s ease; border-bottom: 1px solid var(--border-light); position: relative; }
-.track:last-child { border-bottom: none; }
-.track:hover { background: var(--bg); }
-.track--selected { background: var(--brand-light); }
-.track--playing { background: linear-gradient(to right, rgba(140,21,21,0.08), transparent); }
-.track__num { font-size: 13px; color: var(--text-muted); font-weight: 600; width: 28px; text-align: center; flex-shrink: 0; font-variant-numeric: tabular-nums; }
-.track--playing .track__num, .track--selected .track__num { color: var(--brand); }
-.track__cover { width: 48px; height: 48px; border-radius: var(--radius-sm); overflow: hidden; position: relative; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+/* Track list */
+.track-list { display: flex; flex-direction: column; gap: 4px; }
+.track { display: grid; grid-template-columns: 36px 48px 24px 1fr 1fr 80px; gap: 14px; align-items: center; padding: 14px 16px; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease; position: relative; }
+.track:hover { background: var(--bg); border-color: var(--border-light); }
+.track--selected { background: var(--bg); border-color: var(--border); }
+.track--playing { background: rgba(140,21,21,0.05); border-color: var(--brand-light); }
+.track--playing::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, var(--brand), var(--accent)); border-radius: 0 2px 2px 0; }
+.pub[dir="rtl"] .track--playing::before { left: auto; right: 0; border-radius: 2px 0 0 2px; }
+.track__num { font-size: 12px; font-weight: 700; color: var(--text-muted); text-align: center; font-family: monospace; }
+.track__cover { width: 48px; height: 48px; border-radius: var(--radius-sm); overflow: hidden; position: relative; flex-shrink: 0; background: var(--bg); }
 .track__cover img { width: 100%; height: 100%; object-fit: cover; }
-.track__play-ico { position: absolute; inset: 0; background: rgba(140,21,21,0.8); color: white; display: grid; place-items: center; font-size: 14px; opacity: 0; transition: opacity 0.2s; }
-.track:hover .track__play-ico { opacity: 1; }
-.track--playing .track__play-ico { opacity: 1; }
-.track__indicator { width: 20px; flex-shrink: 0; display: flex; align-items: flex-end; justify-content: center; gap: 2px; height: 20px; }
-.track__bar { width: 3px; background: var(--text-muted); border-radius: 2px; height: 40%; transition: height 0.2s; }
-.track__bar--live:nth-child(1) { height: 60%; animation: barDance 0.6s ease-in-out infinite alternate; }
-.track__bar--live:nth-child(2) { height: 100%; animation: barDance 0.8s ease-in-out infinite alternate 0.15s; background: var(--brand); }
-.track__bar--live:nth-child(3) { height: 40%; animation: barDance 0.5s ease-in-out infinite alternate 0.3s; }
-@keyframes barDance { 0% { transform: scaleY(0.5); } 100% { transform: scaleY(1.2); } }
-.track__info { flex: 1; min-width: 0; }
-.track__title { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-.track--playing .track__title, .track--selected .track__title { color: var(--brand); }
-.track__sub { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-.track__waves { flex-shrink: 0; }
-.wave-wrap { display: flex; align-items: center; gap: 2px; height: 32px; opacity: 0.25; }
-.wave-wrap--live { opacity: 1; }
-.wbar { width: 3px; border-radius: 2px; background: var(--brand); height: calc(var(--h, 0.5) * 28px); min-height: 4px; transition: height 0.3s ease; }
-.wave-wrap--live .wbar { animation: waveLive calc(0.4s + var(--bi, 0) * 0.02s) ease-in-out infinite alternate; }
-@keyframes waveLive { 0% { transform: scaleY(0.4); } 100% { transform: scaleY(1); } }
-.track__right { text-align: end; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.track__dur { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; font-weight: 600; }
-.track__size { font-size: 11px; color: var(--text-muted); opacity: 0.7; }
+.track__play-ico { position: absolute; inset: 0; background: rgba(0,0,0,0.55); color: white; display: grid; place-items: center; font-size: 16px; opacity: 0; transition: opacity 0.2s; }
+.track:hover .track__play-ico,.track--selected .track__play-ico { opacity: 1; }
+.track__indicator { display: flex; gap: 2px; align-items: flex-end; height: 20px; }
+.track__bar { display: block; width: 3px; background: var(--border); border-radius: 2px; height: 40%; transition: height 0.1s; }
+.track__bar--live { background: var(--brand); animation: barBounce calc(0.4s + var(--b, 1) * 0.1s) ease-in-out infinite alternate; }
+@keyframes barBounce { 0% { height: 20%; } 100% { height: 100%; } }
+.track__info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.track__title { font-weight: 600; font-size: 15px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track__sub-row,.track__extra-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.track__chip { background: var(--bg); border: 1px solid var(--border-light); padding: 3px 8px; border-radius: 999px; font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.track__extra-item { font-size: 12px; color: var(--text-muted); }
+.track__waves { cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
+.wave-wrap { display: flex; gap: 2px; align-items: center; height: 40px; }
+.wave-wrap--live .wbar--live { animation: wbarPulse 0.5s ease-in-out infinite alternate; }
+.wbar { display: block; width: 3px; border-radius: 2px; background: var(--border); flex-shrink: 0; transition: height 0.1s, background 0.2s; height: calc(var(--h, 0.5) * 38px); }
+.wbar--played { background: var(--brand); opacity: 0.7; }
+.wbar--current { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.wbar--live { background: var(--brand); opacity: 0.4; }
+@keyframes wbarPulse { 0% { opacity: 0.3; } 100% { opacity: 0.9; } }
+.wave-time { font-size: 11px; color: var(--text-muted); font-weight: 600; font-family: monospace; }
+.track__right { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.track__dur { font-size: 13px; font-weight: 600; color: var(--text-muted); font-family: monospace; }
+.track__size { font-size: 11px; color: var(--text-muted); }
 
-/* AUDIO BAR */
-.audio-bar { margin-top: 24px; background: var(--brand); color: white; border-radius: var(--radius); padding: 20px 24px; display: flex; align-items: center; gap: 20px; box-shadow: var(--shadow-lg); flex-wrap: wrap; }
-.audio-bar__cover { width: 56px; height: 56px; border-radius: var(--radius-sm); overflow: hidden; position: relative; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-.audio-bar__cover img { width: 100%; height: 100%; object-fit: cover; }
-.audio-bar__vinyl { position: absolute; inset: 0; border-radius: 50%; background: rgba(0,0,0,0.4); display: grid; place-items: center; opacity: 0; transition: opacity 0.3s; }
-.audio-bar__vinyl::after { content: ''; width: 12px; height: 12px; background: var(--brand); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); }
-.audio-bar__vinyl--spin { opacity: 1; animation: vinylSpin 3s linear infinite; }
-@keyframes vinylSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.audio-bar__info { flex: 1; min-width: 120px; }
-.audio-bar__title { font-size: 15px; font-weight: 700; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.audio-bar__album { font-size: 12px; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.audio-bar__controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.abtn { background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; font-size: 16px; transition: all 0.2s; }
-.abtn:hover:not(:disabled) { background: rgba(255,255,255,0.25); transform: scale(1.1); }
+/* Brochures */
+.track-brochures { padding: 20px; background: var(--bg); border-radius: var(--radius); border: 1px solid var(--border-light); }
+.track-brochures__title { font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 16px; }
+.track-brochures__grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.brochure-thumb { position: relative; width: 80px; height: 80px; border-radius: var(--radius-sm); overflow: hidden; cursor: zoom-in; border: 1px solid var(--border-light); transition: transform 0.2s; }
+.brochure-thumb:hover { transform: scale(1.05); }
+.brochure-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.brochure-thumb__cap { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); color: white; font-size: 9px; padding: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Audio bar */
+.audio-bar { position: sticky; bottom: 20px; display: grid; grid-template-columns: 56px 1fr auto auto; gap: 16px; align-items: center; background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 20px; box-shadow: var(--shadow-lg); z-index: 50; transition: transform 0.3s ease; }
+.audio-bar:hover { transform: translateY(-2px); box-shadow: 0 24px 60px rgba(0,0,0,0.15); }
+.audio-bar__cover { position: relative; width: 56px; height: 56px; border-radius: var(--radius-sm); overflow: hidden; flex-shrink: 0; }
+.audio-bar__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.audio-bar__vinyl { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0.5) 0%, transparent 60%); opacity: 0; transition: opacity 0.3s; }
+.audio-bar__vinyl--spin { opacity: 1; animation: spinDisc 3s linear infinite; }
+.audio-bar__info { min-width: 0; }
+.audio-bar__title { font-weight: 700; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio-bar__album { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio-bar__controls { display: flex; align-items: center; gap: 8px; }
+.abtn { background: transparent; border: 1px solid var(--border-light); border-radius: 999px; width: 40px; height: 40px; display: grid; place-items: center; cursor: pointer; font-size: 16px; color: var(--text-muted); transition: all 0.2s; padding: 0; }
+.abtn:hover:not(:disabled) { background: var(--brand); color: white; border-color: var(--brand); transform: scale(1.1); }
 .abtn:disabled { opacity: 0.3; cursor: not-allowed; }
-.abtn--play { width: 48px; height: 48px; background: white; color: var(--brand); font-size: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-.abtn--play:hover { background: var(--accent); color: var(--brand-dark); }
+.abtn--play { background: var(--brand); color: white; border-color: var(--brand); width: 48px; height: 48px; font-size: 20px; }
+.abtn--play:hover { background: var(--brand-dark); transform: scale(1.1); }
+.audio-bar__time-only { display: flex; align-items: center; gap: 4px; font-family: monospace; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+.atime__cur { font-weight: 700; color: var(--brand); }
+.atime__sep { color: var(--border); }
+.atime__dur { color: var(--text-muted); }
 
-/* ── AUDIO PROGRESS — always LTR so fill grows left→right in both Sorani (RTL) and Kurmanji (LTR) ── */
-.audio-bar__prog-wrap { flex: 1; min-width: 120px; cursor: pointer; padding: 8px 0; direction: ltr; }
-
-.audio-bar__prog-track { height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px; position: relative; }
-.audio-bar__prog-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.1s linear; }
-.audio-bar__prog-thumb { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background: white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: left 0.1s linear; }
-.audio-bar__time { font-size: 13px; font-variant-numeric: tabular-nums; opacity: 0.8; flex-shrink: 0; white-space: nowrap; font-weight: 600; }
-
-/* STREAM SIDE */
-.stream-side { display: flex; flex-direction: column; gap: 24px; }
-.side-featured { background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); overflow: hidden; }
-.side-heading { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 16px 20px 0; margin: 0 0 12px; }
-.side-cover { position: relative; aspect-ratio: 1; overflow: hidden; margin: 0 16px 16px; border-radius: var(--radius-sm); }
-.side-cover img { width: 100%; height: 100%; object-fit: cover; }
-.side-cover__overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px 14px 12px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); }
+/* ─── SIDE PANEL ───────────────────────────────────────────────── */
+.stream-side { position: sticky; top: 80px; }
+.side-featured { background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius); overflow: hidden; }
+.side-heading { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); padding: 20px 20px 12px; margin: 0; }
+.side-cover { position: relative; aspect-ratio: 1; overflow: hidden; }
+.side-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.side-cover__overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 60%); padding: 20px 16px 16px; }
 .side-cover__title { color: white; font-weight: 700; font-size: 15px; line-height: 1.3; }
-.side-meta { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px; }
-.side-meta__row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; gap: 12px; }
-.side-meta__key { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; flex-shrink: 0; }
-.side-meta__val { color: var(--text); font-weight: 600; text-align: end; }
-.side-keywords { background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 16px; }
-.chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.chip { padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; }
-.chip--tag { background: var(--brand-light); color: var(--brand); border: 1px solid rgba(140,21,21,0.12); }
-.chip--kw { background: var(--accent-light); color: #7a5a00; border: 1px solid rgba(201,162,39,0.2); }
+.side-meta { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.side-meta__row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.side-meta__key { font-size: 12px; color: var(--text-muted); font-weight: 600; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+.side-meta__val { font-size: 13px; font-weight: 600; color: var(--text); text-align: end; }
+.sfm-value--badge { background: var(--brand); color: white; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; }
+.side-covers-row { display: flex; gap: 8px; padding: 12px 20px 20px; }
+.cover-slot { flex: 1; position: relative; cursor: zoom-in; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-light); transition: transform 0.2s; }
+.cover-slot:hover { transform: scale(1.04); }
+.cover-slot img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.cover-slot__lbl { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); color: white; font-size: 9px; font-weight: 700; text-align: center; padding: 4px; letter-spacing: 0.05em; }
 
-/* VIDEO SECTION */
+/* ─── SOUND FULL METADATA ──────────────────────────────────────── */
+.sound-full-meta { padding: 60px 0; background: var(--bg); }
+.sfm-block { margin-bottom: 40px; padding: 28px; background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); }
+.sfm-block--timestamps { background: transparent; border-color: transparent; padding: 8px 0; }
+.sfm-block__title { font-family: var(--font-serif); font-size: 20px; font-weight: 700; color: var(--text); margin: 0 0 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light); position: relative; }
+.sfm-block__title::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 40px; height: 2px; background: linear-gradient(90deg, var(--brand), var(--accent)); }
+.pub[dir="rtl"] .sfm-block__title::after { left: auto; right: 0; }
+.sfm-count { font-size: 13px; color: var(--text-muted); font-weight: 400; font-family: var(--font-sans); margin-inline-start: 8px; }
+.sfm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.sfm-item { display: flex; flex-direction: column; gap: 6px; }
+.sfm-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.sfm-value { font-size: 15px; font-weight: 600; color: var(--text); }
+.sfm-value--yes { color: #16a34a; }
+.sfm-bilingual { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+@media (max-width: 768px) { .sfm-bilingual { grid-template-columns: 1fr; } }
+.sfm-lang-col { display: flex; flex-direction: column; gap: 16px; }
+.sfm-lang-badge { display: inline-flex; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; }
+.sfm-lang-badge--ckb { background: rgba(140,21,21,0.08); color: var(--brand); border: 1px solid rgba(140,21,21,0.2); }
+.sfm-lang-badge--kmr { background: rgba(201,168,76,0.12); color: #92700d; border: 1px solid rgba(201,168,76,0.3); }
+.sfm-desc { font-size: 15px; line-height: 1.8; color: var(--text-muted); margin: 0; }
+.sfm-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.sfm-chip { padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--bg); border: 1px solid var(--border-light); color: var(--text); }
+.sfm-chip--loc { color: var(--brand); border-color: rgba(140,21,21,0.2); background: rgba(140,21,21,0.04); }
+.sfm-chip--topic { color: #7c3aed; background: rgba(124,58,237,0.07); border-color: rgba(124,58,237,0.2); }
+.sfm-chip--tag { cursor: pointer; transition: all 0.2s; }
+.sfm-chip--tag:hover { background: var(--brand); color: white; border-color: var(--brand); transform: translateY(-2px); }
+.sfm-chip--kw { background: rgba(201,168,76,0.1); color: #92700d; border-color: rgba(201,168,76,0.3); }
+.sfm-bilingual-tags { display: flex; flex-direction: column; gap: 20px; }
+.sfm-attachments { display: flex; flex-direction: column; gap: 10px; }
+.sfm-attachment { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius); text-decoration: none; color: var(--text); transition: all 0.2s; }
+.sfm-attachment:hover { border-color: var(--brand); background: rgba(140,21,21,0.03); transform: translateX(4px); }
+.pub[dir="rtl"] .sfm-attachment:hover { transform: translateX(-4px); }
+.sfm-attachment__type { background: var(--brand); color: white; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; flex-shrink: 0; }
+.sfm-attachment__title { flex: 1; font-weight: 600; font-size: 14px; }
+.sfm-attachment__meta { display: flex; gap: 10px; font-size: 12px; color: var(--text-muted); }
+.sfm-attachment__arrow { color: var(--brand); font-size: 18px; font-weight: 700; transition: transform 0.2s; }
+.sfm-attachment:hover .sfm-attachment__arrow { transform: translate(4px, -4px); }
+.sfm-ts { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); margin-inline-end: 24px; }
+.sfm-ts__label { font-weight: 700; }
+.sfm-ts__val { font-weight: 400; }
+
+/* ─── VIDEO SECTION ────────────────────────────────────────────── */
 .video-section { padding: 60px 0; }
-.clips-layout { display: grid; grid-template-columns: 1fr 320px; gap: 32px; align-items: start; }
-@media (max-width: 968px) { .clips-layout { grid-template-columns: 1fr; } }
-.clips-player { background: #000; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-lg); }
-.vplayer-wrap { width: 100%; aspect-ratio: 16/9; background: #000; overflow: hidden; border-radius: var(--radius); }
-.vplayer-el { width: 100%; height: 100%; display: block; background: #000; }
-.vembed-wrap { width: 100%; aspect-ratio: 16/9; }
-.vembed { width: 100%; height: 100%; border: none; display: block; border-radius: var(--radius); }
-.vno-source { aspect-ratio: 16/9; display: grid; place-items: center; background: var(--bg); border: 2px dashed var(--border); border-radius: var(--radius); flex-direction: column; gap: 12px; }
+.video-stage { display: flex; flex-direction: column; gap: 16px; margin-bottom: 40px; }
+.vplayer-wrap { border-radius: var(--radius); overflow: hidden; background: #000; box-shadow: var(--shadow-lg); }
+.vplayer-el { width: 100%; aspect-ratio: 16/9; display: block; }
+.vembed-wrap { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-lg); aspect-ratio: 16/9; }
+.vembed { width: 100%; height: 100%; border: none; display: block; }
+.vno-source { aspect-ratio: 16/9; background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius); display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; }
 .vno-source__icon { font-size: 48px; opacity: 0.4; }
-.vno-source__text { font-size: 16px; font-weight: 600; color: var(--text-muted); }
-.clip-desc { padding: 20px; background: var(--surface); }
-.clip-desc p { font-size: 15px; color: var(--text-muted); line-height: 1.7; margin: 0; }
-.clips-list { background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); overflow: hidden; }
-.clips-list__heading { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); padding: 16px 20px; border-bottom: 1px solid var(--border-light); margin: 0; }
-.clip-item { display: flex; align-items: center; gap: 14px; padding: 14px 20px; cursor: pointer; transition: all 0.2s; border-bottom: 1px solid var(--border-light); }
-.clip-item:last-child { border-bottom: none; }
-.clip-item:hover { background: var(--bg); }
-.clip-item--on { background: var(--brand-light); border-inline-start: 3px solid var(--brand); }
+.vno-source__text { font-size: 15px; color: var(--text-muted); font-weight: 600; }
+.vfilm-info { display: flex; justify-content: center; }
+.vfilm-chips { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.vchip { background: var(--surface); border: 1px solid var(--border-light); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text); }
+.clips-layout { display: grid; grid-template-columns: 1fr 320px; gap: 32px; margin-bottom: 40px; }
+@media (max-width: 1024px) { .clips-layout { grid-template-columns: 1fr; } }
+.clips-player { display: flex; flex-direction: column; gap: 20px; }
+.clip-meta-full { padding: 20px; background: var(--bg); border: 1px solid var(--border-light); border-radius: var(--radius); display: flex; flex-direction: column; gap: 16px; }
+.clip-meta-full__chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.clip-desc p { font-size: 15px; line-height: 1.7; color: var(--text-muted); margin: 0; }
+.clip-titles { display: flex; flex-direction: column; gap: 12px; }
+.clip-title-row { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; }
+.clips-list { display: flex; flex-direction: column; gap: 4px; }
+.clips-list__heading { font-size: 16px; font-weight: 700; color: var(--text); margin: 0 0 16px; }
+.clip-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; transition: all 0.2s; }
+.clip-item:hover { background: var(--bg); border-color: var(--border-light); }
+.clip-item--on { background: rgba(140,21,21,0.05); border-color: var(--brand-light); }
 .clip-item__num { width: 28px; height: 28px; background: var(--bg); border: 1px solid var(--border); border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
-.clip-item--on .clip-item__num { background: var(--brand); color: white; border-color: var(--brand); }
+.clip-item--on .clip-item__num { background: var(--brand); border-color: var(--brand); color: white; }
 .clip-item__info { flex: 1; min-width: 0; }
-.clip-item__title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.clip-item__meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-muted); }
-.clip-item__play { color: var(--text-muted); transition: color 0.2s; flex-shrink: 0; }
-.clip-item:hover .clip-item__play { color: var(--brand); }
-.video-stage { display: flex; flex-direction: column; gap: 20px; }
-.vfilm-info { padding: 4px 0; }
-.vfilm-chips { display: flex; flex-wrap: wrap; gap: 10px; }
-.vchip { background: var(--bg); border: 1px solid var(--border-light); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.clip-item__title { font-weight: 600; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.clip-item__meta { display: flex; gap: 10px; font-size: 12px; color: var(--text-muted); margin-top: 4px; flex-wrap: wrap; }
+.clip-item__play { color: var(--brand); opacity: 0; transition: opacity 0.2s; flex-shrink: 0; }
+.clip-item:hover .clip-item__play,.clip-item--on .clip-item__play { opacity: 1; }
+.video-full-meta { padding: 0; }
+.content-detail-block { display: flex; flex-direction: column; gap: 10px; }
+.cdb-row { display: grid; grid-template-columns: 100px 1fr; gap: 12px; }
+.cdb-key { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding-top: 2px; }
+.cdb-val { font-size: 14px; color: var(--text); line-height: 1.6; }
 
-/* GALLERY SECTION */
+/* ─── GALLERY / IMAGE ──────────────────────────────────────────── */
 .gallery-section { padding: 60px 0; }
-.gallery-layout { display: flex; flex-direction: column; gap: 20px; }
-.gallery-main { position: relative; }
-.gallery-preview { position: relative; aspect-ratio: 16/10; border-radius: var(--radius); overflow: hidden; background: var(--bg); border: 1px solid var(--border-light); cursor: zoom-in; box-shadow: var(--shadow); }
-.gallery-preview__img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.4s ease; }
-.gallery-preview:hover .gallery-preview__img { transform: scale(1.03); }
-.gallery-zoom-hint { position: absolute; bottom: 14px; right: 14px; background: rgba(0,0,0,0.6); color: white; font-size: 12px; padding: 8px 14px; border-radius: 999px; display: flex; align-items: center; gap: 6px; opacity: 0; transition: opacity 0.2s; backdrop-filter: blur(4px); }
+.gallery-layout { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start; margin-bottom: 40px; }
+@media (max-width: 900px) { .gallery-layout { grid-template-columns: 1fr; } }
+.gallery-main { display: flex; flex-direction: column; gap: 20px; }
+.gallery-preview { position: relative; border-radius: var(--radius); overflow: hidden; background: var(--bg); border: 1px solid var(--border-light); cursor: zoom-in; }
+.gallery-preview__img { width: 100%; max-height: 520px; object-fit: contain; display: block; }
+.gallery-zoom-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: white; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
 .gallery-preview:hover .gallery-zoom-hint { opacity: 1; }
-.gallery-caption { padding: 16px 4px; }
-.gallery-caption__title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-.gallery-caption__desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-.gallery-strip { display: flex; gap: 10px; flex-wrap: wrap; }
-.gthumb { width: 80px; height: 60px; border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; padding: 0; background: var(--bg); flex-shrink: 0; }
-.gthumb img { width: 100%; height: 100%; object-fit: cover; }
-.gthumb:hover { border-color: var(--brand-light); transform: translateY(-2px); }
-.gthumb--on { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-light); }
-.gallery-nav { display: flex; align-items: center; justify-content: center; gap: 20px; }
-.gnav-btn { padding: 10px 24px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 600; cursor: pointer; color: var(--text); transition: all 0.2s; }
+.gallery-img-meta { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+.pub[dir="rtl"] .gallery-img-meta { right: auto; left: 12px; }
+.gallery-img-meta span { background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; font-family: monospace; backdrop-filter: blur(8px); }
+.gallery-caption { padding: 20px; background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); display: flex; flex-direction: column; gap: 16px; }
+.gallery-caption__title { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.3; }
+.gallery-caption__desc { font-size: 15px; color: var(--text-muted); line-height: 1.7; }
+.gallery-caption__bilingual { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border-light); padding-top: 16px; }
+.gcap-row { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; line-height: 1.6; }
+.gallery-img-tech { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; border-top: 1px solid var(--border-light); padding-top: 16px; }
+.git-row { display: flex; flex-direction: column; gap: 4px; }
+.git-key { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.git-val { font-size: 14px; font-weight: 600; color: var(--text); }
+.gallery-strip { display: flex; flex-direction: column; gap: 8px; width: 90px; max-height: 600px; overflow-y: auto; padding: 4px; scrollbar-width: thin; }
+.gthumb { width: 80px; height: 80px; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid transparent; padding: 0; cursor: pointer; transition: all 0.2s; flex-shrink: 0; position: relative; background: var(--bg); }
+.gthumb:hover { border-color: var(--brand); transform: scale(1.04); }
+.gthumb--on { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(140,21,21,0.15); }
+.gthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gthumb__meta { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); color: white; font-size: 8px; text-align: center; padding: 2px; font-family: monospace; }
+.gallery-nav { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 16px 0; }
+.gnav-btn { background: var(--surface); border: 1px solid var(--border); padding: 10px 24px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; color: var(--text); }
 .gnav-btn:hover:not(:disabled) { background: var(--brand); color: white; border-color: var(--brand); }
 .gnav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.gnav-pos { font-size: 14px; color: var(--text-muted); font-variant-numeric: tabular-nums; font-weight: 600; min-width: 60px; text-align: center; }
-.gallery-single { max-width: 100%; border-radius: var(--radius); box-shadow: var(--shadow-lg); display: block; }
-.gallery-empty { text-align: center; padding: 40px; }
+.gnav-pos { font-size: 14px; font-weight: 700; color: var(--text-muted); font-family: monospace; }
+.gallery-single { width: 100%; max-width: 600px; border-radius: var(--radius); display: block; margin: 0 auto; }
+.gallery-empty { text-align: center; padding: 40px 0; }
+.image-full-meta { display: flex; flex-direction: column; gap: 0; }
+.cover-slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+.cover-slot-full { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-light); cursor: zoom-in; transition: all 0.2s; position: relative; }
+.cover-slot-full:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
+.cover-slot-full img { width: 100%; aspect-ratio: 3/4; object-fit: cover; display: block; }
+.cover-slot-full__lbl { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%); color: white; font-size: 12px; font-weight: 700; text-align: center; padding: 20px 8px 8px; }
 
-/* WRITING SECTION */
+/* ─── WRITING SECTION ──────────────────────────────────────────── */
 .writing-section { padding: 60px 0; }
-.writing-layout { display: flex; flex-direction: column; gap: 32px; }
-.writing-info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
-.winfo-card { background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 20px; display: flex; align-items: flex-start; gap: 14px; transition: all 0.2s ease; }
-.winfo-card:hover { border-color: var(--brand-light); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
-.winfo-card__ico { font-size: 24px; flex-shrink: 0; width: 44px; height: 44px; background: var(--bg); border-radius: var(--radius-sm); display: grid; place-items: center; border: 1px solid var(--border-light); }
+.writing-layout { display: flex; flex-direction: column; gap: 40px; }
+.writing-genres { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.wg-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+.wg-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.wg-chip { background: var(--brand); color: white; padding: 8px 20px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.writing-bilingual-content { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+@media (max-width: 900px) { .writing-bilingual-content { grid-template-columns: 1fr; } }
+.wbc-col { display: flex; flex-direction: column; gap: 16px; padding: 24px; background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); }
+.wbc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.winfo-card { display: flex; align-items: flex-start; gap: 14px; padding: 14px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border-light); transition: border-color 0.2s; }
+.winfo-card:hover { border-color: var(--brand-light); }
+.winfo-card__ico { font-size: 22px; flex-shrink: 0; width: 32px; text-align: center; }
 .winfo-card__content { flex: 1; min-width: 0; }
-.winfo-card__lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px; }
-.winfo-card__val { font-size: 15px; font-weight: 600; color: var(--text); word-break: break-word; }
-.series-block { background: linear-gradient(135deg, var(--brand-light), rgba(201,162,39,0.06)); border: 1px solid rgba(140,21,21,0.12); border-radius: var(--radius); padding: 24px 28px; display: flex; align-items: center; gap: 20px; }
-.series-block__ico { font-size: 36px; flex-shrink: 0; }
-.series-block__info { flex: 1; }
-.series-block__lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--brand); margin-bottom: 6px; }
-.series-block__name { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
-.series-block__order { font-size: 14px; color: var(--text-muted); font-weight: 600; }
+.winfo-card__lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; }
+.winfo-card__val { font-size: 15px; font-weight: 600; color: var(--text); }
+.wdesc p { font-size: 15px; line-height: 1.8; color: var(--text-muted); margin: 0; }
+.wdownload-btn { display: inline-flex; align-items: center; gap: 10px; background: var(--brand); color: white; padding: 14px 24px; border-radius: var(--radius); font-size: 14px; font-weight: 700; text-decoration: none; transition: all 0.2s; margin-top: 8px; }
+.wdownload-btn:hover { background: var(--brand-dark); transform: translateY(-2px); box-shadow: var(--shadow); }
+.writing-info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.series-block { display: flex; align-items: center; gap: 20px; padding: 24px; background: linear-gradient(135deg, rgba(140,21,21,0.04) 0%, rgba(201,168,76,0.06) 100%); border: 1px solid rgba(140,21,21,0.15); border-radius: var(--radius); }
+.series-block__ico { font-size: 40px; flex-shrink: 0; }
+.series-block__lbl { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 6px; }
+.series-block__name { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--brand); margin-bottom: 8px; }
+.series-block__meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text-muted); font-weight: 600; flex-wrap: wrap; }
+.series-parent-badge { background: var(--accent); color: var(--brand-dark); padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 
-/* CHIPS SECTIONS */
-.chips-section { padding: 32px 0; border-top: 1px solid var(--border-light); }
-.chips-section--alt { background: var(--bg); border-top: 1px solid var(--border-light); }
-.chips-block__heading { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin: 0 0 14px; }
+/* ─── TAG SEARCH PAGE ──────────────────────────────────────────── */
+.tag-search-page { min-height: 100vh; background: var(--bg); }
+.ts-hero { background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%); padding: 48px 0; position: relative; overflow: hidden; }
+.ts-hero::before { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+.ts-back { border-color: rgba(255,255,255,0.3); color: white; }
+.ts-back:hover { background: rgba(255,255,255,0.15); border-color: white; color: white; }
+.ts-title { display: flex; align-items: baseline; gap: 4px; margin: 20px 0 12px; }
+.ts-hash { font-family: var(--font-serif); font-size: 48px; font-weight: 700; color: var(--accent); opacity: 0.8; }
+.ts-query { font-family: var(--font-serif); font-size: 48px; font-weight: 700; color: white; word-break: break-all; }
+.ts-total { font-size: 16px; color: rgba(255,255,255,0.7); font-weight: 600; }
+.ts-body { padding: 48px 24px 80px; }
+.ts-section { margin-bottom: 56px; }
+.ts-section-head { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid var(--border-light); }
+.ts-section-icon { font-size: 28px; }
+.ts-section-title { font-family: var(--font-serif); font-size: 24px; font-weight: 700; color: var(--text); margin: 0; flex: 1; }
+.ts-section-count { background: var(--brand); color: white; padding: 6px 16px; border-radius: 999px; font-size: 14px; font-weight: 700; }
+.ts-divider { border: none; border-top: 1px solid var(--border-light); margin: 40px 0; }
 
-/* RELATED */
-.related { padding: 60px 0; background: linear-gradient(to bottom, var(--bg), rgba(140,21,21,0.02)); }
+/* ─── RELATED ──────────────────────────────────────────────────── */
+.related { padding: 60px 0 80px; background: var(--bg); border-top: 1px solid var(--border-light); }
 .related__head { display: flex; align-items: center; gap: 20px; margin-bottom: 32px; }
 .related__title { font-family: var(--font-serif); font-size: 28px; font-weight: 700; color: var(--text); margin: 0; white-space: nowrap; }
-.related__rule { flex: 1; height: 1px; background: linear-gradient(to right, var(--border), transparent); }
-.related__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+.related__rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--accent), transparent); opacity: 0.5; }
+.pub[dir="rtl"] .related__rule { background: linear-gradient(270deg, var(--accent), transparent); }
+.related__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
 .rcard { background: var(--surface); border: 1px solid var(--border-light); border-radius: var(--radius); overflow: hidden; cursor: pointer; transition: all 0.3s ease; }
-.rcard:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
-.rcard:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
-.rcard__img { position: relative; aspect-ratio: 16/10; overflow: hidden; background: var(--bg); }
-.rcard__img-main { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
-.rcard__img-hover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease; }
+.rcard:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); border-color: var(--border); }
+.rcard__img { position: relative; aspect-ratio: 16/9; overflow: hidden; }
+.rcard__img-main { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; display: block; }
+.rcard__img-hover { position: absolute; inset: 0; object-fit: cover; width: 100%; height: 100%; opacity: 0; transition: opacity 0.3s ease; }
 .rcard:hover .rcard__img-main { transform: scale(1.08); }
-.rcard:hover .rcard__img-hover { opacity: 1; transform: scale(1.08); }
-.rcard__overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.4), transparent); opacity: 0; transition: opacity 0.3s; }
+.rcard:hover .rcard__img-hover { opacity: 1; }
+.rcard__overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%); opacity: 0; transition: opacity 0.3s; }
 .rcard:hover .rcard__overlay { opacity: 1; }
-.rcard__typebadge { position: absolute; top: 10px; start: 10px; background: rgba(255,255,255,0.9); padding: 4px 10px; border-radius: 999px; font-size: 14px; backdrop-filter: blur(6px); }
-.rcard__body { padding: 16px; }
-.rcard__title { font-family: var(--font-serif); font-size: 16px; font-weight: 700; color: var(--text); margin: 0 0 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.rcard__desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0 0 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.rcard__tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.rtag { font-size: 11px; color: var(--text-muted); background: var(--bg); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-light); }
+.rcard__typebadge { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.92); color: var(--brand-dark); padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.pub[dir="rtl"] .rcard__typebadge { left: auto; right: 10px; }
+.rcard__body { padding: 18px; }
+.rcard__title { font-family: var(--font-serif); font-size: 17px; font-weight: 700; margin: 0 0 8px; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rcard__desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 12px; }
+.rcard__tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.rtag { font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-light); transition: all 0.2s; }
+.rtag--clickable { cursor: pointer; }
+.rtag--clickable:hover { background: var(--brand); color: white; border-color: var(--brand); }
 
-/* PAGER */
-.pager { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 48px 0 20px; }
-.pager__btn { padding: 12px 28px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 14px; font-weight: 700; cursor: pointer; color: var(--text); transition: all 0.2s; letter-spacing: 0.03em; }
-.pager__btn:hover:not(:disabled) { background: var(--brand); color: white; border-color: var(--brand); box-shadow: var(--shadow); }
-.pager__btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.pager__dots { display: flex; align-items: center; gap: 8px; }
-.pager__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.2s; border: none; padding: 0; }
+/* ─── PAGER ────────────────────────────────────────────────────── */
+.pager { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 48px 0 0; }
+.pager__btn { background: var(--surface); border: 1px solid var(--border); padding: 12px 28px; border-radius: 999px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; color: var(--text); }
+.pager__btn:hover:not(:disabled) { background: var(--brand); color: white; border-color: var(--brand); transform: scale(1.04); }
+.pager__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pager__dots { display: flex; gap: 8px; align-items: center; }
+.pager__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); cursor: pointer; transition: all 0.2s; }
 .pager__dot:hover { background: var(--brand-light); transform: scale(1.2); }
-.pager__dot--on { background: var(--brand); transform: scale(1.3); box-shadow: 0 0 0 3px var(--brand-light); }
+.pager__dot--on { background: var(--brand); transform: scale(1.3); box-shadow: 0 0 0 3px rgba(140,21,21,0.15); }
 
-/* EMPTY STATE */
-.empty { text-align: center; padding: 80px 40px; }
-.empty__icon { font-size: 56px; margin-bottom: 20px; filter: grayscale(0.3); }
-.empty__title { font-family: var(--font-serif); font-size: 24px; font-weight: 700; color: var(--text); margin: 0 0 12px; }
-.empty__hint { font-size: 15px; color: var(--text-muted); margin: 0 0 28px; }
-.btn-primary { background: var(--brand); color: white; border: none; padding: 14px 32px; border-radius: 999px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.03em; box-shadow: var(--shadow); }
-.btn-primary:hover { background: var(--brand-dark); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+/* ─── EMPTY STATE ──────────────────────────────────────────────── */
+.empty { text-align: center; padding: 80px 24px; }
+.empty__icon { font-size: 64px; margin-bottom: 24px; }
+.empty__title { font-family: var(--font-serif); font-size: 28px; font-weight: 700; color: var(--text); margin: 0 0 12px; }
+.empty__hint { font-size: 16px; color: var(--text-muted); margin: 0 0 32px; }
+.btn-primary { display: inline-flex; align-items: center; gap: 10px; background: var(--brand); color: white; border: none; padding: 14px 28px; border-radius: 999px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.btn-primary:hover { background: var(--brand-dark); transform: translateY(-2px); box-shadow: var(--shadow); }
 
-/* FULLSCREEN OVERLAY */
-.fsoverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.94); z-index: 9999; display: grid; place-items: center; backdrop-filter: blur(8px); }
-.fsoverlay__x { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 20px; cursor: pointer; display: grid; place-items: center; transition: all 0.2s; z-index: 1; }
-.fsoverlay__x:hover { background: var(--brand); border-color: var(--brand); }
-.fsoverlay__frame { max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center; }
-.fsoverlay__img { max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: var(--radius-sm); box-shadow: 0 40px 100px rgba(0,0,0,0.6); }
+/* ─── FULLSCREEN OVERLAY ───────────────────────────────────────── */
+.fsoverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(12px); }
+.fsoverlay__x { position: absolute; top: 24px; right: 24px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: white; font-size: 20px; cursor: pointer; display: grid; place-items: center; transition: all 0.2s; }
+.fsoverlay__x:hover { background: var(--brand); border-color: var(--brand); transform: scale(1.1); }
+.fsoverlay__frame { max-width: 90vw; max-height: 90vh; }
+.fsoverlay__img { max-width: 100%; max-height: 90vh; border-radius: var(--radius); object-fit: contain; box-shadow: 0 40px 100px rgba(0,0,0,0.6); }
 
-/* TRANSITIONS */
-.page-enter-active, .page-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
-.page-enter-from { opacity: 0; transform: translateY(12px); }
-.page-leave-to { opacity: 0; transform: translateY(-12px); }
-.drop-enter-active { transition: opacity 0.18s ease, transform 0.18s ease; }
-.drop-leave-active { transition: opacity 0.14s ease, transform 0.14s ease; }
-.drop-enter-from, .drop-leave-to { opacity: 0; transform: translateY(-8px) scale(0.97); }
-.pill-enter-active, .pill-leave-active { transition: all 0.25s ease; }
-.pill-enter-from, .pill-leave-to { opacity: 0; transform: translateY(-8px) scale(0.95); }
-.fs-enter-active, .fs-leave-active { transition: opacity 0.25s ease; }
-.fs-enter-from, .fs-leave-to { opacity: 0; }
-.lang-swap-enter-active, .lang-swap-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
-.lang-swap-enter-from { opacity: 0; transform: translateY(8px); }
-.lang-swap-leave-to { opacity: 0; transform: translateY(-8px); }
+/* ─── TRANSITIONS ──────────────────────────────────────────────── */
+.page-enter-active,.page-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+.page-enter-from { opacity: 0; transform: translateY(16px); }
+.page-leave-to { opacity: 0; transform: translateY(-8px); }
+.drop-enter-active,.drop-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.drop-enter-from,.drop-leave-to { opacity: 0; transform: translateY(-8px); }
+.pill-enter-active,.pill-leave-active { transition: opacity 0.3s, transform 0.3s; }
+.pill-enter-from,.pill-leave-to { opacity: 0; transform: scale(0.85); }
+.fs-enter-active,.fs-leave-active { transition: opacity 0.25s ease; }
+.fs-enter-from,.fs-leave-to { opacity: 0; }
 
-/* RESPONSIVE */
+/* ─── RESPONSIVE ───────────────────────────────────────────────── */
+@media (max-width: 1280px) { .stream-layout { grid-template-columns: 1fr 280px; } }
+@media (max-width: 1024px) { .track { grid-template-columns: 36px 48px 24px 1fr 60px; } .track__waves { display: none; } }
 @media (max-width: 768px) {
   .hero { min-height: 70vh; }
-  .hero__inner { padding: 80px 16px 60px; }
   .hero__stats { gap: 16px; }
   .hstat__inner { padding: 12px 16px; }
   .hstat__num { font-size: 28px; }
-  .tabnav__row { gap: 4px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-  .tabnav__row::-webkit-scrollbar { display: none; }
-  .tabnav__item { max-width: 140px; flex-shrink: 0; }
-  .tabtn { padding: 12px 14px; font-size: 13px; }
-  .grid { grid-template-columns: 1fr; }
-  .dhero__content { padding: 48px 16px; gap: 32px; }
-  .dhero__title { font-size: clamp(26px, 6vw, 40px); }
+  .dhero__content { grid-template-columns: 1fr; padding: 60px 24px; }
   .dhero__right { display: none; }
-  .stream-layout, .clips-layout { grid-template-columns: 1fr; }
-  .audio-bar { gap: 12px; }
-  .related__grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-  .hero__corner { display: none; }
-  .hero__filigree { display: none; }
+  .dhero__stats { flex-direction: column; align-items: flex-start; }
+  .tabnav__row { gap: 4px; flex-wrap: wrap; }
+  .tabnav__item { max-width: none; flex: none; }
+  .tabtn { padding: 12px 14px; font-size: 13px; }
+  .tabtn__chevron,.tabtn__count { display: none; }
+  .grid { grid-template-columns: 1fr; }
+  .track { grid-template-columns: 36px 48px 1fr 60px; }
+  .track__indicator,.track__waves { display: none; }
+  .audio-bar { grid-template-columns: 48px 1fr auto; }
+  .audio-bar__time-only { display: none; }
+  .sfm-bilingual,.writing-bilingual-content { grid-template-columns: 1fr; }
+  .clips-layout { grid-template-columns: 1fr; }
+  .gallery-layout { grid-template-columns: 1fr; }
+  .gallery-strip { flex-direction: row; width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+  .gthumb { flex-shrink: 0; }
+  .hero__corner { width: 40px; height: 40px; }
+  .ts-hash,.ts-query { font-size: 32px; }
+  .dnav__right { display: none; }
 }
 @media (max-width: 480px) {
-  .tabnav__item { max-width: 110px; }
-  .tabtn__lbl { font-size: 12px; }
-  .writing-info-grid { grid-template-columns: 1fr 1fr; }
-  .audio-bar { flex-wrap: wrap; }
-  .audio-bar__prog-wrap { order: 5; flex: 0 0 100%; }
+  .container { padding: 0 16px; }
+  .card { border-radius: var(--radius-sm); }
+  .sfm-grid { grid-template-columns: 1fr; }
+  .cdb-row { grid-template-columns: 80px 1fr; }
+  .hero__filigree,.hero__stamp { display: none; }
+  .hstat { flex: 1; min-width: 120px; }
+  .wbc-col { padding: 16px; }
 }
-/* ─── Clickable tags ─────────────────────────────────────────── */
-.dtag--clickable,
-.ctag--clickable,
-.rtag--clickable,
-.sfm-chip--tag {
-  cursor: pointer;
-  transition: background 0.18s, color 0.18s, transform 0.12s;
+@media (prefers-color-scheme: dark) {
+  .pub {
+    --bg: #0d0d0d; --surface: #161616; --surface-elevated: #1f1f1f;
+    --text: #f0eeeb; --text-muted: #9ca3af;
+    --border: rgba(255,255,255,0.09); --border-light: rgba(255,255,255,0.05);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3); --shadow: 0 10px 26px rgba(0,0,0,0.45); --shadow-lg: 0 20px 56px rgba(0,0,0,0.6);
+    --brand-light: rgba(140,21,21,0.18);
+  }
+  .shimmer { background: linear-gradient(90deg, #1a1a1a 25%, #262626 50%, #1a1a1a 75%); }
+  .skel__line,.skel__thumb,.skel__pill { background: #1f1f1f; }
+  .tabnav { background: rgba(13,13,13,0.95); }
+  .audio-bar { background: var(--surface); }
+  .sfm-block { background: var(--surface); }
+  .tabdrop { background: var(--surface-elevated); }
+  .tsort__sel { background: var(--surface); color: var(--text); }
+  .hero__overlay--base { background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.88) 100%); }
 }
-.dtag--clickable:hover  { opacity: 0.8; transform: translateY(-1px); }
-.ctag--clickable:hover  { opacity: 0.85; transform: translateY(-1px); }
-.sfm-chip--tag:hover    { filter: brightness(1.15); transform: translateY(-1px); }
-.rtag--clickable        { cursor: pointer; }
-.rtag--clickable:hover  { opacity: 0.8; }
- 
-/* ─── Tabnav separator ───────────────────────────────────────── */
-.tabnav__sep {
-  display: inline-block;
-  width: 1px;
-  height: 1.4em;
-  background: currentColor;
-  opacity: 0.18;
-  align-self: center;
-  flex-shrink: 0;
-  margin: 0 2px;
+@media (prefers-reduced-motion: reduce) {
+  *,.hero__slide,.hparticle,.msound__disc,.stamp__ring,.stamp__inner { animation: none !important; transition: none !important; }
 }
-.tabnav__row { display: flex; align-items: center; }
- 
-/* ─── Tag search page ────────────────────────────────────────── */
-.ts-hero {
-  padding: 2rem 0 1.5rem;
-  border-bottom: 1px solid rgba(0,0,0,0.08);
-  margin-bottom: 2rem;
-}
-.ts-hero .container {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-.ts-back { flex-shrink: 0; }
-.ts-title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  display: flex;
-  align-items: baseline;
-  gap: 0.1em;
-}
-.ts-hash  { opacity: 0.4; font-weight: 400; }
-.ts-query { }
-.ts-total {
-  margin-inline-start: auto;
-  opacity: 0.5;
-  font-size: 0.9rem;
-}
-.ts-section { margin-bottom: 2.5rem; }
-.ts-section-head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-.ts-section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0;
-}
-.ts-section-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.15em 0.55em;
-  border-radius: 99px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  background: rgba(0,0,0,0.08);
-}
-.ts-divider {
-  border: none;
-  border-top: 1px solid rgba(0,0,0,0.1);
-  margin: 0 0 2.5rem;
-}
-.ts-body { padding-top: 0; }
- 
-/* ─── Sound full metadata section ─────────────────────────────── */
-.sound-full-meta {
-  padding: 2rem 0 3rem;
-}
-.sfm-block {
-  padding: 1.5rem 0;
-  border-bottom: 1px solid rgba(0,0,0,0.07);
-}
-.sfm-block:last-child { border-bottom: none; }
-.sfm-block__title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  opacity: 0.5;
-  margin: 0 0 1rem;
-}
-.sfm-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
-}
-.sfm-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.sfm-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  opacity: 0.45;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.sfm-value {
-  font-size: 0.92rem;
-  font-weight: 500;
-}
-.sfm-value--badge {
-  display: inline-flex;
-  padding: 0.15em 0.55em;
-  border-radius: 4px;
-  background: rgba(0,0,0,0.07);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.sfm-value--yes { color: #16a34a; font-weight: 700; }
- 
-.sfm-bilingual {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-@media (max-width: 640px) { .sfm-bilingual { grid-template-columns: 1fr; } }
-.sfm-lang-col { display: flex; flex-direction: column; gap: 0.5rem; }
-.sfm-lang-badge {
-  display: inline-flex;
-  align-self: flex-start;
-  padding: 0.15em 0.6em;
-  border-radius: 4px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.sfm-lang-badge--ckb { background: rgba(59,130,246,0.1); color: #1d4ed8; }
-.sfm-lang-badge--kmr { background: rgba(16,185,129,0.1); color: #065f46; }
-.sfm-desc { margin: 0; font-size: 0.92rem; line-height: 1.6; opacity: 0.85; }
- 
-.sfm-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.sfm-chip {
-  padding: 0.25em 0.7em;
-  border-radius: 99px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  background: rgba(0,0,0,0.06);
-}
-.sfm-chip--loc { background: rgba(59,130,246,0.08); }
-.sfm-chip--tag { cursor: pointer; background: rgba(0,0,0,0.06); }
- 
-.sfm-attachments { display: flex; flex-direction: column; gap: 0.5rem; }
-.sfm-attachment {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: 8px;
-  background: rgba(0,0,0,0.03);
-  border: 1px solid rgba(0,0,0,0.08);
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.15s;
-}
-.sfm-attachment:hover { background: rgba(0,0,0,0.06); }
-.sfm-attachment__type {
-  padding: 0.1em 0.45em;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  background: rgba(0,0,0,0.08);
-  flex-shrink: 0;
-}
-.sfm-attachment__title { font-size: 0.88rem; font-weight: 500; flex: 1; }
-.sfm-attachment__meta  { display: flex; gap: 0.5rem; font-size: 0.75rem; opacity: 0.5; }
-.sfm-attachment__arrow { font-size: 1rem; opacity: 0.4; flex-shrink: 0; }
- 
-.sfm-block--timestamps { display: flex; gap: 2rem; flex-wrap: wrap; border-bottom: none; padding-top: 1rem; }
-.sfm-ts { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; opacity: 0.5; }
-.sfm-ts__label { font-weight: 600; }
- 
-/* ─── Track extra rows ───────────────────────────────────────── */
-.track__sub-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.2rem;
-}
-.track__chip {
-  padding: 0.1em 0.45em;
-  border-radius: 4px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  background: rgba(255,255,255,0.12);
-  color: inherit;
-  letter-spacing: 0.03em;
-}
-.track__extra-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-}
-.track__extra-item { font-size: 0.72rem; opacity: 0.55; }
- 
-/* ─── Track brochures ────────────────────────────────────────── */
-.track-brochures { padding: 1rem 0 0; }
-.track-brochures__title { font-size: 0.8rem; font-weight: 700; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 0.75rem; }
-.track-brochures__grid  { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.brochure-thumb {
-  position: relative;
-  cursor: pointer;
-  border-radius: 6px;
-  overflow: hidden;
-  width: 80px; height: 80px;
-}
-.brochure-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.brochure-thumb__cap {
-  position: absolute; inset-x: 0; bottom: 0;
-  background: rgba(0,0,0,0.65); color: #fff;
-  font-size: 0.6rem; padding: 2px 4px;
-  text-align: center; line-height: 1.3;
-}
+
+
 
 </style>
