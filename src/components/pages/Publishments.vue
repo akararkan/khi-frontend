@@ -1,8 +1,678 @@
 <template>
   <main class="pub" :dir="lang.dir" :class="{ 'pub--ltr': lang.isKMR }">
     <transition name="page" mode="out-in">
-
-      <div v-if="!activeItem" key="listing" class="listing">
+ 
+      <!-- ══════════════════════════════════════════════════════════
+           DETAIL VIEW  (highest priority)
+      ══════════════════════════════════════════════════════════ -->
+      <div v-if="activeItem" key="detail" class="detail">
+        <nav class="dnav">
+          <div class="container dnav__inner">
+            <button class="back-btn" @click="closeItem">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              <span>{{ lbl('back') }}</span>
+            </button>
+            <div class="dnav__right">
+              <span class="dtype-pill">{{ getMediaIcon(activeItem._mediaType) }} {{ getMediaTypeLabel(activeItem._mediaType) }}</span>
+              <div class="langpills" v-if="activeItem.contentLanguages?.length">
+                <span v-for="l in activeItem.contentLanguages" :key="l" class="langpill" :class="{ 'langpill--on': lang.activeLang === l }">
+                  <span class="langpill__dot" :class="`lpdot--${l.toLowerCase()}`"></span>{{ l }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </nav>
+ 
+        <header class="dhero">
+          <div class="dhero__bg" :style="{ backgroundImage: `url(${pCover(activeItem)})` }"></div>
+          <div class="dhero__gradient"></div>
+          <div class="dhero__gradient dhero__gradient--side"></div>
+          <div class="dhero__grain"></div>
+          <div class="dhero__scanlines"></div>
+          <div class="dhero__frame dhero__frame--tl"></div>
+          <div class="dhero__frame dhero__frame--br"></div>
+          <div class="dhero__gold-line dhero__gold-line--top"></div>
+          <div class="dhero__gold-line dhero__gold-line--bottom"></div>
+          <div class="container dhero__content">
+            <transition name="lang-swap" mode="out-in">
+              <div :key="lang.activeLang" class="dhero__left">
+                <div class="dhero__badges">
+                  <span class="dbadge dbadge--type">{{ getTypeEmoji(activeItem) }} {{ getTypeLabel(activeItem) }}</span>
+                  <span class="dbadge" v-if="getItemDate(activeItem)">📅 {{ formatDate(getItemDate(activeItem)) }}</span>
+                  <span class="dbadge dbadge--mem" v-if="activeItem.albumOfMemories">💫 {{ lbl('albumOfMemories') }}</span>
+                  <span class="dbadge" v-if="activeItem.thisProjectOfInstitute">🏛️ {{ lbl('institute') }}</span>
+                </div>
+                <h1 class="dhero__title">{{ pTitle(activeItem) }}</h1>
+                <p class="dhero__desc" v-if="pDesc(activeItem)">{{ pDesc(activeItem) }}</p>
+                <div class="dhero__stats">
+                  <!-- SOUND stats (all fields) -->
+                  <template v-if="activeItem._mediaType === 'sound'">
+                    <div class="dstat" v-if="activeItem.files?.length">
+                      <span class="dstat__ico">🎵</span><span class="dstat__val">{{ activeItem.files.length }}</span><span class="dstat__lbl">{{ lbl('tracks') }}</span>
+                    </div>
+                    <div class="dstat" v-if="activeItem.soundType">
+                      <span class="dstat__ico">🎼</span><span class="dstat__val">{{ activeItem.soundType }}</span>
+                    </div>
+                    <div class="dstat" v-if="activeItem.reader">
+                      <span class="dstat__ico">🎤</span><span class="dstat__val">{{ activeItem.reader }}</span>
+                    </div>
+                    <div class="dstat" v-if="activeItem.directors?.length">
+                      <span class="dstat__ico">🎬</span><span class="dstat__val">{{ activeItem.directors.join('، ') }}</span>
+                    </div>
+                    <div class="dstat" v-if="totalSoundDuration > 0">
+                      <span class="dstat__ico">⏱</span><span class="dstat__val">{{ formatTime(totalSoundDuration) }}</span>
+                    </div>
+                    <div class="dstat" v-if="activeItem.trackState === 'MULTI' && activeItem.albumName">
+                      <span class="dstat__ico">💿</span><span class="dstat__val">{{ activeItem.albumName }}</span>
+                    </div>
+                    <div class="dstat" v-if="activeItem.publishmentYear">
+                      <span class="dstat__ico">📅</span><span class="dstat__val">{{ activeItem.publishmentYear }}</span>
+                    </div>
+                    <div class="dstat" v-if="activeItem.terms">
+                      <span class="dstat__ico">🗣</span><span class="dstat__val">{{ activeItem.terms }}</span>
+                    </div>
+                  </template>
+                  <!-- VIDEO stats -->
+                  <template v-else-if="activeItem._mediaType === 'video'">
+                    <div class="dstat" v-if="activeItem.durationSeconds"><span class="dstat__ico">⏱</span><span class="dstat__val">{{ formatTime(activeItem.durationSeconds) }}</span></div>
+                    <div class="dstat" v-if="pDirector(activeItem)"><span class="dstat__ico">🎬</span><span class="dstat__val">{{ pDirector(activeItem) }}</span></div>
+                    <div class="dstat" v-if="pProducer(activeItem)"><span class="dstat__ico">🎞</span><span class="dstat__val">{{ pProducer(activeItem) }}</span></div>
+                    <div class="dstat" v-if="activeItem.resolution"><span class="dstat__ico">📺</span><span class="dstat__val">{{ activeItem.resolution }}</span></div>
+                  </template>
+                  <!-- WRITING stats -->
+                  <template v-else-if="activeItem._mediaType === 'writing'">
+                    <div class="dstat" v-if="pPageCount(activeItem)"><span class="dstat__ico">📄</span><span class="dstat__val">{{ pPageCount(activeItem) }}</span><span class="dstat__lbl">{{ lbl('pages') }}</span></div>
+                    <div class="dstat" v-if="pWriter(activeItem)"><span class="dstat__ico">✍️</span><span class="dstat__val">{{ pWriter(activeItem) }}</span></div>
+                    <div class="dstat" v-if="pGenre(activeItem)"><span class="dstat__ico">📚</span><span class="dstat__val">{{ pGenre(activeItem) }}</span></div>
+                  </template>
+                  <!-- IMAGE stats -->
+                  <template v-else-if="activeItem._mediaType === 'image'">
+                    <div class="dstat" v-if="activeItem.imageAlbum?.length"><span class="dstat__ico">🖼️</span><span class="dstat__val">{{ activeItem.imageAlbum.length }}</span><span class="dstat__lbl">{{ lbl('images') }}</span></div>
+                    <div class="dstat" v-if="pLocation(activeItem)"><span class="dstat__ico">📍</span><span class="dstat__val">{{ pLocation(activeItem) }}</span></div>
+                    <div class="dstat" v-if="pCollectedBy(activeItem)"><span class="dstat__ico">🏛️</span><span class="dstat__val">{{ pCollectedBy(activeItem) }}</span></div>
+                  </template>
+                </div>
+                <!-- Clickable Tags (no keywords) -->
+                <div class="dhero__tags" v-if="pTags(activeItem).length">
+                  <span
+                    v-for="tag in pTags(activeItem)" :key="tag"
+                    class="dtag dtag--clickable"
+                    @click.stop="searchByTagGlobal(tag)"
+                    :title="`گەڕان بەدوای: #${tag}`"
+                  >#{{ tag }}</span>
+                </div>
+              </div>
+            </transition>
+            <!-- Media mockups -->
+            <div class="dhero__right">
+              <div class="mockup-sound" v-if="activeItem._mediaType === 'sound'">
+                <div class="msound__case"><div class="msound__spine"></div><div class="msound__front"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /><div class="msound__overlay"></div></div></div>
+                <div class="msound__disc"><div class="msound__disc-ring"></div><div class="msound__disc-art"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /></div><div class="msound__disc-hole"></div></div>
+              </div>
+              <div class="mockup-book" v-else-if="activeItem._mediaType === 'writing'">
+                <div class="mbook__spine"></div><div class="mbook__cover"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /><div class="mbook__sheen"></div></div><div class="mbook__pages"></div>
+              </div>
+              <div class="mockup-video" v-else-if="activeItem._mediaType === 'video'">
+                <div class="mvideo__frame"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /><div class="mvideo__play-ico">▶</div></div><div class="mvideo__stand"></div>
+              </div>
+              <div class="mockup-image" v-else-if="activeItem._mediaType === 'image'">
+                <div class="mimage__frame"><div class="mimage__mat"></div><div class="mimage__photo"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /></div></div>
+              </div>
+            </div>
+          </div>
+        </header>
+ 
+        <!-- ══ SOUND — Player + Full Metadata ══ -->
+        <section class="stream-section" v-if="activeItem._mediaType === 'sound' && activeItem.files?.length">
+          <div class="container">
+            <div class="stream-layout">
+              <div class="stream-main">
+                <div class="stream-head">
+                  <h3 class="section-heading">{{ lbl('yourStream') }}</h3>
+                  <span class="stream-count">{{ activeItem.files.length }} {{ lbl('tracks') }}</span>
+                </div>
+                <div v-if="audioError" class="audio-error"><span>⚠️ {{ audioError }}</span></div>
+                <div class="track-list">
+                  <div
+                    v-for="(file, i) in activeItem.files" :key="file.id || i"
+                    class="track"
+                    :class="{ 'track--playing': currentTrackIdx === i && isAudioPlaying, 'track--selected': currentTrackIdx === i }"
+                    @click="playTrack(file, i)"
+                  >
+                    <div class="track__num">{{ String(i + 1).padStart(2, '0') }}</div>
+                    <div class="track__cover">
+                      <img :src="pCover(activeItem)" :alt="`Track ${i + 1}`" @error="onImgError($event)" />
+                      <div class="track__play-ico"><span>{{ currentTrackIdx === i && isAudioPlaying ? '⏸' : '▶' }}</span></div>
+                    </div>
+                    <div class="track__indicator">
+                      <span v-for="b in 3" :key="b" class="track__bar" :class="{ 'track__bar--live': currentTrackIdx === i && isAudioPlaying }" :style="{ '--b': b }"></span>
+                    </div>
+                    <div class="track__info">
+                      <div class="track__title">{{ file.title || `${lbl('track')} ${i + 1}` }}</div>
+                      <div class="track__sub-row">
+                        <span v-if="file.fileType" class="track__chip">{{ file.fileType }}</span>
+                        <span v-if="file.genre" class="track__chip">{{ file.genre }}</span>
+                        <span v-if="file.form" class="track__chip">{{ file.form }}</span>
+                        <span v-if="file.audioChannel" class="track__chip">{{ file.audioChannel }}</span>
+                      </div>
+                      <div class="track__extra-row" v-if="file.recordingVenue || file.publishmentYear || file.bitRate || file.sampleRate">
+                        <span v-if="file.recordingVenue" class="track__extra-item">📍 {{ file.recordingVenue }}</span>
+                        <span v-if="file.publishmentYear" class="track__extra-item">📅 {{ file.publishmentYear }}</span>
+                        <span v-if="file.bitRate" class="track__extra-item">🔊 {{ file.bitRate }}</span>
+                        <span v-if="file.sampleRate" class="track__extra-item">〰 {{ file.sampleRate }}</span>
+                      </div>
+                    </div>
+                    <div class="track__waves">
+                      <div class="wave-wrap" :class="{ 'wave-wrap--live': currentTrackIdx === i && isAudioPlaying }">
+                        <span v-for="(h, bi) in getWaveform(file.id || i)" :key="bi" class="wbar" :style="{ '--h': h, '--bi': bi }"></span>
+                      </div>
+                    </div>
+                    <div class="track__right">
+                      <span class="track__dur" v-if="file.durationSeconds">{{ formatTime(file.durationSeconds) }}</span>
+                      <span class="track__size" v-if="file.sizeBytes > 0">{{ formatSize(file.sizeBytes) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Brochures for selected track -->
+                <div class="track-brochures" v-if="currentTrack?.brochures?.length">
+                  <h4 class="track-brochures__title">بروشووری تراک</h4>
+                  <div class="track-brochures__grid">
+                    <div v-for="(br, bi) in currentTrack.brochures" :key="br.id || bi" class="brochure-thumb" @click="openFullscreen(br.imageUrl)">
+                      <img :src="br.imageUrl" :alt="br.caption || ''" @error="onImgError($event)" />
+                      <span v-if="br.caption" class="brochure-thumb__cap">{{ br.caption }}</span>
+                    </div>
+                  </div>
+                </div>
+                <!-- Audio bar -->
+                <div class="audio-bar" v-if="currentTrack">
+                  <div class="audio-bar__cover">
+                    <img :src="pCover(activeItem)" alt="playing" @error="onImgError($event)" />
+                    <div class="audio-bar__vinyl" :class="{ 'audio-bar__vinyl--spin': isAudioPlaying }"></div>
+                  </div>
+                  <div class="audio-bar__info">
+                    <div class="audio-bar__title">{{ currentTrack.title || `${lbl('track')} ${currentTrackIdx + 1}` }}</div>
+                    <div class="audio-bar__album">{{ pTitle(activeItem) }}</div>
+                  </div>
+                  <div class="audio-bar__controls">
+                    <button class="abtn" @click="prevTrack" :disabled="currentTrackIdx <= 0">⏮</button>
+                    <button class="abtn abtn--play" @click="togglePlay">{{ isAudioPlaying ? '⏸' : '▶' }}</button>
+                    <button class="abtn" @click="nextTrack" :disabled="currentTrackIdx >= activeItem.files.length - 1">⏭</button>
+                  </div>
+                  <div class="audio-bar__prog-wrap" @click="seekAudio">
+                    <div class="audio-bar__prog-track">
+                      <div class="audio-bar__prog-fill" :style="{ width: audioProgress + '%' }"></div>
+                      <div class="audio-bar__prog-thumb" :style="{ left: audioProgress + '%' }"></div>
+                    </div>
+                  </div>
+                  <div class="audio-bar__time">{{ formatTime(audioCurrentTime) }} / {{ formatTime(audioDuration) }}</div>
+                </div>
+                <audio ref="audioPlayer" style="display:none" preload="auto"
+                  @loadedmetadata="onAudioLoaded" @timeupdate="onAudioTimeUpdate"
+                  @play="isAudioPlaying = true" @pause="isAudioPlaying = false"
+                  @ended="onTrackEnded" @error="onAudioError"></audio>
+              </div>
+              <!-- Side panel -->
+              <div class="stream-side">
+                <div class="side-featured">
+                  <h4 class="side-heading">{{ lbl('featured') }}</h4>
+                  <div class="side-cover">
+                    <img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" />
+                    <div class="side-cover__overlay"><div class="side-cover__title">{{ pTitle(activeItem) }}</div></div>
+                  </div>
+                  <div class="side-meta">
+                    <div class="side-meta__row" v-if="activeItem.soundType"><span class="side-meta__key">{{ lbl('type') }}</span><span class="side-meta__val">{{ activeItem.soundType }}</span></div>
+                    <div class="side-meta__row" v-if="activeItem.reader"><span class="side-meta__key">{{ lbl('reader') }}</span><span class="side-meta__val">{{ activeItem.reader }}</span></div>
+                    <div class="side-meta__row" v-if="activeItem.directors?.length"><span class="side-meta__key">{{ lbl('director') }}</span><span class="side-meta__val">{{ activeItem.directors.join('، ') }}</span></div>
+                    <div class="side-meta__row" v-if="activeItem.trackState"><span class="side-meta__key">دۆخ</span><span class="side-meta__val">{{ activeItem.trackState }}</span></div>
+                    <div class="side-meta__row" v-if="activeItem.terms"><span class="side-meta__key">زاراوە</span><span class="side-meta__val">{{ activeItem.terms }}</span></div>
+                    <div class="side-meta__row" v-for="loc in (activeItem.locations || []).slice(0, 2)" :key="loc"><span class="side-meta__key">📍</span><span class="side-meta__val">{{ loc }}</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+ 
+        <!-- ══ SOUND — Full Metadata Grid ══ -->
+        <section class="sound-full-meta" v-if="activeItem._mediaType === 'sound'">
+          <div class="container">
+ 
+            <!-- Album Info (MULTI) -->
+            <div class="sfm-block" v-if="activeItem.trackState === 'MULTI' && (activeItem.albumName || activeItem.publishmentYear || activeItem.cdNumber || activeItem.totalTracks)">
+              <h3 class="sfm-block__title">زانیاری ئەلبووم</h3>
+              <div class="sfm-grid">
+                <div class="sfm-item" v-if="activeItem.albumName"><span class="sfm-label">ناوی ئەلبووم</span><span class="sfm-value">{{ activeItem.albumName }}</span></div>
+                <div class="sfm-item" v-if="activeItem.publishmentYear"><span class="sfm-label">ساڵی بڵاوکردنەوە</span><span class="sfm-value">{{ activeItem.publishmentYear }}</span></div>
+                <div class="sfm-item" v-if="activeItem.cdNumber"><span class="sfm-label">ژمارەی CD</span><span class="sfm-value">{{ activeItem.cdNumber }}</span></div>
+                <div class="sfm-item" v-if="activeItem.totalTracks"><span class="sfm-label">کۆی تراکەکان</span><span class="sfm-value">{{ activeItem.totalTracks }}</span></div>
+              </div>
+            </div>
+ 
+            <!-- Technical Info -->
+            <div class="sfm-block">
+              <h3 class="sfm-block__title">زانیاری تەکنیکی</h3>
+              <div class="sfm-grid">
+                <div class="sfm-item"><span class="sfm-label">جۆری دەنگ</span><span class="sfm-value">{{ activeItem.soundType || '—' }}</span></div>
+                <div class="sfm-item"><span class="sfm-label">دۆخی تراک</span><span class="sfm-value sfm-value--badge">{{ activeItem.trackState }}</span></div>
+                <div class="sfm-item" v-if="activeItem.reader"><span class="sfm-label">خوێنەر</span><span class="sfm-value">{{ activeItem.reader }}</span></div>
+                <div class="sfm-item" v-if="activeItem.directors?.length"><span class="sfm-label">دەرهێنەران</span><span class="sfm-value">{{ activeItem.directors.join('، ') }}</span></div>
+                <div class="sfm-item" v-if="activeItem.terms"><span class="sfm-label">زاراوە / شێوەزار</span><span class="sfm-value">{{ activeItem.terms }}</span></div>
+                <div class="sfm-item" v-if="activeItem.thisProjectOfInstitute"><span class="sfm-label">پرۆژەی دامەزراوە</span><span class="sfm-value sfm-value--yes">بەڵێ</span></div>
+                <div class="sfm-item" v-if="activeItem.albumOfMemories"><span class="sfm-label">یادگاریەکان</span><span class="sfm-value sfm-value--yes">بەڵێ 💫</span></div>
+                <div class="sfm-item" v-if="activeItem.files?.length"><span class="sfm-label">ژمارەی فایلەکان</span><span class="sfm-value">{{ activeItem.files.length }}</span></div>
+                <div class="sfm-item" v-if="activeItem.totalDurationSeconds > 0"><span class="sfm-label">کاتی گشتی</span><span class="sfm-value">{{ formatTime(activeItem.totalDurationSeconds) }}</span></div>
+                <div class="sfm-item" v-if="activeItem.totalSizeBytes > 0"><span class="sfm-label">قەبارەی گشتی</span><span class="sfm-value">{{ formatSize(activeItem.totalSizeBytes) }}</span></div>
+              </div>
+            </div>
+ 
+            <!-- Content (bilingual) -->
+            <div class="sfm-block" v-if="pDesc(activeItem)">
+              <h3 class="sfm-block__title">وەسف</h3>
+              <div class="sfm-bilingual">
+                <div class="sfm-lang-col" v-if="activeItem.ckbContent?.description">
+                  <span class="sfm-lang-badge sfm-lang-badge--ckb">سۆرانی</span>
+                  <p class="sfm-desc">{{ activeItem.ckbContent.description }}</p>
+                </div>
+                <div class="sfm-lang-col" v-if="activeItem.kmrContent?.description">
+                  <span class="sfm-lang-badge sfm-lang-badge--kmr">کورمانجی</span>
+                  <p class="sfm-desc">{{ activeItem.kmrContent.description }}</p>
+                </div>
+              </div>
+            </div>
+ 
+            <!-- Locations -->
+            <div class="sfm-block" v-if="activeItem.locations?.length">
+              <h3 class="sfm-block__title">شوێنەکان</h3>
+              <div class="sfm-chips">
+                <span v-for="loc in activeItem.locations" :key="loc" class="sfm-chip sfm-chip--loc">📍 {{ loc }}</span>
+              </div>
+            </div>
+ 
+            <!-- Languages -->
+            <div class="sfm-block" v-if="activeItem.contentLanguages?.length">
+              <h3 class="sfm-block__title">زمانی ناوەڕۆک</h3>
+              <div class="sfm-chips">
+                <span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">
+                  {{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}
+                </span>
+              </div>
+            </div>
+ 
+            <!-- Attachments -->
+            <div class="sfm-block" v-if="activeItem.attachments?.length">
+              <h3 class="sfm-block__title">هاوپێچەکان <span class="sfm-count">{{ activeItem.attachments.length }}</span></h3>
+              <div class="sfm-attachments">
+                <a
+                  v-for="(att, ai) in activeItem.attachments" :key="att.id || ai"
+                  :href="att.fileUrl" target="_blank" rel="noopener"
+                  class="sfm-attachment"
+                >
+                  <span class="sfm-attachment__type">{{ att.attachmentType || 'FILE' }}</span>
+                  <span class="sfm-attachment__title">{{ att.title || `هاوپێچ ${ai + 1}` }}</span>
+                  <span class="sfm-attachment__meta">
+                    <span v-if="att.mimeType">{{ att.mimeType }}</span>
+                    <span v-if="att.sizeBytes > 0">{{ formatSize(att.sizeBytes) }}</span>
+                  </span>
+                  <span class="sfm-attachment__arrow">↗</span>
+                </a>
+              </div>
+            </div>
+ 
+            <!-- Tags (clickable) -->
+            <div class="sfm-block" v-if="pTags(activeItem).length">
+              <h3 class="sfm-block__title">{{ lbl('tags') }}</h3>
+              <div class="sfm-chips">
+                <span
+                  v-for="tag in pTags(activeItem)" :key="tag"
+                  class="sfm-chip sfm-chip--tag"
+                  @click="searchByTagGlobal(tag)"
+                >#{{ tag }}</span>
+              </div>
+            </div>
+ 
+            <!-- Timestamps -->
+            <div class="sfm-block sfm-block--timestamps">
+              <div class="sfm-ts" v-if="activeItem.createdAt">
+                <span class="sfm-ts__label">دروستکراوە:</span>
+                <span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span>
+              </div>
+              <div class="sfm-ts" v-if="activeItem.updatedAt">
+                <span class="sfm-ts__label">نوێکراوەتەوە:</span>
+                <span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+ 
+        <!-- ══ VIDEO ══ -->
+        <section class="video-section" v-if="activeItem._mediaType === 'video'">
+          <div class="container">
+            <template v-if="activeItem.videoType === 'VIDEO_CLIP' && activeItem.videoClipItems?.length">
+              <div class="clips-layout">
+                <div class="clips-player" v-if="selectedClip">
+                  <div class="vplayer-wrap" v-if="getClipUrl(selectedClip)"><video class="vplayer-el" controls :poster="pCover(activeItem)" :key="getClipUrl(selectedClip)"><source :src="getClipUrl(selectedClip)" type="video/mp4" /></video></div>
+                  <div class="vembed-wrap" v-else-if="getClipEmbedUrl(selectedClip)"><iframe :src="getClipEmbedUrl(selectedClip)" frameborder="0" allowfullscreen class="vembed"></iframe></div>
+                  <div class="vno-source" v-else><div class="vno-source__icon">📹</div><div class="vno-source__text">{{ lbl('noSource') }}</div></div>
+                  <div class="clip-desc" v-if="lang.activeLang === 'CKB' ? selectedClip.descriptionCkb : selectedClip.descriptionKmr"><p>{{ lang.activeLang === 'CKB' ? selectedClip.descriptionCkb : selectedClip.descriptionKmr }}</p></div>
+                </div>
+                <div class="clips-list">
+                  <h4 class="clips-list__heading">{{ lbl('clips') }} ({{ activeItem.videoClipItems?.length }})</h4>
+                  <div v-for="clip in activeItem.videoClipItems" :key="clip.id" class="clip-item" :class="{ 'clip-item--on': selectedClip?.id === clip.id }" @click="selectedClip = clip">
+                    <div class="clip-item__num">{{ clip.clipNumber }}</div>
+                    <div class="clip-item__info"><div class="clip-item__title">{{ lang.activeLang === 'CKB' ? (clip.titleCkb || clip.titleKmr) : (clip.titleKmr || clip.titleCkb) || `Clip ${clip.clipNumber}` }}</div><div class="clip-item__meta"><span v-if="clip.durationSeconds">⏱ {{ formatTime(clip.durationSeconds) }}</span><span v-if="clip.resolution">{{ clip.resolution }}</span></div></div>
+                    <svg class="clip-item__play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <div class="video-stage">
+                <div class="vplayer-wrap" v-if="getVideoSourceUrl(activeItem)"><video ref="videoPlayerEl" class="vplayer-el" controls :poster="pCover(activeItem)"><source :src="getVideoSourceUrl(activeItem)" type="video/mp4" /></video></div>
+                <div class="vembed-wrap" v-else-if="getVideoEmbedUrl(activeItem)"><iframe :src="getVideoEmbedUrl(activeItem)" frameborder="0" allowfullscreen class="vembed"></iframe></div>
+                <div class="vno-source" v-else><div class="vno-source__icon">🎬</div><div class="vno-source__text">{{ lbl('noSource') }}</div></div>
+                <div class="vfilm-info"><div class="vfilm-chips">
+                  <span v-if="activeItem.resolution" class="vchip">📺 {{ activeItem.resolution }}</span>
+                  <span v-if="activeItem.fileFormat" class="vchip">🎞 {{ activeItem.fileFormat }}</span>
+                  <span v-if="activeItem.durationSeconds" class="vchip">⏱ {{ formatTime(activeItem.durationSeconds) }}</span>
+                  <span v-if="activeItem.fileSizeMb" class="vchip">💾 {{ activeItem.fileSizeMb?.toFixed(1) }}MB</span>
+                </div></div>
+              </div>
+            </template>
+          </div>
+        </section>
+ 
+        <!-- ══ IMAGE ══ -->
+        <section class="gallery-section" v-if="activeItem._mediaType === 'image'">
+          <div class="container">
+            <div class="gallery-layout" v-if="activeItem.imageAlbum?.length">
+              <div class="gallery-main">
+                <div class="gallery-preview" v-if="selectedImage"><img :src="selectedImage.imageUrl || selectedImage.externalUrl || selectedImage.embedUrl" :alt="lang.activeLang === 'CKB' ? selectedImage.captionCkb : selectedImage.captionKmr" class="gallery-preview__img" @click="openFullscreen(selectedImage.imageUrl || selectedImage.externalUrl)" @error="onImgError($event)" /><div class="gallery-zoom-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>{{ lbl('clickToExpand') }}</div></div>
+                <div class="gallery-caption" v-if="selectedImage"><div class="gallery-caption__title">{{ lang.activeLang === 'CKB' ? selectedImage.captionCkb : selectedImage.captionKmr }}</div><div class="gallery-caption__desc">{{ lang.activeLang === 'CKB' ? selectedImage.descriptionCkb : selectedImage.descriptionKmr }}</div></div>
+              </div>
+              <div class="gallery-strip"><button v-for="img in activeItem.imageAlbum" :key="img.id" class="gthumb" :class="{ 'gthumb--on': selectedImage?.id === img.id }" @click="selectedImage = img"><img :src="img.imageUrl || img.externalUrl" @error="onImgError($event)" /></button></div>
+              <div class="gallery-nav" v-if="activeItem.imageAlbum.length > 1">
+                <button class="gnav-btn" @click="prevImage" :disabled="!canPrevImage">{{ lbl('prev') }}</button>
+                <span class="gnav-pos">{{ currentImageIdx + 1 }} / {{ activeItem.imageAlbum.length }}</span>
+                <button class="gnav-btn" @click="nextImage" :disabled="!canNextImage">{{ lbl('next') }}</button>
+              </div>
+            </div>
+            <div class="gallery-empty" v-else><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" class="gallery-single" @error="onImgError($event)" /></div>
+          </div>
+        </section>
+ 
+        <!-- ══ WRITING ══ -->
+        <section class="writing-section" v-if="activeItem._mediaType === 'writing'">
+          <div class="container">
+            <div class="writing-layout">
+              <div class="writing-info-grid">
+                <div class="winfo-card" v-if="pWriter(activeItem)"><div class="winfo-card__ico">✍️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('writer') }}</div><div class="winfo-card__val">{{ pWriter(activeItem) }}</div></div></div>
+                <div class="winfo-card" v-if="pGenre(activeItem)"><div class="winfo-card__ico">🎭</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('genre') }}</div><div class="winfo-card__val">{{ pGenre(activeItem) }}</div></div></div>
+                <div class="winfo-card" v-if="pPageCount(activeItem)"><div class="winfo-card__ico">📄</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('pages') }}</div><div class="winfo-card__val">{{ pPageCount(activeItem) }}</div></div></div>
+                <div class="winfo-card" v-if="activeItem.writingTopic"><div class="winfo-card__ico">🏷️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('category') }}</div><div class="winfo-card__val">{{ activeItem.writingTopic }}</div></div></div>
+                <div class="winfo-card" v-if="pFileFormat(activeItem)"><div class="winfo-card__ico">💾</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('format') }}</div><div class="winfo-card__val">{{ pFileFormat(activeItem) }}</div></div></div>
+                <div class="winfo-card" v-if="activeItem.publishedByInstitute"><div class="winfo-card__ico">🏛️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('publisher') }}</div><div class="winfo-card__val">{{ lbl('institute') }}</div></div></div>
+              </div>
+              <div class="series-block" v-if="activeItem.seriesName || activeItem.seriesId">
+                <div class="series-block__ico">📚</div>
+                <div class="series-block__info"><div class="series-block__lbl">{{ lbl('series') }}</div><div class="series-block__name">{{ activeItem.seriesName || activeItem.seriesId }}</div><div class="series-block__order" v-if="activeItem.seriesOrder">Vol. {{ activeItem.seriesOrder }}</div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+ 
+        <!-- Tags (clickable) — for all non-sound types -->
+        <section class="chips-section" v-if="activeItem._mediaType !== 'sound' && pTags(activeItem).length">
+          <div class="container">
+            <div class="chips-block">
+              <h3 class="chips-block__heading">{{ lbl('tags') }}</h3>
+              <div class="chips-row">
+                <span
+                  v-for="tag in pTags(activeItem)" :key="tag"
+                  class="chip chip--tag chip--clickable"
+                  @click="searchByTagGlobal(tag)"
+                >#{{ tag }}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+ 
+        <!-- Related -->
+        <section class="related" v-if="relatedItems.length">
+          <div class="container">
+            <div class="related__head"><h2 class="related__title">{{ lbl('related') }}</h2><div class="related__rule"></div></div>
+            <div class="related__grid">
+              <article v-for="rp in relatedItems" :key="`rel-${rp._mediaType}-${rp.id}`" class="rcard" tabindex="0" @click="openItem(rp)" @keyup.enter="openItem(rp)">
+                <div class="rcard__img"><img :src="pCover(rp)" :alt="pTitle(rp)" loading="lazy" class="rcard__img-main" @error="onImgError($event)" /><img v-if="pHoverCover(rp)" :src="pHoverCover(rp)" :alt="pTitle(rp)" loading="lazy" class="rcard__img-hover" @error="onImgError($event)" /><div class="rcard__overlay"></div><span class="rcard__typebadge">{{ getMediaIcon(rp._mediaType) }}</span></div>
+                <div class="rcard__body">
+                  <h3 class="rcard__title">{{ pTitle(rp) }}</h3>
+                  <p class="rcard__desc">{{ truncate(pDesc(rp), 90) }}</p>
+                  <div class="rcard__tags" v-if="pTags(rp).length">
+                    <span v-for="t in pTags(rp).slice(0, 2)" :key="t" class="rtag rtag--clickable" @click.stop="searchByTagGlobal(t)">#{{ t }}</span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+      </div>
+ 
+      <!-- ══════════════════════════════════════════════════════════
+           TAG SEARCH VIEW
+      ══════════════════════════════════════════════════════════ -->
+      <div v-else-if="tagSearchMode" key="tag-search" class="listing tag-search-page">
+        <!-- Tag search header -->
+        <div class="ts-hero">
+          <div class="container">
+            <button class="back-btn ts-back" @click="clearTagSearch">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              <span>{{ lbl('back') }}</span>
+            </button>
+            <div class="ts-title">
+              <span class="ts-hash">#</span><span class="ts-query">{{ tagSearchQuery }}</span>
+            </div>
+            <div class="ts-total" v-if="!isTagSearchLoading">
+              {{ totalTagResults }} {{ lbl('results') }}
+            </div>
+          </div>
+        </div>
+ 
+        <div class="container ts-body">
+ 
+          <!-- Loading -->
+          <div v-if="isTagSearchLoading" class="grid">
+            <div v-for="i in 8" :key="`tsk-${i}`" class="skel" :style="{ '--d': `${(i-1)*0.07}s` }">
+              <div class="skel__thumb shimmer"></div>
+              <div class="skel__body">
+                <div class="skel__line shimmer" style="width:55%"></div>
+                <div class="skel__line shimmer" style="width:100%;margin-top:.5rem"></div>
+                <div class="skel__line shimmer" style="width:75%"></div>
+              </div>
+            </div>
+          </div>
+ 
+          <template v-else>
+            <!-- Empty state -->
+            <div v-if="totalTagResults === 0" class="empty">
+              <div class="empty__icon">🔍</div>
+              <h3 class="empty__title">{{ lbl('noResults') }}</h3>
+              <p class="empty__hint">#{{ tagSearchQuery }}</p>
+              <button class="btn-primary" @click="clearTagSearch">{{ lbl('resetFilter') }}</button>
+            </div>
+ 
+            <!-- SOUNDS -->
+            <div class="ts-section" v-if="tagSearchResults.sounds.filter(s => !s.albumOfMemories).length">
+              <div class="ts-section-head">
+                <h3 class="ts-section-title">{{ lbl('sound') }}</h3>
+                <span class="ts-section-count">{{ tagSearchResults.sounds.filter(s => !s.albumOfMemories).length }}</span>
+              </div>
+              <div class="grid">
+                <article
+                  v-for="(item, i) in tagSearchResults.sounds.filter(s => !s.albumOfMemories)"
+                  :key="`ts-snd-${item.id}`"
+                  class="card card--sound"
+                  :style="{ '--d': `${i * 0.04}s` }"
+                  tabindex="0"
+                  @click="openItem(item)"
+                  @keyup.enter="openItem(item)"
+                >
+                  <div class="card__thumb">
+                    <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
+                    <img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" />
+                    <div class="card__film"></div><div class="card__scrim"></div>
+                    <div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div>
+                    <div class="card__countbadge" v-if="item.files?.length">🎵 {{ item.files.length }}</div>
+                    <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+                    <div class="card__accent"></div>
+                  </div>
+                  <div class="card__body">
+                    <div class="card__meta">
+                      <span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span>
+                    </div>
+                    <h3 class="card__title">{{ pTitle(item) }}</h3>
+                    <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
+                    <div class="card__extra" v-if="item.soundType"><span class="card__extra-val">{{ item.soundType }}</span></div>
+                    <div class="card__tags" v-if="pTags(item).length">
+                      <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span>
+                      <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
+                    </div>
+                  </div>
+                  <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
+                </article>
+              </div>
+            </div>
+ 
+            <hr v-if="tagSearchResults.sounds.filter(s=>!s.albumOfMemories).length && tagSearchResults.images.length" class="ts-divider">
+ 
+            <!-- IMAGES -->
+            <div class="ts-section" v-if="tagSearchResults.images.length">
+              <div class="ts-section-head">
+                <h3 class="ts-section-title">{{ lbl('images') }}</h3>
+                <span class="ts-section-count">{{ tagSearchResults.images.length }}</span>
+              </div>
+              <div class="grid">
+                <article
+                  v-for="(item, i) in tagSearchResults.images"
+                  :key="`ts-img-${item.id}`"
+                  class="card card--image"
+                  :style="{ '--d': `${i * 0.04}s` }"
+                  tabindex="0"
+                  @click="openItem(item)"
+                  @keyup.enter="openItem(item)"
+                >
+                  <div class="card__thumb">
+                    <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
+                    <img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" />
+                    <div class="card__film"></div><div class="card__scrim"></div>
+                    <div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div>
+                    <div class="card__countbadge" v-if="item.imageAlbum?.length">🖼️ {{ item.imageAlbum.length }}</div>
+                    <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+                    <div class="card__accent"></div>
+                  </div>
+                  <div class="card__body">
+                    <div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div>
+                    <h3 class="card__title">{{ pTitle(item) }}</h3>
+                    <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
+                    <div class="card__tags" v-if="pTags(item).length">
+                      <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span>
+                      <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
+                    </div>
+                  </div>
+                  <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
+                </article>
+              </div>
+            </div>
+ 
+            <hr v-if="tagSearchResults.images.length && tagSearchResults.videos.filter(v=>!v.albumOfMemories).length" class="ts-divider">
+ 
+            <!-- VIDEOS (non-memory) -->
+            <div class="ts-section" v-if="tagSearchResults.videos.filter(v => !v.albumOfMemories).length">
+              <div class="ts-section-head">
+                <h3 class="ts-section-title">{{ lbl('video') }}</h3>
+                <span class="ts-section-count">{{ tagSearchResults.videos.filter(v => !v.albumOfMemories).length }}</span>
+              </div>
+              <div class="grid">
+                <article
+                  v-for="(item, i) in tagSearchResults.videos.filter(v => !v.albumOfMemories)"
+                  :key="`ts-vid-${item.id}`"
+                  class="card card--video"
+                  :style="{ '--d': `${i * 0.04}s` }"
+                  tabindex="0"
+                  @click="openItem(item)"
+                  @keyup.enter="openItem(item)"
+                >
+                  <div class="card__thumb">
+                    <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
+                    <div class="card__film"></div><div class="card__scrim"></div>
+                    <div class="card__badges"><div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div></div>
+                    <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+                    <div class="card__accent"></div>
+                  </div>
+                  <div class="card__body">
+                    <div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div>
+                    <h3 class="card__title">{{ pTitle(item) }}</h3>
+                    <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
+                    <div class="card__tags" v-if="pTags(item).length">
+                      <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span>
+                      <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
+                    </div>
+                  </div>
+                  <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
+                </article>
+              </div>
+            </div>
+ 
+            <hr v-if="(tagSearchResults.videos.filter(v=>!v.albumOfMemories).length || tagSearchResults.images.length || tagSearchResults.sounds.filter(s=>!s.albumOfMemories).length) && tagSearchMemories.length" class="ts-divider">
+ 
+            <!-- ALBUM OF MEMORIES -->
+            <div class="ts-section" v-if="tagSearchMemories.length">
+              <div class="ts-section-head">
+                <h3 class="ts-section-title">{{ lbl('memories') }}</h3>
+                <span class="ts-section-count">{{ tagSearchMemories.length }}</span>
+              </div>
+              <div class="grid">
+                <article
+                  v-for="(item, i) in tagSearchMemories"
+                  :key="`ts-mem-${item._mediaType}-${item.id}`"
+                  class="card"
+                  :class="`card--${item._mediaType}`"
+                  :style="{ '--d': `${i * 0.04}s` }"
+                  tabindex="0"
+                  @click="openItem(item)"
+                  @keyup.enter="openItem(item)"
+                >
+                  <div class="card__thumb">
+                    <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
+                    <div class="card__film"></div><div class="card__scrim"></div>
+                    <div class="card__badges">
+                      <div class="card__typebadge">{{ getTypeEmoji(item) }} {{ getTypeLabel(item) }}</div>
+                      <div class="card__mediabadge">{{ getMediaIcon(item._mediaType) }}</div>
+                    </div>
+                    <div class="card__memorybadge">💫</div>
+                    <div class="card__view"><span class="card__viewbtn">{{ lbl('viewItem') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span></div>
+                    <div class="card__accent"></div>
+                  </div>
+                  <div class="card__body">
+                    <div class="card__meta"><span class="card__date" v-if="getItemDate(item)">{{ formatDate(getItemDate(item)) }}</span></div>
+                    <h3 class="card__title">{{ pTitle(item) }}</h3>
+                    <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
+                    <div class="card__tags" v-if="pTags(item).length">
+                      <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag ctag--clickable" @click.stop="searchByTagGlobal(tag)">#{{ tag }}</span>
+                      <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
+                    </div>
+                  </div>
+                  <div class="card__foot"><span class="card__cta">{{ lbl('viewItem') }}</span><span class="card__arrow">{{ lang.isKMR ? '→' : '←' }}</span></div>
+                </article>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+ 
+      <!-- ══════════════════════════════════════════════════════════
+           LISTING VIEW
+      ══════════════════════════════════════════════════════════ -->
+      <div v-else key="listing" class="listing">
+        <!-- Hero -->
         <header class="hero">
           <div class="hero__canvas">
             <div class="hero__slides">
@@ -82,63 +752,68 @@
             </div>
           </button>
         </header>
-
+ 
+        <!-- Tabnav — no icons, separator lines between items -->
         <nav class="tabnav" ref="tabNavRef">
           <div class="container">
             <div class="tabnav__row">
-              <div v-for="tab in tabDefs" :key="tab.key" class="tabnav__item" :class="{ 'tabnav__item--on': activeTab === tab.key }" @mouseenter="onTabEnter(tab.key)" @mouseleave="scheduleDropClose" @click="switchTab(tab.key)">
-                <button class="tabtn" :class="{ 'tabtn--on': activeTab === tab.key }">
-                  <span class="tabtn__ico">
-                    <svg v-if="tab.key === 'image'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    <svg v-else-if="tab.key === 'sound'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-                    <svg v-else-if="tab.key === 'video'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                    <svg v-else-if="tab.key === 'writing'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
-                    <svg v-else-if="tab.key === 'memories'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3.332.88-4.5 2-1.168-1.12-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                  </span>
-                  <span class="tabtn__lbl">{{ tab.label }}</span>
-                  <svg class="tabtn__chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                  <span class="tabtn__count" v-if="tabCount(tab.key) > 0">{{ tabCount(tab.key) }}</span>
-                </button>
-                <transition name="drop">
-                  <div v-if="openDropdownKey === tab.key" class="tabdrop" :class="{ 'tabdrop--memories': tab.key === 'memories' }" @mouseenter="cancelDropClose" @mouseleave="scheduleDropClose">
-                    <div class="tabdrop__inner">
-                      <template v-if="tab.key !== 'memories'">
-                        <div class="tabdrop__header"><span class="tabdrop__header-ico">{{ tab.icon }}</span><span class="tabdrop__header-lbl">{{ tab.label }}</span></div>
-                        <div class="tabdrop__divider"></div>
-                        <button class="tabdrop__item" :class="{ 'tabdrop__item--on': !activeTopicFilter }" @click.stop="setTopicFilter(null)">
-                          <span class="tabdrop__item-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
-                          <span class="tabdrop__item-name">{{ lbl('allTopics') }}</span>
-                          <span class="tabdrop__item-count">{{ tabCount(tab.key) }}</span>
-                        </button>
-                        <div class="tabdrop__topics-list">
-                          <button v-for="topic in getTopicsFor(tab.key)" :key="topic.id" class="tabdrop__item" :class="{ 'tabdrop__item--on': activeTopicFilter === topic.id }" @click.stop="setTopicFilter(topic.id)">
-                            <span class="tabdrop__item-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
-                            <span class="tabdrop__item-name">{{ topicName(topic) }}</span>
+              <template v-for="(tab, ti) in tabDefs" :key="tab.key">
+                <div
+                  class="tabnav__item"
+                  :class="{ 'tabnav__item--on': activeTab === tab.key }"
+                  @mouseenter="onTabEnter(tab.key)"
+                  @mouseleave="scheduleDropClose"
+                  @click="switchTab(tab.key)"
+                >
+                  <button class="tabtn" :class="{ 'tabtn--on': activeTab === tab.key }">
+                    <span class="tabtn__lbl">{{ tab.label }}</span>
+                    <svg class="tabtn__chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    <span class="tabtn__count" v-if="tabCount(tab.key) > 0">{{ tabCount(tab.key) }}</span>
+                  </button>
+                  <transition name="drop">
+                    <div v-if="openDropdownKey === tab.key" class="tabdrop" :class="{ 'tabdrop--memories': tab.key === 'memories' }" @mouseenter="cancelDropClose" @mouseleave="scheduleDropClose">
+                      <div class="tabdrop__inner">
+                        <template v-if="tab.key !== 'memories'">
+                          <div class="tabdrop__header"><span class="tabdrop__header-lbl">{{ tab.label }}</span></div>
+                          <div class="tabdrop__divider"></div>
+                          <button class="tabdrop__item" :class="{ 'tabdrop__item--on': !activeTopicFilter }" @click.stop="setTopicFilter(null)">
+                            <span class="tabdrop__item-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+                            <span class="tabdrop__item-name">{{ lbl('allTopics') }}</span>
+                            <span class="tabdrop__item-count">{{ tabCount(tab.key) }}</span>
                           </button>
-                          <div v-if="!getTopicsFor(tab.key).length" class="tabdrop__empty"><span>{{ lbl('noTopics') }}</span></div>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <div class="tabdrop__header"><span class="tabdrop__header-ico">💫</span><span class="tabdrop__header-lbl">{{ lbl('memories') }}</span></div>
-                        <div class="tabdrop__divider"></div>
-                        <div v-if="memorySounds.length" class="tabdrop__mem-section">
-                          <div class="tabdrop__mem-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>{{ lbl('sound') }}<span class="tabdrop__sec-count">{{ memorySounds.length }}</span></div>
-                          <button v-for="mem in memorySounds.slice(0, 6)" :key="`ms-${mem.id}`" class="tabdrop__item tabdrop__item--mem" @click.stop="openMemoryFromDropdown(mem)"><span class="tabdrop__mem-cover"><img :src="pCover(mem)" @error="onImgError($event)" /><span class="tabdrop__mem-play">▶</span></span><span class="tabdrop__item-name">{{ truncate(pTitle(mem), 30) }}</span><span class="tabdrop__mem-badge">💫</span></button>
-                        </div>
-                        <div v-if="memoryVideos.length" class="tabdrop__mem-section">
-                          <div class="tabdrop__mem-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>{{ lbl('video') }}<span class="tabdrop__sec-count">{{ memoryVideos.length }}</span></div>
-                          <button v-for="mem in memoryVideos.slice(0, 6)" :key="`mv-${mem.id}`" class="tabdrop__item tabdrop__item--mem" @click.stop="openMemoryFromDropdown(mem)"><span class="tabdrop__mem-cover"><img :src="pCover(mem)" @error="onImgError($event)" /><span class="tabdrop__mem-play">▶</span></span><span class="tabdrop__item-name">{{ truncate(pTitle(mem), 30) }}</span><span class="tabdrop__mem-badge">💫</span></button>
-                        </div>
-                        <div v-if="!memorySounds.length && !memoryVideos.length" class="tabdrop__empty"><span>💫 {{ lbl('noMemories') }}</span></div>
-                      </template>
+                          <div class="tabdrop__topics-list">
+                            <button v-for="topic in getTopicsFor(tab.key)" :key="topic.id" class="tabdrop__item" :class="{ 'tabdrop__item--on': activeTopicFilter === topic.id }" @click.stop="setTopicFilter(topic.id)">
+                              <span class="tabdrop__item-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
+                              <span class="tabdrop__item-name">{{ topicName(topic) }}</span>
+                            </button>
+                            <div v-if="!getTopicsFor(tab.key).length" class="tabdrop__empty"><span>{{ lbl('noTopics') }}</span></div>
+                          </div>
+                        </template>
+                        <template v-else>
+                          <div class="tabdrop__header"><span class="tabdrop__header-lbl">{{ lbl('memories') }}</span></div>
+                          <div class="tabdrop__divider"></div>
+                          <div v-if="memorySounds.length" class="tabdrop__mem-section">
+                            <div class="tabdrop__mem-section-title">{{ lbl('sound') }}<span class="tabdrop__sec-count">{{ memorySounds.length }}</span></div>
+                            <button v-for="mem in memorySounds.slice(0, 6)" :key="`ms-${mem.id}`" class="tabdrop__item tabdrop__item--mem" @click.stop="openMemoryFromDropdown(mem)"><span class="tabdrop__mem-cover"><img :src="pCover(mem)" @error="onImgError($event)" /><span class="tabdrop__mem-play">▶</span></span><span class="tabdrop__item-name">{{ truncate(pTitle(mem), 30) }}</span><span class="tabdrop__mem-badge">💫</span></button>
+                          </div>
+                          <div v-if="memoryVideos.length" class="tabdrop__mem-section">
+                            <div class="tabdrop__mem-section-title">{{ lbl('video') }}<span class="tabdrop__sec-count">{{ memoryVideos.length }}</span></div>
+                            <button v-for="mem in memoryVideos.slice(0, 6)" :key="`mv-${mem.id}`" class="tabdrop__item tabdrop__item--mem" @click.stop="openMemoryFromDropdown(mem)"><span class="tabdrop__mem-cover"><img :src="pCover(mem)" @error="onImgError($event)" /><span class="tabdrop__mem-play">▶</span></span><span class="tabdrop__item-name">{{ truncate(pTitle(mem), 30) }}</span><span class="tabdrop__mem-badge">💫</span></button>
+                          </div>
+                          <div v-if="!memorySounds.length && !memoryVideos.length" class="tabdrop__empty"><span>💫 {{ lbl('noMemories') }}</span></div>
+                        </template>
+                      </div>
                     </div>
-                  </div>
-                </transition>
-              </div>
+                  </transition>
+                </div>
+                <!-- Separator line between tabs (not after last) -->
+                <span v-if="ti < tabDefs.length - 1" class="tabnav__sep" aria-hidden="true"></span>
+              </template>
             </div>
           </div>
         </nav>
-
+ 
+        <!-- Content body -->
         <section class="body" ref="gridSection">
           <div class="container">
             <transition name="pill">
@@ -166,6 +841,7 @@
                 </div>
               </div>
             </div>
+            <!-- Loading skeletons -->
             <div v-if="isLoading" class="grid">
               <div v-for="i in 8" :key="`sk-${i}`" class="skel" :style="{ '--d': `${(i-1)*0.07}s` }">
                 <div class="skel__thumb shimmer"></div>
@@ -177,14 +853,25 @@
                 </div>
               </div>
             </div>
+            <!-- Empty -->
             <div v-else-if="!paginatedItems.length" class="empty">
               <div class="empty__icon">{{ tabDefs.find(t => t.key === activeTab)?.icon || '📂' }}</div>
               <h3 class="empty__title">{{ lbl('noResults') }}</h3>
               <p class="empty__hint">{{ lbl('noResultsHint') }}</p>
               <button class="btn-primary" @click="clearFilters">{{ lbl('resetFilter') }}</button>
             </div>
+            <!-- Cards grid -->
             <div v-else class="grid">
-              <article v-for="(item, i) in paginatedItems" :key="`${item._mediaType}-${item.id}`" class="card" :class="[`card--${item._mediaType}`, { 'card--featured': i === 0 && clientPage === 0 && !activeTopicFilter }]" :style="{ '--d': `${i * 0.05}s` }" tabindex="0" @click="openItem(item)" @keyup.enter="openItem(item)">
+              <article
+                v-for="(item, i) in paginatedItems"
+                :key="`${item._mediaType}-${item.id}`"
+                class="card"
+                :class="[`card--${item._mediaType}`, { 'card--featured': i === 0 && clientPage === 0 && !activeTopicFilter }]"
+                :style="{ '--d': `${i * 0.05}s` }"
+                tabindex="0"
+                @click="openItem(item)"
+                @keyup.enter="openItem(item)"
+              >
                 <div class="card__thumb">
                   <img :src="pCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--main" @error="onImgError($event)" />
                   <img v-if="pHoverCover(item)" :src="pHoverCover(item)" :alt="pTitle(item)" loading="lazy" class="card__img card__img--hover" @error="onImgError($event)" />
@@ -207,8 +894,13 @@
                   <h3 class="card__title">{{ pTitle(item) }}</h3>
                   <p class="card__desc">{{ truncate(pDesc(item), 100) }}</p>
                   <div class="card__extra" v-if="getExtraLine(item)"><span class="card__extra-val">{{ getExtraLine(item) }}</span></div>
+                  <!-- Tags only (no keywords), clickable -->
                   <div class="card__tags" v-if="pTags(item).length">
-                    <span v-for="tag in pTags(item).slice(0, 3)" :key="tag" class="ctag">#{{ tag }}</span>
+                    <span
+                      v-for="tag in pTags(item).slice(0, 3)" :key="tag"
+                      class="ctag ctag--clickable"
+                      @click.stop="searchByTagGlobal(tag)"
+                    >#{{ tag }}</span>
                     <span v-if="pTags(item).length > 3" class="ctag ctag--more">+{{ pTags(item).length - 3 }}</span>
                   </div>
                 </div>
@@ -218,6 +910,7 @@
                 </div>
               </article>
             </div>
+            <!-- Pager -->
             <nav class="pager" v-if="totalClientPages > 1 && !isLoading">
               <button class="pager__btn" :disabled="clientPage === 0" @click="goPrev">{{ lbl('prev') }}</button>
               <div class="pager__dots">
@@ -228,252 +921,10 @@
           </div>
         </section>
       </div>
-
-      <div v-else key="detail" class="detail">
-        <nav class="dnav">
-          <div class="container dnav__inner">
-            <button class="back-btn" @click="closeItem">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-              <span>{{ lbl('back') }}</span>
-            </button>
-            <div class="dnav__right">
-              <span class="dtype-pill">{{ getMediaIcon(activeItem._mediaType) }} {{ getMediaTypeLabel(activeItem._mediaType) }}</span>
-              <div class="langpills" v-if="activeItem.contentLanguages?.length">
-                <span v-for="l in activeItem.contentLanguages" :key="l" class="langpill" :class="{ 'langpill--on': lang.activeLang === l }">
-                  <span class="langpill__dot" :class="`lpdot--${l.toLowerCase()}`"></span>{{ l }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <header class="dhero">
-          <div class="dhero__bg" :style="{ backgroundImage: `url(${pCover(activeItem)})` }"></div>
-          <div class="dhero__gradient"></div>
-          <div class="dhero__gradient dhero__gradient--side"></div>
-          <div class="dhero__grain"></div>
-          <div class="dhero__scanlines"></div>
-          <div class="dhero__frame dhero__frame--tl"></div>
-          <div class="dhero__frame dhero__frame--br"></div>
-          <div class="dhero__gold-line dhero__gold-line--top"></div>
-          <div class="dhero__gold-line dhero__gold-line--bottom"></div>
-          <div class="container dhero__content">
-            <transition name="lang-swap" mode="out-in">
-              <div :key="lang.activeLang" class="dhero__left">
-                <div class="dhero__badges">
-                  <span class="dbadge dbadge--type">{{ getTypeEmoji(activeItem) }} {{ getTypeLabel(activeItem) }}</span>
-                  <span class="dbadge" v-if="getItemDate(activeItem)">📅 {{ formatDate(getItemDate(activeItem)) }}</span>
-                  <span class="dbadge dbadge--mem" v-if="activeItem.albumOfMemories">💫 {{ lbl('albumOfMemories') }}</span>
-                  <span class="dbadge" v-if="activeItem.publishedByInstitute">🏛️ {{ lbl('institute') }}</span>
-                </div>
-                <h1 class="dhero__title">{{ pTitle(activeItem) }}</h1>
-                <p class="dhero__desc" v-if="pDesc(activeItem)">{{ pDesc(activeItem) }}</p>
-                <div class="dhero__stats">
-                  <template v-if="activeItem._mediaType === 'sound'">
-                    <div class="dstat" v-if="activeItem.files?.length"><span class="dstat__ico">🎵</span><span class="dstat__val">{{ activeItem.files.length }}</span><span class="dstat__lbl">{{ lbl('tracks') }}</span></div>
-                    <div class="dstat" v-if="activeItem.soundType"><span class="dstat__ico">🎼</span><span class="dstat__val">{{ activeItem.soundType }}</span></div>
-                    <div class="dstat" v-if="activeItem.director"><span class="dstat__ico">🎤</span><span class="dstat__val">{{ activeItem.director }}</span></div>
-                    <div class="dstat" v-if="totalSoundDuration > 0"><span class="dstat__ico">⏱</span><span class="dstat__val">{{ formatTime(totalSoundDuration) }}</span></div>
-                  </template>
-                  <template v-else-if="activeItem._mediaType === 'video'">
-                    <div class="dstat" v-if="activeItem.durationSeconds"><span class="dstat__ico">⏱</span><span class="dstat__val">{{ formatTime(activeItem.durationSeconds) }}</span></div>
-                    <div class="dstat" v-if="pDirector(activeItem)"><span class="dstat__ico">🎬</span><span class="dstat__val">{{ pDirector(activeItem) }}</span></div>
-                    <div class="dstat" v-if="pProducer(activeItem)"><span class="dstat__ico">🎞</span><span class="dstat__val">{{ pProducer(activeItem) }}</span></div>
-                    <div class="dstat" v-if="activeItem.resolution"><span class="dstat__ico">📺</span><span class="dstat__val">{{ activeItem.resolution }}</span></div>
-                  </template>
-                  <template v-else-if="activeItem._mediaType === 'writing'">
-                    <div class="dstat" v-if="pPageCount(activeItem)"><span class="dstat__ico">📄</span><span class="dstat__val">{{ pPageCount(activeItem) }}</span><span class="dstat__lbl">{{ lbl('pages') }}</span></div>
-                    <div class="dstat" v-if="pWriter(activeItem)"><span class="dstat__ico">✍️</span><span class="dstat__val">{{ pWriter(activeItem) }}</span></div>
-                    <div class="dstat" v-if="pGenre(activeItem)"><span class="dstat__ico">📚</span><span class="dstat__val">{{ pGenre(activeItem) }}</span></div>
-                  </template>
-                  <template v-else-if="activeItem._mediaType === 'image'">
-                    <div class="dstat" v-if="activeItem.imageAlbum?.length"><span class="dstat__ico">🖼️</span><span class="dstat__val">{{ activeItem.imageAlbum.length }}</span><span class="dstat__lbl">{{ lbl('images') }}</span></div>
-                    <div class="dstat" v-if="pLocation(activeItem)"><span class="dstat__ico">📍</span><span class="dstat__val">{{ pLocation(activeItem) }}</span></div>
-                    <div class="dstat" v-if="pCollectedBy(activeItem)"><span class="dstat__ico">🏛️</span><span class="dstat__val">{{ pCollectedBy(activeItem) }}</span></div>
-                  </template>
-                </div>
-                <div class="dhero__tags" v-if="pTags(activeItem).length">
-                  <span v-for="tag in pTags(activeItem)" :key="tag" class="dtag">#{{ tag }}</span>
-                </div>
-              </div>
-            </transition>
-            <div class="dhero__right">
-              <div class="mockup-sound" v-if="activeItem._mediaType === 'sound'">
-                <div class="msound__case"><div class="msound__spine"></div><div class="msound__front"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /><div class="msound__overlay"></div></div></div>
-                <div class="msound__disc"><div class="msound__disc-ring"></div><div class="msound__disc-art"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /></div><div class="msound__disc-hole"></div></div>
-              </div>
-              <div class="mockup-book" v-else-if="activeItem._mediaType === 'writing'">
-                <div class="mbook__spine"></div><div class="mbook__cover"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /><div class="mbook__sheen"></div></div><div class="mbook__pages"></div>
-              </div>
-              <div class="mockup-video" v-else-if="activeItem._mediaType === 'video'">
-                <div class="mvideo__frame"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /><div class="mvideo__play-ico">▶</div></div><div class="mvideo__stand"></div>
-              </div>
-              <div class="mockup-image" v-else-if="activeItem._mediaType === 'image'">
-                <div class="mimage__frame"><div class="mimage__mat"></div><div class="mimage__photo"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /></div></div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <!-- ── SOUND ── -->
-        <section class="stream-section" v-if="activeItem._mediaType === 'sound' && activeItem.files?.length">
-          <div class="container">
-            <div class="stream-layout">
-              <div class="stream-main">
-                <div class="stream-head">
-                  <h3 class="section-heading">{{ lbl('yourStream') }}</h3>
-                  <span class="stream-count">{{ activeItem.files.length }} {{ lbl('tracks') }}</span>
-                </div>
-                <div v-if="audioError" class="audio-error"><span>⚠️ {{ audioError }}</span></div>
-                <div class="track-list">
-                  <div v-for="(file, i) in activeItem.files" :key="file.id || i" class="track" :class="{ 'track--playing': currentTrackIdx === i && isAudioPlaying, 'track--selected': currentTrackIdx === i }" @click="playTrack(file, i)">
-                    <div class="track__num">{{ String(i + 1).padStart(2, '0') }}</div>
-                    <div class="track__cover"><img :src="pCover(activeItem)" :alt="`Track ${i + 1}`" @error="onImgError($event)" /><div class="track__play-ico"><span>{{ currentTrackIdx === i && isAudioPlaying ? '⏸' : '▶' }}</span></div></div>
-                    <div class="track__indicator"><span v-for="b in 3" :key="b" class="track__bar" :class="{ 'track__bar--live': currentTrackIdx === i && isAudioPlaying }" :style="{ '--b': b }"></span></div>
-                    <div class="track__info">
-                      <div class="track__title">{{ file.readerName || `${lbl('track')} ${i + 1}` }}</div>
-                      <div class="track__sub">{{ file.fileType || 'AUDIO' }}</div>
-                    </div>
-                    <div class="track__waves"><div class="wave-wrap" :class="{ 'wave-wrap--live': currentTrackIdx === i && isAudioPlaying }"><span v-for="(h, bi) in getWaveform(file.id || i)" :key="bi" class="wbar" :style="{ '--h': h, '--bi': bi }"></span></div></div>
-                    <div class="track__right">
-                      <span class="track__dur" v-if="file.durationSeconds">{{ formatTime(file.durationSeconds) }}</span>
-                      <span class="track__size" v-if="file.sizeBytes > 0">{{ formatSize(file.sizeBytes) }}</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="audio-bar" v-if="currentTrack">
-                  <div class="audio-bar__cover"><img :src="pCover(activeItem)" alt="playing" @error="onImgError($event)" /><div class="audio-bar__vinyl" :class="{ 'audio-bar__vinyl--spin': isAudioPlaying }"></div></div>
-                  <div class="audio-bar__info">
-                    <div class="audio-bar__title">{{ currentTrack.readerName || `${lbl('track')} ${currentTrackIdx + 1}` }}</div>
-                    <div class="audio-bar__album">{{ pTitle(activeItem) }}</div>
-                  </div>
-                  <div class="audio-bar__controls">
-                    <button class="abtn" @click="prevTrack" :disabled="currentTrackIdx <= 0">⏮</button>
-                    <button class="abtn abtn--play" @click="togglePlay">{{ isAudioPlaying ? '⏸' : '▶' }}</button>
-                    <button class="abtn" @click="nextTrack" :disabled="currentTrackIdx >= activeItem.files.length - 1">⏭</button>
-                  </div>
-                  <div class="audio-bar__prog-wrap" @click="seekAudio">
-                    <div class="audio-bar__prog-track">
-                      <div class="audio-bar__prog-fill" :style="{ width: audioProgress + '%' }"></div>
-                      <div class="audio-bar__prog-thumb" :style="{ left: audioProgress + '%' }"></div>
-                    </div>
-                  </div>
-                  <div class="audio-bar__time">{{ formatTime(audioCurrentTime) }} / {{ formatTime(audioDuration) }}</div>
-                </div>
-                <audio ref="audioPlayer" style="display:none" preload="auto" @loadedmetadata="onAudioLoaded" @timeupdate="onAudioTimeUpdate" @play="isAudioPlaying = true" @pause="isAudioPlaying = false" @ended="onTrackEnded" @error="onAudioError"></audio>
-              </div>
-              <div class="stream-side">
-                <div class="side-featured">
-                  <h4 class="side-heading">{{ lbl('featured') }}</h4>
-                  <div class="side-cover"><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" @error="onImgError($event)" /><div class="side-cover__overlay"><div class="side-cover__title">{{ pTitle(activeItem) }}</div></div></div>
-                  <div class="side-meta">
-                    <div class="side-meta__row" v-if="activeItem.soundType"><span class="side-meta__key">{{ lbl('type') }}</span><span class="side-meta__val">{{ activeItem.soundType }}</span></div>
-                    <div class="side-meta__row" v-if="activeItem.director"><span class="side-meta__key">{{ lbl('director') }}</span><span class="side-meta__val">{{ activeItem.director }}</span></div>
-                    <div class="side-meta__row" v-for="loc in (activeItem.locations || []).slice(0, 2)" :key="loc"><span class="side-meta__key">📍</span><span class="side-meta__val">{{ loc }}</span></div>
-                  </div>
-                </div>
-                <div class="side-keywords" v-if="pKeywords(activeItem).length">
-                  <h4 class="side-heading">{{ lbl('keywords') }}</h4>
-                  <div class="chips-row"><span v-for="kw in pKeywords(activeItem)" :key="kw" class="chip chip--kw">{{ kw }}</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ── VIDEO ── -->
-        <section class="video-section" v-if="activeItem._mediaType === 'video'">
-          <div class="container">
-            <template v-if="activeItem.videoType === 'VIDEO_CLIP' && activeItem.videoClipItems?.length">
-              <div class="clips-layout">
-                <div class="clips-player" v-if="selectedClip">
-                  <div class="vplayer-wrap" v-if="getClipUrl(selectedClip)"><video class="vplayer-el" controls :poster="pCover(activeItem)" :key="getClipUrl(selectedClip)"><source :src="getClipUrl(selectedClip)" type="video/mp4" /></video></div>
-                  <div class="vembed-wrap" v-else-if="getClipEmbedUrl(selectedClip)"><iframe :src="getClipEmbedUrl(selectedClip)" frameborder="0" allowfullscreen class="vembed"></iframe></div>
-                  <div class="vno-source" v-else><div class="vno-source__icon">📹</div><div class="vno-source__text">{{ lbl('noSource') }}</div></div>
-                  <div class="clip-desc" v-if="lang.activeLang === 'CKB' ? selectedClip.descriptionCkb : selectedClip.descriptionKmr"><p>{{ lang.activeLang === 'CKB' ? selectedClip.descriptionCkb : selectedClip.descriptionKmr }}</p></div>
-                </div>
-                <div class="clips-list">
-                  <h4 class="clips-list__heading">{{ lbl('clips') }} ({{ activeItem.videoClipItems?.length }})</h4>
-                  <div v-for="clip in activeItem.videoClipItems" :key="clip.id" class="clip-item" :class="{ 'clip-item--on': selectedClip?.id === clip.id }" @click="selectedClip = clip">
-                    <div class="clip-item__num">{{ clip.clipNumber }}</div>
-                    <div class="clip-item__info"><div class="clip-item__title">{{ lang.activeLang === 'CKB' ? (clip.titleCkb || clip.titleKmr) : (clip.titleKmr || clip.titleCkb) || `Clip ${clip.clipNumber}` }}</div><div class="clip-item__meta"><span v-if="clip.durationSeconds">⏱ {{ formatTime(clip.durationSeconds) }}</span><span v-if="clip.resolution">{{ clip.resolution }}</span></div></div>
-                    <svg class="clip-item__play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  </div>
-                </div>
-              </div>
-            </template>
-            <template v-else>
-              <div class="video-stage">
-                <div class="vplayer-wrap" v-if="getVideoSourceUrl(activeItem)"><video ref="videoPlayerEl" class="vplayer-el" controls :poster="pCover(activeItem)"><source :src="getVideoSourceUrl(activeItem)" type="video/mp4" /></video></div>
-                <div class="vembed-wrap" v-else-if="getVideoEmbedUrl(activeItem)"><iframe :src="getVideoEmbedUrl(activeItem)" frameborder="0" allowfullscreen class="vembed"></iframe></div>
-                <div class="vno-source" v-else><div class="vno-source__icon">🎬</div><div class="vno-source__text">{{ lbl('noSource') }}</div></div>
-                <div class="vfilm-info"><div class="vfilm-chips">
-                  <span v-if="activeItem.resolution" class="vchip">📺 {{ activeItem.resolution }}</span>
-                  <span v-if="activeItem.fileFormat" class="vchip">🎞 {{ activeItem.fileFormat }}</span>
-                  <span v-if="activeItem.durationSeconds" class="vchip">⏱ {{ formatTime(activeItem.durationSeconds) }}</span>
-                  <span v-if="activeItem.fileSizeMb" class="vchip">💾 {{ activeItem.fileSizeMb?.toFixed(1) }}MB</span>
-                </div></div>
-              </div>
-            </template>
-          </div>
-        </section>
-
-        <!-- ── IMAGE ── -->
-        <section class="gallery-section" v-if="activeItem._mediaType === 'image'">
-          <div class="container">
-            <div class="gallery-layout" v-if="activeItem.imageAlbum?.length">
-              <div class="gallery-main">
-                <div class="gallery-preview" v-if="selectedImage"><img :src="selectedImage.imageUrl || selectedImage.externalUrl || selectedImage.embedUrl" :alt="lang.activeLang === 'CKB' ? selectedImage.captionCkb : selectedImage.captionKmr" class="gallery-preview__img" @click="openFullscreen(selectedImage)" @error="onImgError($event)" /><div class="gallery-zoom-hint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>{{ lbl('clickToExpand') }}</div></div>
-                <div class="gallery-caption" v-if="selectedImage"><div class="gallery-caption__title">{{ lang.activeLang === 'CKB' ? selectedImage.captionCkb : selectedImage.captionKmr }}</div><div class="gallery-caption__desc">{{ lang.activeLang === 'CKB' ? selectedImage.descriptionCkb : selectedImage.descriptionKmr }}</div></div>
-              </div>
-              <div class="gallery-strip"><button v-for="img in activeItem.imageAlbum" :key="img.id" class="gthumb" :class="{ 'gthumb--on': selectedImage?.id === img.id }" @click="selectedImage = img"><img :src="img.imageUrl || img.externalUrl" @error="onImgError($event)" /></button></div>
-              <div class="gallery-nav" v-if="activeItem.imageAlbum.length > 1">
-                <button class="gnav-btn" @click="prevImage" :disabled="!canPrevImage">{{ lbl('prev') }}</button>
-                <span class="gnav-pos">{{ currentImageIdx + 1 }} / {{ activeItem.imageAlbum.length }}</span>
-                <button class="gnav-btn" @click="nextImage" :disabled="!canNextImage">{{ lbl('next') }}</button>
-              </div>
-            </div>
-            <div class="gallery-empty" v-else><img :src="pCover(activeItem)" :alt="pTitle(activeItem)" class="gallery-single" @error="onImgError($event)" /></div>
-          </div>
-        </section>
-
-        <!-- ── WRITING ── -->
-        <section class="writing-section" v-if="activeItem._mediaType === 'writing'">
-          <div class="container">
-            <div class="writing-layout">
-              <div class="writing-info-grid">
-                <div class="winfo-card" v-if="pWriter(activeItem)"><div class="winfo-card__ico">✍️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('writer') }}</div><div class="winfo-card__val">{{ pWriter(activeItem) }}</div></div></div>
-                <div class="winfo-card" v-if="pGenre(activeItem)"><div class="winfo-card__ico">🎭</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('genre') }}</div><div class="winfo-card__val">{{ pGenre(activeItem) }}</div></div></div>
-                <div class="winfo-card" v-if="pPageCount(activeItem)"><div class="winfo-card__ico">📄</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('pages') }}</div><div class="winfo-card__val">{{ pPageCount(activeItem) }}</div></div></div>
-                <div class="winfo-card" v-if="activeItem.writingTopic"><div class="winfo-card__ico">🏷️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('category') }}</div><div class="winfo-card__val">{{ activeItem.writingTopic }}</div></div></div>
-                <div class="winfo-card" v-if="pFileFormat(activeItem)"><div class="winfo-card__ico">💾</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('format') }}</div><div class="winfo-card__val">{{ pFileFormat(activeItem) }}</div></div></div>
-                <div class="winfo-card" v-if="activeItem.publishedByInstitute"><div class="winfo-card__ico">🏛️</div><div class="winfo-card__content"><div class="winfo-card__lbl">{{ lbl('publisher') }}</div><div class="winfo-card__val">{{ lbl('institute') }}</div></div></div>
-              </div>
-              <div class="series-block" v-if="activeItem.seriesName || activeItem.seriesId">
-                <div class="series-block__ico">📚</div>
-                <div class="series-block__info"><div class="series-block__lbl">{{ lbl('series') }}</div><div class="series-block__name">{{ activeItem.seriesName || activeItem.seriesId }}</div><div class="series-block__order" v-if="activeItem.seriesOrder">Vol. {{ activeItem.seriesOrder }}</div></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="chips-section" v-if="pTags(activeItem).length"><div class="container"><div class="chips-block"><h3 class="chips-block__heading">{{ lbl('tags') }}</h3><div class="chips-row"><span v-for="tag in pTags(activeItem)" :key="tag" class="chip chip--tag">#{{ tag }}</span></div></div></div></section>
-        <section class="chips-section chips-section--alt" v-if="pKeywords(activeItem).length"><div class="container"><div class="chips-block"><h3 class="chips-block__heading">{{ lbl('keywords') }}</h3><div class="chips-row"><span v-for="kw in pKeywords(activeItem)" :key="kw" class="chip chip--kw">{{ kw }}</span></div></div></div></section>
-
-        <section class="related" v-if="relatedItems.length">
-          <div class="container">
-            <div class="related__head"><h2 class="related__title">{{ lbl('related') }}</h2><div class="related__rule"></div></div>
-            <div class="related__grid">
-              <article v-for="rp in relatedItems" :key="`rel-${rp._mediaType}-${rp.id}`" class="rcard" tabindex="0" @click="openItem(rp)" @keyup.enter="openItem(rp)">
-                <div class="rcard__img"><img :src="pCover(rp)" :alt="pTitle(rp)" loading="lazy" class="rcard__img-main" @error="onImgError($event)" /><img v-if="pHoverCover(rp)" :src="pHoverCover(rp)" :alt="pTitle(rp)" loading="lazy" class="rcard__img-hover" @error="onImgError($event)" /><div class="rcard__overlay"></div><span class="rcard__typebadge">{{ getMediaIcon(rp._mediaType) }}</span></div>
-                <div class="rcard__body"><h3 class="rcard__title">{{ pTitle(rp) }}</h3><p class="rcard__desc">{{ truncate(pDesc(rp), 90) }}</p><div class="rcard__tags" v-if="pTags(rp).length"><span v-for="t in pTags(rp).slice(0, 2)" :key="t" class="rtag">#{{ t }}</span></div></div>
-              </article>
-            </div>
-          </div>
-        </section>
-      </div>
+ 
     </transition>
-
+ 
+    <!-- Fullscreen overlay -->
     <transition name="fs">
       <div v-if="isFullscreen" class="fsoverlay" @click="isFullscreen = false">
         <button class="fsoverlay__x" @click.stop="isFullscreen = false">✕</button>
@@ -482,202 +933,311 @@
     </transition>
   </main>
 </template>
-
+ 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import axios from 'axios'
 import { API_BASE_URL } from '../consts.js'
 import { useLanguageStore } from '@/stores/useLanguageStore'
-
+ 
 const lang = useLanguageStore()
 const fallbackCover = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f4f4f5'/%3E%3Crect x='160' y='95' width='80' height='65' rx='8' fill='%23e4e4e7'/%3E%3Ccircle cx='185' cy='118' r='10' fill='%23d4d4d8'/%3E%3Cpolygon points='160,160 200,125 230,148 260,125 280,160' fill='%23d4d4d8'/%3E%3C/svg%3E"
 const currentYear = new Date().getFullYear()
 const audioError = ref(null)
-
+ 
 const i18n = {
-  CKB: { archive: 'ئەرشیڤ', heroDeco: 'کتێبخانەی کهیە', heroMain: 'بڵاوکراوەکان', heroSub: 'وێنە · دەنگ · ڤیدیۆ · نووسین', images: 'وێنەکان', sound: 'دەنگ', video: 'ڤیدیۆ', writings: 'نووسینەکان', memories: 'یادگاریەکان', albumOfMemories: 'یادگاریەکان', allTopics: 'هەموو بابەتەکان', all: 'هەموو', explore: 'بگەڕێ', back: 'گەڕانەوە', results: 'ئەنجام', noResults: 'ئەنجامێک نەدۆزرایەوە', noResultsHint: 'فیلتر بگۆڕە یان سیفرەوە', resetFilter: 'سیفرکردنەوە', viewItem: 'بینین', tracks: 'گۆرانیەکان', track: 'گۆرانی', pages: 'لاپەڕە', clips: 'کلیپەکان', yourStream: 'گۆرانیەکان', featured: 'تایبەتمەند', type: 'جۆر', director: 'دەرهێنەر', writer: 'نووسەر', genre: 'جۆری نووسین', category: 'پۆل', format: 'فۆرمات', publisher: 'بڵاوکەرەوە', institute: 'ڕێکخراو', series: 'زنجیرە', tags: 'تاگەکان', keywords: 'کلیلەوشەکان', related: 'پەیوەندیدار', sortNewest: 'نوێترین', sortOldest: 'کۆنترین', sortTitle: 'ناوی', prev: 'پێشتر', next: 'دواتر', noSource: 'سەرچاوەیەک نییە', clickToExpand: 'کلیک بکە بۆ گەورەکردن', totalItems: 'کۆی بابەتەکان', noTopics: 'بابەتێک نییە', noMemories: 'یادگاریەک نییە' },
-  KMR: { archive: 'Arşîv', heroDeco: 'Lîbrariya KHI', heroMain: 'Weşandin', heroSub: 'Wêne · Deng · Vîdyo · Nivîsar', images: 'Wêne', sound: 'Deng', video: 'Vîdyo', writings: 'Nivîsarên', memories: 'Bîranîn', albumOfMemories: 'Albûma Bîranînê', allTopics: 'Hemû Mijar', all: 'Hemû', explore: 'Bigere', back: 'Vegere', results: 'Encam', noResults: 'Encam nehat dîtin', noResultsHint: 'Fîlteran biguherîne', resetFilter: 'Sifirkirin', viewItem: 'Bibîne', tracks: 'Stran', track: 'Stran', pages: 'Rûpel', clips: 'Klîp', yourStream: 'Stranên Te', featured: 'Taybet', type: 'Cûre', director: 'Derhêner', writer: 'Nivîskar', genre: 'Cûre', category: 'Kategorî', format: 'Format', publisher: 'Weşanger', institute: 'Dezgeh', series: 'Rêze', tags: 'Etiket', keywords: 'Peyvên Kilîtê', related: 'Girêdayî', sortNewest: 'Herî nû', sortOldest: 'Herî kevn', sortTitle: 'Sernavê', prev: 'Berî', next: 'Paş', noSource: 'Çavkanî tune', clickToExpand: 'Klikê bike mezin bike', totalItems: 'Giştî', noTopics: 'Mijar tune', noMemories: 'Bîranîn tune' }
+  CKB: {
+    archive: 'ئەرشیڤ', heroDeco: 'کتێبخانەی کهیە', heroMain: 'بڵاوکراوەکان',
+    heroSub: 'وێنە · دەنگ · ڤیدیۆ · نووسین', images: 'وێنەکان', sound: 'دەنگ',
+    video: 'ڤیدیۆ', writings: 'نووسینەکان', memories: 'یادگاریەکان',
+    albumOfMemories: 'یادگاریەکان', allTopics: 'هەموو بابەتەکان', all: 'هەموو',
+    explore: 'بگەڕێ', back: 'گەڕانەوە', results: 'ئەنجام', noResults: 'ئەنجامێک نەدۆزرایەوە',
+    noResultsHint: 'فیلتر بگۆڕە یان سیفرەوە', resetFilter: 'سیفرکردنەوە', viewItem: 'بینین',
+    tracks: 'گۆرانیەکان', track: 'گۆرانی', pages: 'لاپەڕە', clips: 'کلیپەکان',
+    yourStream: 'گۆرانیەکان', featured: 'تایبەتمەند', type: 'جۆر', director: 'دەرهێنەر',
+    reader: 'خوێنەر', writer: 'نووسەر', genre: 'جۆری نووسین', category: 'پۆل',
+    format: 'فۆرمات', publisher: 'بڵاوکەرەوە', institute: 'ڕێکخراو', series: 'زنجیرە',
+    tags: 'تاگەکان', related: 'پەیوەندیدار', sortNewest: 'نوێترین', sortOldest: 'کۆنترین',
+    sortTitle: 'ناوی', prev: 'پێشتر', next: 'دواتر', noSource: 'سەرچاوەیەک نییە',
+    clickToExpand: 'کلیک بکە بۆ گەورەکردن', totalItems: 'کۆی بابەتەکان',
+    noTopics: 'بابەتێک نییە', noMemories: 'یادگاریەک نییە'
+  },
+  KMR: {
+    archive: 'Arşîv', heroDeco: 'Lîbrariya KHI', heroMain: 'Weşandin',
+    heroSub: 'Wêne · Deng · Vîdyo · Nivîsar', images: 'Wêne', sound: 'Deng',
+    video: 'Vîdyo', writings: 'Nivîsarên', memories: 'Bîranîn',
+    albumOfMemories: 'Albûma Bîranînê', allTopics: 'Hemû Mijar', all: 'Hemû',
+    explore: 'Bigere', back: 'Vegere', results: 'Encam', noResults: 'Encam nehat dîtin',
+    noResultsHint: 'Fîlteran biguherîne', resetFilter: 'Sifirkirin', viewItem: 'Bibîne',
+    tracks: 'Stran', track: 'Stran', pages: 'Rûpel', clips: 'Klîp',
+    yourStream: 'Stranên Te', featured: 'Taybet', type: 'Cûre', director: 'Derhêner',
+    reader: 'Xwendekar', writer: 'Nivîskar', genre: 'Cûre', category: 'Kategorî',
+    format: 'Format', publisher: 'Weşanger', institute: 'Dezgeh', series: 'Rêze',
+    tags: 'Etiket', related: 'Girêdayî', sortNewest: 'Herî nû', sortOldest: 'Herî kevn',
+    sortTitle: 'Sernavê', prev: 'Berî', next: 'Paş', noSource: 'Çavkanî tune',
+    clickToExpand: 'Klikê bike mezin bike', totalItems: 'Giştî',
+    noTopics: 'Mijar tune', noMemories: 'Bîranîn tune'
+  }
 }
 function lbl(key) { const al = lang?.activeLang || 'CKB'; return i18n[al]?.[key] || i18n['CKB']?.[key] || key }
-
+ 
 const api = axios.create({ baseURL: API_BASE_URL, timeout: 15000 })
-
-// ============================================================================
-// API Response Normalizer - Handles both ApiResponse wrappers and Spring Pages
-// ============================================================================
+ 
+// ────────────────────────────────────────────────────────────────
+// API Response unwrapper
+// ────────────────────────────────────────────────────────────────
 function toArray(raw) {
   if (!raw) return []
-  // ApiResponse wrapper → unwrap .data first
   const inner = raw?.data !== undefined ? raw.data : raw
   if (Array.isArray(inner)) return inner
-  // Spring Page inside wrapper
   if (Array.isArray(inner?.content)) return inner.content
-  // bare Spring Page
   if (Array.isArray(inner?.data)) return inner.data
-  // inner.data is itself a Page  { data: { content: [...] } }
   if (Array.isArray(inner?.data?.content)) return inner.data.content
   return []
 }
-
+ 
+// ────────────────────────────────────────────────────────────────
+// State
+// ────────────────────────────────────────────────────────────────
 const images = ref([]), sounds = ref([]), videos = ref([]), writings = ref([])
 const imageTopics = ref([]), soundTopics = ref([]), videoTopics = ref([]), writingTopics = ref([])
-const isLoading = ref(false), activeTab = ref('sound'), activeTopicFilter = ref(null), sortBy = ref('newest')
-const openDropdownKey = ref(null), gridSection = ref(null), tabNavRef = ref(null)
+const isLoading = ref(false)
+const activeTab = ref('sound')
+const activeTopicFilter = ref(null)
+const sortBy = ref('newest')
+const openDropdownKey = ref(null)
+const gridSection = ref(null), tabNavRef = ref(null)
 let dropCloseTimer = null
 const clientPage = ref(0), clientPageSize = 12
-const activeItem = ref(null), selectedClip = ref(null), selectedImage = ref(null)
-const audioPlayer = ref(null), currentTrackIdx = ref(-1), currentTrack = ref(null)
-const isAudioPlaying = ref(false), audioCurrentTime = ref(0), audioDuration = ref(0), audioProgress = ref(0)
+const activeItem = ref(null)
+const selectedClip = ref(null), selectedImage = ref(null)
+const audioPlayer = ref(null)
+const currentTrackIdx = ref(-1), currentTrack = ref(null)
+const isAudioPlaying = ref(false)
+const audioCurrentTime = ref(0), audioDuration = ref(0), audioProgress = ref(0)
 const isFullscreen = ref(false), fullscreenUrl = ref('')
 const heroSlideIndex = ref(0), heroPrevIndex = ref(-1)
 let slideTimer = null
-
+ 
+// ── Tag search ────────────────────────────────────────────────
+const tagSearchMode = ref(false)
+const tagSearchQuery = ref('')
+const tagSearchResults = ref({ sounds: [], images: [], videos: [], writings: [] })
+const isTagSearchLoading = ref(false)
+ 
+const tagSearchMemories = computed(() => [
+  ...tagSearchResults.value.sounds.filter(s => s.albumOfMemories),
+  ...tagSearchResults.value.videos.filter(v => v.albumOfMemories),
+])
+const totalTagResults = computed(() =>
+  tagSearchResults.value.sounds.length +
+  tagSearchResults.value.images.length +
+  tagSearchResults.value.videos.length +
+  tagSearchResults.value.writings.length
+)
+ 
+async function searchByTagGlobal(tag) {
+  if (!tag) return
+  stopAudio()
+  tagSearchMode.value = true
+  tagSearchQuery.value = tag
+  activeItem.value = null
+  isTagSearchLoading.value = true
+  tagSearchResults.value = { sounds: [], images: [], videos: [], writings: [] }
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+ 
+  const [snd, img, vid, wrt] = await Promise.allSettled([
+    api.get('/soundtracks/search/tag',      { params: { tag,   page: 0, size: 200 } }),
+    api.get('/image-collections/search/tag', { params: { tag,   page: 0, size: 200 } }),
+    api.get('/videos/search/tag',            { params: { value: tag, page: 0, size: 200 } }),
+    api.get('/writings/search/tag',          { params: { tag,   page: 0, size: 200 } }),
+  ])
+  if (snd.status === 'fulfilled') tagSearchResults.value.sounds   = toArray(snd.value.data).map(s => ({ ...s, _mediaType: 'sound'   }))
+  if (img.status === 'fulfilled') tagSearchResults.value.images   = toArray(img.value.data).map(i => ({ ...i, _mediaType: 'image'   }))
+  if (vid.status === 'fulfilled') tagSearchResults.value.videos   = toArray(vid.value.data).map(v => ({ ...v, _mediaType: 'video'   }))
+  if (wrt.status === 'fulfilled') tagSearchResults.value.writings = toArray(wrt.value.data).map(w => ({ ...w, _mediaType: 'writing' }))
+ 
+  isTagSearchLoading.value = false
+}
+ 
+function clearTagSearch() {
+  tagSearchMode.value = false
+  tagSearchQuery.value = ''
+  tagSearchResults.value = { sounds: [], images: [], videos: [], writings: [] }
+}
+ 
+// ────────────────────────────────────────────────────────────────
+// Computed
+// ────────────────────────────────────────────────────────────────
 const memorySounds = computed(() => sounds.value.filter(s => s.albumOfMemories).map(s => ({ ...s, _mediaType: 'sound' })))
-const memoryVideos = computed(() => videos.value.filter(v => v.albumOfMemories).map(v => ({ ...v, _mediaType: 'video' })))
-
+const memoryVideos  = computed(() => videos.value.filter(v => v.albumOfMemories).map(v => ({ ...v, _mediaType: 'video' })))
+ 
 const heroSlides = computed(() => {
   const seen = new Set(), urls = []
-  const addUrl = (u, tab) => { if (!u || seen.has(u) || u.includes('example.com') || u.includes('placeholder') || !u.startsWith('http')) return; seen.add(u); urls.push({ url: u, tab }) }
-  images.value.forEach(x => { addUrl(x.ckbCoverUrl, 'image'); addUrl(x.kmrCoverUrl, 'image'); addUrl(x.hoverCoverUrl, 'image') })
-  sounds.value.forEach(x => { addUrl(x.ckbCoverUrl, 'sound'); addUrl(x.kmrCoverUrl, 'sound'); addUrl(x.hoverCoverUrl, 'sound') })
-  videos.value.forEach(x => { addUrl(x.ckbCoverUrl, 'video'); addUrl(x.kmrCoverUrl, 'video'); addUrl(x.hoverCoverUrl, 'video') })
-  writings.value.forEach(x => { addUrl(x.ckbCoverUrl, 'writing'); addUrl(x.kmrCoverUrl, 'writing'); addUrl(x.hoverCoverUrl, 'writing') })
+  const addUrl = (u) => { if (!u || seen.has(u) || !u.startsWith('http')) return; seen.add(u); urls.push({ url: u }) }
+  ;[...images.value, ...sounds.value, ...videos.value, ...writings.value].forEach(x => {
+    addUrl(x.ckbCoverUrl); addUrl(x.kmrCoverUrl); addUrl(x.hoverCoverUrl)
+  })
   for (let i = urls.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [urls[i], urls[j]] = [urls[j], urls[i]] }
   return urls.slice(0, 14)
 })
-
+ 
 function jumpSlide(idx) { heroPrevIndex.value = heroSlideIndex.value; heroSlideIndex.value = idx; restartSlideTimer() }
 function advanceSlide() { if (!heroSlides.value.length) return; heroPrevIndex.value = heroSlideIndex.value; heroSlideIndex.value = (heroSlideIndex.value + 1) % heroSlides.value.length }
 function restartSlideTimer() { if (slideTimer) clearInterval(slideTimer); slideTimer = setInterval(advanceSlide, 4800) }
-watch(heroSlides, (slides) => { if (slides.length > 1) restartSlideTimer() }, { immediate: false })
-
+watch(heroSlides, (slides) => { if (slides.length > 1) restartSlideTimer() })
+ 
 const waveformCache = new Map()
 function getWaveform(seed) {
   const key = String(seed)
-  if (!waveformCache.has(key)) { waveformCache.set(key, Array.from({ length: 40 }, (_, i) => { const x = Math.sin(Number(seed || 1) * 9301 + i * 49297 + 233) * 233; return (x - Math.floor(x)) * 0.7 + 0.3 })) }
+  if (!waveformCache.has(key)) {
+    waveformCache.set(key, Array.from({ length: 40 }, (_, i) => {
+      const x = Math.sin(Number(seed || 1) * 9301 + i * 49297 + 233) * 233
+      return (x - Math.floor(x)) * 0.7 + 0.3
+    }))
+  }
   return waveformCache.get(key)
 }
 function particleStyle(i) { const seed = i * 137.508; return { '--x': `${seed % 100}%`, '--y': `${(seed * 1.618) % 100}%`, '--dur': `${14 + (i * 3.2) % 20}s`, '--del': `${(i * 1.1) % 5}s`, '--sz': `${1.5 + (i % 3)}px` } }
-
-const tabDefs = computed(() => [{ key: 'image', label: lbl('images'), icon: '🖼️' }, { key: 'sound', label: lbl('sound'), icon: '🎵' }, { key: 'video', label: lbl('video'), icon: '🎬' }, { key: 'writing', label: lbl('writings'), icon: '📚' }, { key: 'memories', label: lbl('memories'), icon: '💫' }])
-
+ 
+const tabDefs = computed(() => [
+  { key: 'image',    label: lbl('images'),   icon: '🖼️' },
+  { key: 'sound',    label: lbl('sound'),    icon: '🎵' },
+  { key: 'video',    label: lbl('video'),    icon: '🎬' },
+  { key: 'writing',  label: lbl('writings'), icon: '📚' },
+  { key: 'memories', label: lbl('memories'), icon: '💫' },
+])
+ 
 const displayedItems = computed(() => {
   let list = []
-  switch (activeTab.value) { case 'image': list = [...images.value]; break; case 'sound': list = [...sounds.value]; break; case 'video': list = [...videos.value]; break; case 'writing': list = [...writings.value]; break; case 'memories': list = [...memorySounds.value, ...memoryVideos.value]; break }
-  if (activeTopicFilter.value && activeTab.value !== 'memories') { const fid = String(activeTopicFilter.value); list = list.filter(item => { const tid = item.topicId ?? item.topic?.id; return tid != null && String(tid) === fid }) }
-  switch (sortBy.value) { case 'newest': list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')); break; case 'oldest': list.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')); break; case 'title': list.sort((a, b) => pTitle(a).localeCompare(pTitle(b))); break }
+  switch (activeTab.value) {
+    case 'image':    list = [...images.value];   break
+    case 'sound':    list = [...sounds.value];   break
+    case 'video':    list = [...videos.value];   break
+    case 'writing':  list = [...writings.value]; break
+    case 'memories': list = [...memorySounds.value, ...memoryVideos.value]; break
+  }
+  if (activeTopicFilter.value && activeTab.value !== 'memories') {
+    const fid = String(activeTopicFilter.value)
+    list = list.filter(item => { const tid = item.topicId ?? item.topic?.id; return tid != null && String(tid) === fid })
+  }
+  switch (sortBy.value) {
+    case 'newest': list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')); break
+    case 'oldest': list.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')); break
+    case 'title':  list.sort((a, b) => pTitle(a).localeCompare(pTitle(b))); break
+  }
   return list
 })
 const totalClientPages = computed(() => Math.ceil(displayedItems.value.length / clientPageSize))
-const paginatedItems = computed(() => { const s = clientPage.value * clientPageSize; return displayedItems.value.slice(s, s + clientPageSize) })
-const heroStats = computed(() => [{ value: images.value.length, label: lbl('images') }, { value: sounds.value.length, label: lbl('sound') }, { value: videos.value.length, label: lbl('video') }, { value: writings.value.length, label: lbl('writings') }])
-const activeTopicName = computed(() => { if (!activeTopicFilter.value) return ''; const fid = String(activeTopicFilter.value); const all = [...imageTopics.value, ...soundTopics.value, ...videoTopics.value, ...writingTopics.value]; const t = all.find(t => String(t.id) === fid); return t ? topicName(t) : '' })
-const relatedItems = computed(() => { if (!activeItem.value) return []; const myTags = new Set(pTags(activeItem.value)); const type = activeItem.value._mediaType; const pool = type === 'image' ? images.value : type === 'sound' ? sounds.value : type === 'video' ? videos.value : writings.value; return pool.filter(p => p.id !== activeItem.value.id && pTags(p).some(t => myTags.has(t))).slice(0, 4) })
+const paginatedItems   = computed(() => { const s = clientPage.value * clientPageSize; return displayedItems.value.slice(s, s + clientPageSize) })
+const heroStats        = computed(() => [{ value: images.value.length, label: lbl('images') }, { value: sounds.value.length, label: lbl('sound') }, { value: videos.value.length, label: lbl('video') }, { value: writings.value.length, label: lbl('writings') }])
+const activeTopicName  = computed(() => { if (!activeTopicFilter.value) return ''; const fid = String(activeTopicFilter.value); const all = [...imageTopics.value, ...soundTopics.value, ...videoTopics.value, ...writingTopics.value]; const t = all.find(t => String(t.id) === fid); return t ? topicName(t) : '' })
+const relatedItems     = computed(() => { if (!activeItem.value) return []; const myTags = new Set(pTags(activeItem.value)); const pool = activeItem.value._mediaType === 'image' ? images.value : activeItem.value._mediaType === 'sound' ? sounds.value : activeItem.value._mediaType === 'video' ? videos.value : writings.value; return pool.filter(p => p.id !== activeItem.value.id && pTags(p).some(t => myTags.has(t))).slice(0, 4) })
 const totalSoundDuration = computed(() => { if (!activeItem.value || activeItem.value._mediaType !== 'sound') return 0; return (activeItem.value.files || []).reduce((sum, f) => sum + (f.durationSeconds || 0), 0) })
-const currentImageIdx = computed(() => { if (!selectedImage.value || !activeItem.value?.imageAlbum) return 0; return activeItem.value.imageAlbum.findIndex(i => i.id === selectedImage.value.id) })
-const canPrevImage = computed(() => currentImageIdx.value > 0)
-const canNextImage = computed(() => currentImageIdx.value < (activeItem.value?.imageAlbum?.length || 0) - 1)
-
-function pTitle(item) { if (!item) return ''; const c = lang.activeLang === 'CKB'; return (c ? item.ckbContent?.title : item.kmrContent?.title) || (c ? item.kmrContent?.title : item.ckbContent?.title) || '' }
-function pDesc(item) { if (!item) return ''; const c = lang.activeLang === 'CKB'; return (c ? item.ckbContent?.description : item.kmrContent?.description) || (c ? item.kmrContent?.description : item.ckbContent?.description) || '' }
-function pCover(item) { if (!item) return fallbackCover; const c = lang.activeLang === 'CKB'; return (c ? item.ckbCoverUrl : item.kmrCoverUrl) || (c ? item.kmrCoverUrl : item.ckbCoverUrl) || item.hoverCoverUrl || fallbackCover }
-function pHoverCover(item) { if (!item) return null; const cover = pCover(item); const hover = item.hoverCoverUrl; if (!hover || hover === cover || hover === fallbackCover) return null; return hover }
-function pTags(item) { if (!item) return []; const c = lang.activeLang === 'CKB'; const ckb = item.tagsCkb || item.tags?.ckb || []; const kmr = item.tagsKmr || item.tags?.kmr || []; return [...(c ? ckb : kmr)] }
-function pKeywords(item) { if (!item) return []; const c = lang.activeLang === 'CKB'; const ckb = item.keywordsCkb || item.keywords?.ckb || []; const kmr = item.keywordsKmr || item.keywords?.kmr || []; return [...(c ? ckb : kmr)] }
-function pLocation(item) { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.location : item.kmrContent?.location) || '' }
+const currentImageIdx  = computed(() => { if (!selectedImage.value || !activeItem.value?.imageAlbum) return 0; return activeItem.value.imageAlbum.findIndex(i => i.id === selectedImage.value.id) })
+const canPrevImage     = computed(() => currentImageIdx.value > 0)
+const canNextImage     = computed(() => currentImageIdx.value < (activeItem.value?.imageAlbum?.length || 0) - 1)
+ 
+// ────────────────────────────────────────────────────────────────
+// Field extractors
+// ────────────────────────────────────────────────────────────────
+function pTitle(item)       { if (!item) return ''; const c = lang.activeLang === 'CKB'; return (c ? item.ckbContent?.title : item.kmrContent?.title) || (c ? item.kmrContent?.title : item.ckbContent?.title) || '' }
+function pDesc(item)        { if (!item) return ''; const c = lang.activeLang === 'CKB'; return (c ? item.ckbContent?.description : item.kmrContent?.description) || (c ? item.kmrContent?.description : item.ckbContent?.description) || '' }
+function pCover(item)       { if (!item) return fallbackCover; const c = lang.activeLang === 'CKB'; return (c ? item.ckbCoverUrl : item.kmrCoverUrl) || (c ? item.kmrCoverUrl : item.ckbCoverUrl) || item.hoverCoverUrl || fallbackCover }
+function pHoverCover(item)  { if (!item) return null; const cover = pCover(item); const hover = item.hoverCoverUrl; if (!hover || hover === cover || hover === fallbackCover) return null; return hover }
+function pTags(item)        { if (!item) return []; const c = lang.activeLang === 'CKB'; const ckb = item.tagsCkb || item.tags?.ckb || []; const kmr = item.tagsKmr || item.tags?.kmr || []; return [...(c ? ckb : kmr)] }
+function pLocation(item)    { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.location : item.kmrContent?.location) || '' }
 function pCollectedBy(item) { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.collectedBy : item.kmrContent?.collectedBy) || '' }
-function pDirector(item) { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.director : item.kmrContent?.director) || '' }
-function pProducer(item) { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.producer : item.kmrContent?.producer) || '' }
-function pWriter(item) { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.writer : item.kmrContent?.writer) || '' }
-function pGenre(item) { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.genre : item.kmrContent?.genre) || '' }
-function pPageCount(item) { return !item ? null : item.ckbContent?.pageCount || item.kmrContent?.pageCount || null }
-function pFileFormat(item) { return !item ? '' : item.ckbContent?.fileFormat || item.kmrContent?.fileFormat || '' }
-function topicName(topic) { if (!topic) return ''; return (lang.activeLang === 'CKB' ? topic.nameCkb : topic.nameKmr) || topic.nameCkb || topic.nameKmr || '' }
+function pDirector(item)    { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.director : item.kmrContent?.director) || '' }
+function pProducer(item)    { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.producer : item.kmrContent?.producer) || '' }
+function pWriter(item)      { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.writer : item.kmrContent?.writer) || '' }
+function pGenre(item)       { return !item ? '' : (lang.activeLang === 'CKB' ? item.ckbContent?.genre : item.kmrContent?.genre) || '' }
+function pPageCount(item)   { return !item ? null : item.ckbContent?.pageCount || item.kmrContent?.pageCount || null }
+function pFileFormat(item)  { return !item ? '' : item.ckbContent?.fileFormat || item.kmrContent?.fileFormat || '' }
+ 
+function topicName(topic)   { if (!topic) return ''; return (lang.activeLang === 'CKB' ? topic.nameCkb : topic.nameKmr) || topic.nameCkb || topic.nameKmr || '' }
 function getMediaIcon(type) { return { image: '🖼️', sound: '🎵', video: '🎬', writing: '📚' }[type] || '📎' }
 function getMediaTypeLabel(type) { return { image: lbl('images'), sound: lbl('sound'), video: lbl('video'), writing: lbl('writings') }[type] || type }
 function getTypeEmoji(item) { if (!item) return '📎'; if (item._mediaType === 'sound') return item.trackState === 'MULTI' ? '💿' : '🎵'; if (item._mediaType === 'video') return item.videoType === 'FILM' ? '🎞' : '📹'; if (item._mediaType === 'image') return item.collectionType === 'SINGLE' ? '🖼️' : '📷'; if (item._mediaType === 'writing') return '📖'; return '📎' }
 function getTypeLabel(item) { if (!item) return ''; if (item._mediaType === 'sound') return item.trackState || 'SOUND'; if (item._mediaType === 'video') return item.videoType || 'VIDEO'; if (item._mediaType === 'image') return item.collectionType || 'IMAGE'; if (item._mediaType === 'writing') return item.writingTopic || 'WRITING'; return item._mediaType?.toUpperCase() || '' }
-function getItemDate(item) { return item?.publishmentDate || item?.createdAt || null }
-function getCountBadge(item) { if (!item) return null; if (item._mediaType === 'sound' && item.files?.length) return `🎵 ${item.files.length}`; if (item._mediaType === 'image' && item.imageAlbum?.length) return `🖼️ ${item.imageAlbum.length}`; if (item._mediaType === 'video' && item.videoClipItems?.length) return `📹 ${item.videoClipItems.length}`; return null }
-function getExtraLine(item) { if (!item) return ''; if (item._mediaType === 'writing') return pWriter(item); if (item._mediaType === 'sound') return item.soundType || item.director || ''; if (item._mediaType === 'video') return pDirector(item); if (item._mediaType === 'image') return pLocation(item); return '' }
-function tabCount(key) { if (key === 'image') return images.value.length; if (key === 'sound') return sounds.value.length; if (key === 'video') return videos.value.length; if (key === 'writing') return writings.value.length; if (key === 'memories') return memorySounds.value.length + memoryVideos.value.length; return 0 }
-function getTopicsFor(key) { if (key === 'image') return imageTopics.value; if (key === 'sound') return soundTopics.value; if (key === 'video') return videoTopics.value; if (key === 'writing') return writingTopics.value; return [] }
-function getVideoSourceUrl(item) { if (!item) return ''; const c = lang.activeLang === 'CKB'; return item.sourceUrl || item.videoUrl || item.fileUrl || (c ? item.ckbContent?.sourceUrl : item.kmrContent?.sourceUrl) || (c ? item.ckbContent?.videoUrl : item.kmrContent?.videoUrl) || (c ? item.kmrContent?.sourceUrl : item.ckbContent?.sourceUrl) || '' }
-function getVideoEmbedUrl(item) { if (!item) return ''; const c = lang.activeLang === 'CKB'; return item.sourceEmbedUrl || item.embedUrl || (c ? item.ckbContent?.sourceEmbedUrl : item.kmrContent?.sourceEmbedUrl) || (c ? item.ckbContent?.embedUrl : item.kmrContent?.embedUrl) || (c ? item.kmrContent?.sourceEmbedUrl : item.ckbContent?.sourceEmbedUrl) || '' }
-function getClipUrl(clip) { return !clip ? '' : clip.url || clip.sourceUrl || clip.videoUrl || clip.fileUrl || '' }
-function getClipEmbedUrl(clip) { return !clip ? '' : clip.embedUrl || clip.sourceEmbedUrl || '' }
-function truncate(text, max) { if (!text) return ''; return text.length > max ? text.slice(0, max) + '…' : text }
-function formatDate(v) { if (!v) return ''; try { const d = new Date(v); if (isNaN(d.getTime())) return String(v); return d.toLocaleDateString(lang.activeLang === 'CKB' ? 'ckb' : 'ku', { year: 'numeric', month: 'long', day: 'numeric' }) } catch { return String(v) } }
-function formatTime(s) { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60); const sec = Math.floor(s % 60).toString().padStart(2, '0'); if (m >= 60) return `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}:${sec}`; return `${m}:${sec}` }
-function formatSize(bytes) { if (!bytes) return ''; return bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(0)}KB` : `${(bytes / (1024 * 1024)).toFixed(1)}MB` }
-function onImgError(e) { e.target.src = fallbackCover }
-
-// ============================================================================
-// DATA FETCHING - Updated with toArray() to handle inconsistent API formats
-// ============================================================================
-
-async function fetchAll() { isLoading.value = true; try { await Promise.allSettled([fetchImages(), fetchSounds(), fetchVideos(), fetchWritings(), fetchTopics()]) } finally { isLoading.value = false } }
-
-async function fetchImages() { 
-  try { 
-    const { data } = await api.get('/image-collections')
-    images.value = toArray(data).map(i => ({ ...i, _mediaType: 'image' }))
-  } catch (e) { console.warn('images:', e.message) } 
+function getItemDate(item)  { return item?.publishmentDate || item?.createdAt || null }
+function getCountBadge(item){ if (!item) return null; if (item._mediaType === 'sound' && item.files?.length) return `🎵 ${item.files.length}`; if (item._mediaType === 'image' && item.imageAlbum?.length) return `🖼️ ${item.imageAlbum.length}`; if (item._mediaType === 'video' && item.videoClipItems?.length) return `📹 ${item.videoClipItems.length}`; return null }
+function getExtraLine(item) { if (!item) return ''; if (item._mediaType === 'writing') return pWriter(item); if (item._mediaType === 'sound') return item.reader || item.soundType || ''; if (item._mediaType === 'video') return pDirector(item); if (item._mediaType === 'image') return pLocation(item); return '' }
+function tabCount(key)      { if (key === 'image') return images.value.length; if (key === 'sound') return sounds.value.length; if (key === 'video') return videos.value.length; if (key === 'writing') return writings.value.length; if (key === 'memories') return memorySounds.value.length + memoryVideos.value.length; return 0 }
+function getTopicsFor(key)  { if (key === 'image') return imageTopics.value; if (key === 'sound') return soundTopics.value; if (key === 'video') return videoTopics.value; if (key === 'writing') return writingTopics.value; return [] }
+function getVideoSourceUrl(item){ if (!item) return ''; const c = lang.activeLang === 'CKB'; return item.sourceUrl || item.videoUrl || item.fileUrl || (c ? item.ckbContent?.sourceUrl : item.kmrContent?.sourceUrl) || (c ? item.kmrContent?.sourceUrl : item.ckbContent?.sourceUrl) || '' }
+function getVideoEmbedUrl(item) { if (!item) return ''; const c = lang.activeLang === 'CKB'; return item.sourceEmbedUrl || item.embedUrl || (c ? item.ckbContent?.sourceEmbedUrl : item.kmrContent?.sourceEmbedUrl) || (c ? item.kmrContent?.sourceEmbedUrl : item.ckbContent?.sourceEmbedUrl) || '' }
+function getClipUrl(clip)       { return !clip ? '' : clip.url || clip.sourceUrl || clip.videoUrl || clip.fileUrl || '' }
+function getClipEmbedUrl(clip)  { return !clip ? '' : clip.embedUrl || clip.sourceEmbedUrl || '' }
+function truncate(text, max)    { if (!text) return ''; return text.length > max ? text.slice(0, max) + '…' : text }
+function formatDate(v)          { if (!v) return ''; try { const d = new Date(v); if (isNaN(d.getTime())) return String(v); return d.toLocaleDateString(lang.activeLang === 'CKB' ? 'ckb' : 'ku', { year: 'numeric', month: 'long', day: 'numeric' }) } catch { return String(v) } }
+function formatTime(s)          { if (!s || isNaN(s)) return '0:00'; const m = Math.floor(s / 60); const sec = Math.floor(s % 60).toString().padStart(2, '0'); if (m >= 60) return `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}:${sec}`; return `${m}:${sec}` }
+function formatSize(bytes)      { if (!bytes) return ''; return bytes < 1048576 ? `${(bytes/1024).toFixed(0)} KB` : `${(bytes/1048576).toFixed(1)} MB` }
+function onImgError(e)          { e.target.src = fallbackCover }
+ 
+// ────────────────────────────────────────────────────────────────
+// Data fetching
+// ────────────────────────────────────────────────────────────────
+async function fetchAll() {
+  isLoading.value = true
+  try { await Promise.allSettled([fetchImages(), fetchSounds(), fetchVideos(), fetchWritings(), fetchTopics()]) }
+  finally { isLoading.value = false }
 }
-
-async function fetchSounds() { 
-  try { 
-    const { data } = await api.get('/soundtracks')
-    sounds.value = toArray(data).map(s => ({ ...s, _mediaType: 'sound' }))
-  } catch (e) { console.warn('sounds:', e.message) } 
-}
-
-async function fetchVideos() { 
-  try { 
-    const { data } = await api.get('/videos', { params: { page: 0, size: 200 } })
-    videos.value = toArray(data).map(v => ({ ...v, _mediaType: 'video' }))
-  } catch (e) { console.warn('videos:', e.message) } 
-}
-
-async function fetchWritings() { 
-  try { 
-    const { data } = await api.get('/writings', { params: { page: 0, size: 200 } })
-    writings.value = toArray(data).map(w => ({ ...w, _mediaType: 'writing' }))
-  } catch (e) { console.warn('writings:', e.message) } 
-}
-
+ 
+async function fetchImages()   { try { const { data } = await api.get('/image-collections');                              images.value   = toArray(data).map(i => ({ ...i, _mediaType: 'image'   })) } catch (e) { console.warn('images:', e.message) } }
+async function fetchSounds()   { try { const { data } = await api.get('/soundtracks', { params: { page: 0, size: 1000 } }); sounds.value   = toArray(data).map(s => ({ ...s, _mediaType: 'sound'   })) } catch (e) { console.warn('sounds:', e.message) } }
+async function fetchVideos()   { try { const { data } = await api.get('/videos',      { params: { page: 0, size: 200  } }); videos.value   = toArray(data).map(v => ({ ...v, _mediaType: 'video'   })) } catch (e) { console.warn('videos:', e.message) } }
+async function fetchWritings() { try { const { data } = await api.get('/writings',    { params: { page: 0, size: 200  } }); writings.value = toArray(data).map(w => ({ ...w, _mediaType: 'writing' })) } catch (e) { console.warn('writings:', e.message) } }
+ 
 async function fetchTopics() {
   try {
     const [imgT, sndT, vidT, wrtT] = await Promise.allSettled([
-      api.get('/image-collections/topics'), 
-      api.get('/soundtracks/topics'), 
-      api.get('/videos/topics'), 
-      api.get('/writings/topics')
+      api.get('/image-collections/topics'),
+      api.get('/soundtracks/topics'),
+      api.get('/videos/topics'),
+      api.get('/writings/topics'),
     ])
-    if (imgT.status === 'fulfilled') imageTopics.value = toArray(imgT.value.data)
-    if (sndT.status === 'fulfilled') soundTopics.value = toArray(sndT.value.data)
-    if (vidT.status === 'fulfilled') videoTopics.value = toArray(vidT.value.data)
+    if (imgT.status === 'fulfilled') imageTopics.value   = toArray(imgT.value.data)
+    if (sndT.status === 'fulfilled') soundTopics.value   = toArray(sndT.value.data)
+    if (vidT.status === 'fulfilled') videoTopics.value   = toArray(vidT.value.data)
     if (wrtT.status === 'fulfilled') writingTopics.value = toArray(wrtT.value.data)
   } catch (e) { console.warn('topics:', e.message) }
 }
-
-function switchTab(key) { activeTab.value = key; activeTopicFilter.value = null; clientPage.value = 0; openDropdownKey.value = null }
-function setTopicFilter(id) { activeTopicFilter.value = id; clientPage.value = 0; openDropdownKey.value = null }
-function clearTopicFilter() { activeTopicFilter.value = null; clientPage.value = 0 }
-function clearFilters() { activeTopicFilter.value = null; clientPage.value = 0 }
-function onTabEnter(key) { cancelDropClose(); openDropdownKey.value = key }
-function scheduleDropClose() { cancelDropClose(); dropCloseTimer = setTimeout(() => { openDropdownKey.value = null }, 220) }
-function cancelDropClose() { if (dropCloseTimer) { clearTimeout(dropCloseTimer); dropCloseTimer = null } }
-function goPrev() { if (clientPage.value > 0) { clientPage.value--; scrollToContent() } }
-function goNext() { if (clientPage.value + 1 < totalClientPages.value) { clientPage.value++; scrollToContent() } }
-function scrollToContent() { gridSection.value?.scrollIntoView({ behavior: 'smooth' }) }
-
-function openItem(item) { stopAudio(); activeItem.value = item; selectedClip.value = item.videoClipItems?.[0] || null; selectedImage.value = item.imageAlbum?.[0] || null; currentTrackIdx.value = -1; currentTrack.value = null; audioError.value = null; window.scrollTo({ top: 0, behavior: 'smooth' }) }
-function closeItem() { stopAudio(); activeItem.value = null; selectedClip.value = null; selectedImage.value = null; currentTrackIdx.value = -1; currentTrack.value = null; audioError.value = null }
+ 
+// ────────────────────────────────────────────────────────────────
+// Navigation
+// ────────────────────────────────────────────────────────────────
+function switchTab(key)       { activeTab.value = key; activeTopicFilter.value = null; clientPage.value = 0; openDropdownKey.value = null }
+function setTopicFilter(id)   { activeTopicFilter.value = id; clientPage.value = 0; openDropdownKey.value = null }
+function clearTopicFilter()   { activeTopicFilter.value = null; clientPage.value = 0 }
+function clearFilters()       { activeTopicFilter.value = null; clientPage.value = 0 }
+function onTabEnter(key)      { cancelDropClose(); openDropdownKey.value = key }
+function scheduleDropClose()  { cancelDropClose(); dropCloseTimer = setTimeout(() => { openDropdownKey.value = null }, 220) }
+function cancelDropClose()    { if (dropCloseTimer) { clearTimeout(dropCloseTimer); dropCloseTimer = null } }
+function goPrev()             { if (clientPage.value > 0) { clientPage.value--; scrollToContent() } }
+function goNext()             { if (clientPage.value + 1 < totalClientPages.value) { clientPage.value++; scrollToContent() } }
+function scrollToContent()    { gridSection.value?.scrollIntoView({ behavior: 'smooth' }) }
+ 
+function openItem(item) {
+  stopAudio()
+  activeItem.value = item
+  selectedClip.value  = item.videoClipItems?.[0] || null
+  selectedImage.value = item.imageAlbum?.[0] || null
+  currentTrackIdx.value = -1; currentTrack.value = null; audioError.value = null
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+function closeItem() {
+  stopAudio()
+  activeItem.value = null; selectedClip.value = null; selectedImage.value = null
+  currentTrackIdx.value = -1; currentTrack.value = null; audioError.value = null
+}
 function openMemoryFromDropdown(item) { openDropdownKey.value = null; activeTab.value = 'memories'; openItem(item) }
-
+ 
+// ────────────────────────────────────────────────────────────────
+// Audio
+// ────────────────────────────────────────────────────────────────
 function getAudioUrl(file) { if (!file) return ''; return file.fileUrl || file.externalUrl || file.url || file.audioUrl || file.src || file.path || '' }
-
+ 
 async function playTrack(file, idx) {
   const url = getAudioUrl(file)
   if (!url) { audioError.value = 'Audio file not available'; return }
@@ -688,27 +1248,38 @@ async function playTrack(file, idx) {
   audioPlayer.value.src = url; audioPlayer.value.load()
   try { await audioPlayer.value.play() } catch (err) { audioError.value = 'Failed to play audio: ' + (err.message || 'Unknown error'); isAudioPlaying.value = false }
 }
-function togglePlay() { if (!audioPlayer.value) return; if (audioPlayer.value.paused) { audioPlayer.value.play().catch(err => { audioError.value = 'Failed to resume playback' }) } else { audioPlayer.value.pause() } }
-function prevTrack() { if (currentTrackIdx.value > 0 && activeItem.value?.files) playTrack(activeItem.value.files[currentTrackIdx.value - 1], currentTrackIdx.value - 1) }
-function nextTrack() { if (activeItem.value?.files && currentTrackIdx.value < activeItem.value.files.length - 1) playTrack(activeItem.value.files[currentTrackIdx.value + 1], currentTrackIdx.value + 1) }
-function onTrackEnded() { isAudioPlaying.value = false; nextTrack() }
-function onAudioLoaded() { if (audioPlayer.value) audioDuration.value = audioPlayer.value.duration || 0 }
-function onAudioTimeUpdate() { if (!audioPlayer.value) return; audioCurrentTime.value = audioPlayer.value.currentTime || 0; const dur = audioPlayer.value.duration; audioProgress.value = dur ? (audioCurrentTime.value / dur) * 100 : 0 }
-function onAudioError() { const mediaError = audioPlayer.value?.error; let msg = 'Error loading audio file'; if (mediaError) { switch (mediaError.code) { case 1: msg = 'Audio loading was aborted'; break; case 2: msg = 'Network error while loading audio'; break; case 3: msg = 'Audio decoding error'; break; case 4: msg = 'Audio format not supported'; break } } audioError.value = msg; isAudioPlaying.value = false }
-function seekAudio(e) { if (!audioPlayer.value || !audioPlayer.value.duration) return; const r = e.currentTarget.getBoundingClientRect(); const pct = (e.clientX - r.left) / r.width; audioPlayer.value.currentTime = pct * audioPlayer.value.duration }
-function stopAudio() { if (audioPlayer.value) { audioPlayer.value.pause(); audioPlayer.value.removeAttribute('src'); audioPlayer.value.load() }; isAudioPlaying.value = false; audioCurrentTime.value = 0; audioDuration.value = 0; audioProgress.value = 0; currentTrackIdx.value = -1; currentTrack.value = null }
-function prevImage() { if (canPrevImage.value) selectedImage.value = activeItem.value.imageAlbum[currentImageIdx.value - 1] }
-function nextImage() { if (canNextImage.value) selectedImage.value = activeItem.value.imageAlbum[currentImageIdx.value + 1] }
-function openFullscreen(img) { fullscreenUrl.value = img.imageUrl || img.externalUrl || ''; isFullscreen.value = true }
-
+function togglePlay() { if (!audioPlayer.value) return; if (audioPlayer.value.paused) { audioPlayer.value.play().catch(() => { audioError.value = 'Failed to resume playback' }) } else { audioPlayer.value.pause() } }
+function prevTrack()  { if (currentTrackIdx.value > 0 && activeItem.value?.files) playTrack(activeItem.value.files[currentTrackIdx.value - 1], currentTrackIdx.value - 1) }
+function nextTrack()  { if (activeItem.value?.files && currentTrackIdx.value < activeItem.value.files.length - 1) playTrack(activeItem.value.files[currentTrackIdx.value + 1], currentTrackIdx.value + 1) }
+function onTrackEnded()     { isAudioPlaying.value = false; nextTrack() }
+function onAudioLoaded()    { if (audioPlayer.value) audioDuration.value = audioPlayer.value.duration || 0 }
+function onAudioTimeUpdate(){ if (!audioPlayer.value) return; audioCurrentTime.value = audioPlayer.value.currentTime || 0; const dur = audioPlayer.value.duration; audioProgress.value = dur ? (audioCurrentTime.value / dur) * 100 : 0 }
+function onAudioError()     { const me = audioPlayer.value?.error; let msg = 'Error loading audio file'; if (me) { switch (me.code) { case 1: msg = 'Audio loading was aborted'; break; case 2: msg = 'Network error while loading audio'; break; case 3: msg = 'Audio decoding error'; break; case 4: msg = 'Audio format not supported'; break } } audioError.value = msg; isAudioPlaying.value = false }
+function seekAudio(e)       { if (!audioPlayer.value?.duration) return; const r = e.currentTarget.getBoundingClientRect(); audioPlayer.value.currentTime = ((e.clientX - r.left) / r.width) * audioPlayer.value.duration }
+function stopAudio()        { if (audioPlayer.value) { audioPlayer.value.pause(); audioPlayer.value.removeAttribute('src'); audioPlayer.value.load() }; isAudioPlaying.value = false; audioCurrentTime.value = 0; audioDuration.value = 0; audioProgress.value = 0; currentTrackIdx.value = -1; currentTrack.value = null }
+ 
+// ────────────────────────────────────────────────────────────────
+// Gallery
+// ────────────────────────────────────────────────────────────────
+function prevImage()    { if (canPrevImage.value) selectedImage.value = activeItem.value.imageAlbum[currentImageIdx.value - 1] }
+function nextImage()    { if (canNextImage.value) selectedImage.value = activeItem.value.imageAlbum[currentImageIdx.value + 1] }
+function openFullscreen(url) { if (!url) return; fullscreenUrl.value = url; isFullscreen.value = true }
+ 
+// ────────────────────────────────────────────────────────────────
+// Keyboard & click-outside
+// ────────────────────────────────────────────────────────────────
 function handleKeydown(e) {
-  if (e.key === 'Escape') { if (isFullscreen.value) { isFullscreen.value = false; return }; if (activeItem.value) closeItem() }
+  if (e.key === 'Escape') {
+    if (isFullscreen.value) { isFullscreen.value = false; return }
+    if (activeItem.value) { closeItem(); return }
+    if (tagSearchMode.value) { clearTagSearch(); return }
+  }
   if (!activeItem.value) return
   if (activeItem.value._mediaType === 'image') { if (e.key === 'ArrowLeft') prevImage(); if (e.key === 'ArrowRight') nextImage() }
 }
 function handleClickOutside(e) { if (!e.target.closest('.tabnav__item')) openDropdownKey.value = null }
 watch(() => lang.activeLang, () => { if (isFullscreen.value) isFullscreen.value = false })
-
+ 
 onMounted(() => { fetchAll(); window.addEventListener('keydown', handleKeydown); document.addEventListener('click', handleClickOutside) })
 onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (dropCloseTimer) clearTimeout(dropCloseTimer); window.removeEventListener('keydown', handleKeydown); document.removeEventListener('click', handleClickOutside) })
 </script>
@@ -1269,4 +1840,240 @@ onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (
   .audio-bar { flex-wrap: wrap; }
   .audio-bar__prog-wrap { order: 5; flex: 0 0 100%; }
 }
+/* ─── Clickable tags ─────────────────────────────────────────── */
+.dtag--clickable,
+.ctag--clickable,
+.rtag--clickable,
+.sfm-chip--tag {
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, transform 0.12s;
+}
+.dtag--clickable:hover  { opacity: 0.8; transform: translateY(-1px); }
+.ctag--clickable:hover  { opacity: 0.85; transform: translateY(-1px); }
+.sfm-chip--tag:hover    { filter: brightness(1.15); transform: translateY(-1px); }
+.rtag--clickable        { cursor: pointer; }
+.rtag--clickable:hover  { opacity: 0.8; }
+ 
+/* ─── Tabnav separator ───────────────────────────────────────── */
+.tabnav__sep {
+  display: inline-block;
+  width: 1px;
+  height: 1.4em;
+  background: currentColor;
+  opacity: 0.18;
+  align-self: center;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+.tabnav__row { display: flex; align-items: center; }
+ 
+/* ─── Tag search page ────────────────────────────────────────── */
+.ts-hero {
+  padding: 2rem 0 1.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  margin-bottom: 2rem;
+}
+.ts-hero .container {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.ts-back { flex-shrink: 0; }
+.ts-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 0.1em;
+}
+.ts-hash  { opacity: 0.4; font-weight: 400; }
+.ts-query { }
+.ts-total {
+  margin-inline-start: auto;
+  opacity: 0.5;
+  font-size: 0.9rem;
+}
+.ts-section { margin-bottom: 2.5rem; }
+.ts-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.ts-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+.ts-section-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15em 0.55em;
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: rgba(0,0,0,0.08);
+}
+.ts-divider {
+  border: none;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  margin: 0 0 2.5rem;
+}
+.ts-body { padding-top: 0; }
+ 
+/* ─── Sound full metadata section ─────────────────────────────── */
+.sound-full-meta {
+  padding: 2rem 0 3rem;
+}
+.sfm-block {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+.sfm-block:last-child { border-bottom: none; }
+.sfm-block__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  margin: 0 0 1rem;
+}
+.sfm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.sfm-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.sfm-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.45;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sfm-value {
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.sfm-value--badge {
+  display: inline-flex;
+  padding: 0.15em 0.55em;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.07);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.sfm-value--yes { color: #16a34a; font-weight: 700; }
+ 
+.sfm-bilingual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+@media (max-width: 640px) { .sfm-bilingual { grid-template-columns: 1fr; } }
+.sfm-lang-col { display: flex; flex-direction: column; gap: 0.5rem; }
+.sfm-lang-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.15em 0.6em;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.sfm-lang-badge--ckb { background: rgba(59,130,246,0.1); color: #1d4ed8; }
+.sfm-lang-badge--kmr { background: rgba(16,185,129,0.1); color: #065f46; }
+.sfm-desc { margin: 0; font-size: 0.92rem; line-height: 1.6; opacity: 0.85; }
+ 
+.sfm-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.sfm-chip {
+  padding: 0.25em 0.7em;
+  border-radius: 99px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: rgba(0,0,0,0.06);
+}
+.sfm-chip--loc { background: rgba(59,130,246,0.08); }
+.sfm-chip--tag { cursor: pointer; background: rgba(0,0,0,0.06); }
+ 
+.sfm-attachments { display: flex; flex-direction: column; gap: 0.5rem; }
+.sfm-attachment {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.08);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.sfm-attachment:hover { background: rgba(0,0,0,0.06); }
+.sfm-attachment__type {
+  padding: 0.1em 0.45em;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(0,0,0,0.08);
+  flex-shrink: 0;
+}
+.sfm-attachment__title { font-size: 0.88rem; font-weight: 500; flex: 1; }
+.sfm-attachment__meta  { display: flex; gap: 0.5rem; font-size: 0.75rem; opacity: 0.5; }
+.sfm-attachment__arrow { font-size: 1rem; opacity: 0.4; flex-shrink: 0; }
+ 
+.sfm-block--timestamps { display: flex; gap: 2rem; flex-wrap: wrap; border-bottom: none; padding-top: 1rem; }
+.sfm-ts { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; opacity: 0.5; }
+.sfm-ts__label { font-weight: 600; }
+ 
+/* ─── Track extra rows ───────────────────────────────────────── */
+.track__sub-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+.track__chip {
+  padding: 0.1em 0.45em;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(255,255,255,0.12);
+  color: inherit;
+  letter-spacing: 0.03em;
+}
+.track__extra-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.track__extra-item { font-size: 0.72rem; opacity: 0.55; }
+ 
+/* ─── Track brochures ────────────────────────────────────────── */
+.track-brochures { padding: 1rem 0 0; }
+.track-brochures__title { font-size: 0.8rem; font-weight: 700; opacity: 0.5; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 0.75rem; }
+.track-brochures__grid  { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.brochure-thumb {
+  position: relative;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 80px; height: 80px;
+}
+.brochure-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.brochure-thumb__cap {
+  position: absolute; inset-x: 0; bottom: 0;
+  background: rgba(0,0,0,0.65); color: #fff;
+  font-size: 0.6rem; padding: 2px 4px;
+  text-align: center; line-height: 1.3;
+}
+
 </style>

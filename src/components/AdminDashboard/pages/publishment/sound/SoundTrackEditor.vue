@@ -1,6 +1,6 @@
 <template>
   <div class="ste" dir="rtl">
-
+ 
     <!-- Header -->
     <div class="ste__head">
       <RouterLink to="/admin/soundtracks" class="ste__back">
@@ -14,7 +14,7 @@
         <p class="ste__sub" v-if="isEdit">ID: {{ route.params.id }}</p>
       </div>
     </div>
-
+ 
     <!-- Toast -->
     <Transition name="toast">
       <div v-if="toast.show" class="toast" :class="`toast--${toast.type}`">
@@ -22,15 +22,15 @@
         {{ toast.msg }}
       </div>
     </Transition>
-
+ 
     <div v-if="fetching" class="loading-bar"></div>
-
+ 
     <form @submit.prevent="submit" novalidate>
       <div class="ste__layout">
-
+ 
         <!-- ═══ MAIN COLUMN ═══ -->
         <div class="col-main">
-
+ 
           <!-- Sound Type -->
           <section class="card">
             <div class="card__hd"><span class="card__hd-ico">🎵</span> جۆری دەنگ</div>
@@ -49,7 +49,7 @@
             </div>
             <div v-if="errors.soundType" class="err">{{ errors.soundType }}</div>
           </section>
-
+ 
           <!-- Track State -->
           <section class="card">
             <div class="card__hd"><span class="card__hd-ico">📼</span> دۆخی فایل</div>
@@ -66,7 +66,7 @@
               </label>
             </div>
             <div v-if="errors.trackState" class="err">{{ errors.trackState }}</div>
-
+ 
             <Transition name="slide">
               <div v-if="form.trackState === 'MULTI'" class="album-memories-section">
                 <div class="album-memories-divider"></div>
@@ -83,7 +83,7 @@
               </div>
             </Transition>
           </section>
-
+ 
           <!-- Topic -->
           <section class="card">
             <div class="card__hd"><span class="card__hd-ico">🏷</span> بابەت (Topic)</div>
@@ -119,7 +119,7 @@
               </label>
             </div>
           </section>
-
+ 
           <!-- Languages -->
           <section class="card">
             <div class="card__hd"><span class="card__hd-ico">🌐</span> زمانەکانی ناوەڕۆک</div>
@@ -135,7 +135,7 @@
             </div>
             <div v-if="errors.contentLanguages" class="err">{{ errors.contentLanguages }}</div>
           </section>
-
+ 
           <!-- Bilingual Content -->
           <section class="card" v-if="form.contentLanguages.length">
             <div class="tabs">
@@ -161,18 +161,16 @@
             </div>
             <div v-if="errors.titles" class="err">{{ errors.titles }}</div>
           </section>
-
+ 
           <!-- Shared meta -->
           <section class="card">
             <div class="card__hd"><span class="card__hd-ico">🧾</span> زانیاری گشتی</div>
-
-          
-
+ 
             <div class="field">
               <label class="lbl">دەرهێنەران</label>
               <TagInput v-model="form.directors" placeholder="ناوی دەرهێنەر زیاد بکە…" color="default" />
             </div>
-
+ 
             <div class="two-grid">
               <div class="field">
                 <label class="lbl">زاراوە / شێوەزار</label>
@@ -187,13 +185,13 @@
                 </button>
               </div>
             </div>
-
+ 
             <div class="field">
               <label class="lbl">شوێنەکان</label>
               <TagInput v-model="form.locations" placeholder="شوێنی نوێ" color="default" />
             </div>
           </section>
-
+ 
           <!-- Multi-Album Fields -->
           <Transition name="slide">
             <section class="card" v-if="form.trackState === 'MULTI'">
@@ -208,7 +206,7 @@
               </div>
             </section>
           </Transition>
-
+ 
           <!-- Files builder -->
           <section class="card card--files">
             <div class="card__hd">
@@ -232,7 +230,7 @@
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </div>
-
+ 
                 <div v-if="!item.useUrl" class="file-item__body">
                   <label class="upload-zone upload-zone--inline">
                     <input type="file" accept="audio/*" @change="onAudioFile($event, idx)" style="display:none;" />
@@ -242,7 +240,7 @@
                     </div>
                   </label>
                 </div>
-
+ 
                 <div v-else class="file-item__body">
                   <div class="two-grid two-grid--sm">
                     <div class="field"><label class="lbl lbl--sm">لینکی فایل</label><input v-model="item.fileUrl" class="inp inp--sm" placeholder="S3/CDN direct url…" /></div>
@@ -250,11 +248,10 @@
                   </div>
                   <div class="field"><label class="lbl lbl--sm">لینکی Embed</label><input v-model="item.embedUrl" class="inp inp--sm" placeholder="Embed url…" /></div>
                 </div>
-
+ 
                 <div class="file-item__meta">
                   <div class="two-grid two-grid--sm">
                     <div class="field"><label class="lbl lbl--sm">ناونیشان</label><input v-model="item.title" class="inp inp--sm" placeholder="ناونیشانی فایل…" /></div>
-                    <!-- FileType enum: MP3, WAV, OGG, AAC, FLAC, OTHER -->
                     <div class="field">
                       <label class="lbl lbl--sm">جۆری فایل</label>
                       <select v-model="item.fileType" class="inp inp--sm">
@@ -267,7 +264,7 @@
                       </select>
                     </div>
                   </div>
-
+ 
                   <div class="two-grid two-grid--sm">
                     <div class="field"><label class="lbl lbl--sm">کەناڵ</label>
                       <select v-model="item.audioChannel" class="inp inp--sm">
@@ -276,29 +273,37 @@
                         <option value="MONO">MONO</option>
                       </select>
                     </div>
-                    <div class="field"><label class="lbl lbl--sm">ماوە (چرکە)</label><input v-model.number="item.durationSeconds" type="number" class="inp inp--sm" placeholder="0" min="0" /></div>
+                    <!-- ✅ Duration: auto-filled in minutes from file -->
+                    <div class="field">
+                      <label class="lbl lbl--sm">ماوە (خولەک)</label>
+                      <input v-model.number="item.durationMinutes" type="number" class="inp inp--sm" placeholder="0.00" min="0" step="0.01" />
+                    </div>
                   </div>
-
+ 
                   <div class="two-grid two-grid--sm">
-                    <div class="field"><label class="lbl lbl--sm">قەبارە (بایت)</label><input v-model.number="item.sizeBytes" type="number" class="inp inp--sm" placeholder="0" min="0" /></div>
+                    <!-- ✅ Size: auto-filled in MB from file -->
+                    <div class="field">
+                      <label class="lbl lbl--sm">قەبارە (MB)</label>
+                      <input v-model.number="item.sizeMb" type="number" class="inp inp--sm" placeholder="0.00" min="0" step="0.01" />
+                    </div>
                     <div class="field"><label class="lbl lbl--sm">بیت ڕەیت</label><input v-model="item.bitRate" class="inp inp--sm" placeholder="320 kbps, 24-bit…" /></div>
                   </div>
-
+ 
                   <div class="two-grid two-grid--sm">
                     <div class="field"><label class="lbl lbl--sm">نمونەی ڕەیت</label><input v-model="item.sampleRate" class="inp inp--sm" placeholder="44100 Hz…" /></div>
                     <div class="field"><label class="lbl lbl--sm">شێواز (فۆرم)</label><input v-model="item.form" class="inp inp--sm" placeholder="کێشدار، بێکەش…" /></div>
                   </div>
-
+ 
                   <div class="two-grid two-grid--sm">
                     <div class="field"><label class="lbl lbl--sm">ژانرا</label><input v-model="item.genre" class="inp inp--sm" placeholder="Folk, Classical…" /></div>
                     <div class="field"><label class="lbl lbl--sm">شوێنی تۆمارکردن</label><input v-model="item.recordingVenue" class="inp inp--sm" placeholder="Studio A, Sulaymaniyah…" /></div>
                   </div>
-
+ 
                   <div class="field">
                     <label class="lbl lbl--sm">ساڵ</label>
                     <input v-model.number="item.publishmentYear" type="number" class="inp inp--sm" placeholder="2024" />
                   </div>
-
+ 
                   <!-- Brochures -->
                   <div class="broch-section">
                     <div class="broch-section__head">
@@ -322,7 +327,7 @@
                       </div>
                     </div>
                   </div>
-
+ 
                   <div class="field" style="margin-top:.5rem">
                     <label class="lbl lbl--sm">پێشبینی</label>
                     <div class="mini-preview">
@@ -333,12 +338,12 @@
                 </div>
               </div>
             </div>
-
+ 
             <div class="album-empty" v-else>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
               <span>هیچ فایلێک نییە — فایل زیاد بکە</span>
             </div>
-
+ 
             <div class="album-actions">
               <button type="button" class="btn btn--outline btn--sm"
                 :disabled="form.trackState === 'SINGLE' && form.files.length >= 1" @click="addFile(false)">
@@ -352,8 +357,8 @@
               </button>
             </div>
           </section>
-
-          <!-- Attachments — optional supplementary files (available for SINGLE and MULTI) -->
+ 
+          <!-- Attachments -->
           <section class="card">
             <div class="card__hd">
               <span class="card__hd-ico">📎</span>
@@ -402,16 +407,16 @@
               </button>
             </div>
           </section>
-
+ 
         </div>
-
+ 
         <!-- ═══ SIDE COLUMN ═══ -->
         <aside class="col-side">
-
+ 
           <!-- Images -->
           <section class="card">
             <div class="card__hd"><span class="card__hd-ico">🖼</span> وێنەی ڕووکار</div>
-
+ 
             <div class="img-block">
               <div class="img-block__title">وێنەی ڕووکاری سۆرانی</div>
               <div class="cover-preview" v-if="ckbCoverPreview || form.coverUrlCkb">
@@ -426,9 +431,9 @@
                 </div>
               </label>
             </div>
-
+ 
             <div class="img-sep"></div>
-
+ 
             <div class="img-block">
               <div class="img-block__title">وێنەی ڕووکاری کورمانجی</div>
               <div class="cover-preview" v-if="kmrCoverPreview || form.coverUrlKmr">
@@ -443,9 +448,9 @@
                 </div>
               </label>
             </div>
-
+ 
             <div class="img-sep"></div>
-
+ 
             <div class="img-block">
               <div class="img-block__title">وێنەی ماووس (Hover)<span class="img-block__hint">دەرکەوتە لە سەر hover</span></div>
               <div class="cover-preview cover-preview--hover" v-if="hoverPreview || form.hoverUrl">
@@ -462,7 +467,7 @@
               </label>
             </div>
           </section>
-
+ 
           <!-- Submit -->
           <div class="side-actions">
             <button type="submit" class="btn btn--primary btn--full" :disabled="saving">
@@ -471,7 +476,7 @@
             </button>
             <RouterLink to="/admin/soundtracks" class="btn btn--ghost btn--full">هەڵوەشاندنەوە</RouterLink>
           </div>
-
+ 
           <!-- Danger zone -->
           <section v-if="isEdit" class="card card--danger">
             <div class="card__hd card__hd--danger"><span class="card__hd-ico">⚠️</span> ناوچەی مەترسیدار</div>
@@ -486,12 +491,12 @@
     </form>
   </div>
 </template>
-
+ 
 <script setup>
 import { ref, reactive, computed, onMounted, defineComponent, h, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api.js'
-
+ 
 /* ── Inline TagInput ── */
 const TagInput = defineComponent({
   name: 'TagInput',
@@ -526,11 +531,11 @@ const TagInput = defineComponent({
     ])
   }
 })
-
+ 
 const route  = useRoute()
 const router = useRouter()
 const isEdit = computed(() => !!route.params.id)
-
+ 
 const activeLang   = ref('CKB')
 const fetching     = ref(false)
 const saving       = ref(false)
@@ -539,14 +544,14 @@ const errors       = ref({})
 const topics       = ref([])
 const topicMode    = ref('none')
 let _keyCounter    = 0
-
+ 
 const ckbCoverFile    = ref(null)
 const kmrCoverFile    = ref(null)
 const hoverFile       = ref(null)
 const ckbCoverPreview = ref('')
 const kmrCoverPreview = ref('')
 const hoverPreview    = ref('')
-
+ 
 const form = reactive({
   soundType: '',
   trackState: 'SINGLE',
@@ -557,7 +562,6 @@ const form = reactive({
   hoverUrl: '',
   ckbContent: { title: '', description: ''},
   kmrContent: { title: '', description: ''},
-  // ── Single reader field ──
   reader: '',
   directors: [],
   terms: '',
@@ -577,7 +581,7 @@ const form = reactive({
   newTopic: { nameCkb: '', nameKmr: '' },
   clearTopic: false,
 })
-
+ 
 const fetchTopics = async () => {
   try {
     const { data } = await api.get('/api/v1/sound-tracks/topics')
@@ -585,8 +589,8 @@ const fetchTopics = async () => {
     topics.value = Array.isArray(arr) ? arr : []
   } catch { /* non-fatal */ }
 }
-
-const fileCount  = computed(() => form.files.length)
+ 
+const fileCount    = computed(() => form.files.length)
 const fileReqLabel = computed(() => {
   const c = form.files.length
   if (form.trackState === 'SINGLE') return c === 1 ? '✓ ١ فایل' : `${c}/١`
@@ -597,7 +601,7 @@ const fileReqClass = computed(() => {
   const ok = (form.trackState === 'SINGLE' && c === 1) || (form.trackState === 'MULTI' && c >= 1)
   return ok ? 'album-req--ok' : 'album-req--warn'
 })
-
+ 
 const makeFileItem = (useUrl = false) => ({
   _key: ++_keyCounter,
   useUrl,
@@ -608,8 +612,8 @@ const makeFileItem = (useUrl = false) => ({
   title: '',
   fileType: 'MP3',
   publishmentYear: null,
-  durationSeconds: 0,
-  sizeBytes: 0,
+  durationMinutes: 0,
+  sizeMb: 0,
   bitRate: '',
   sampleRate: '',
   audioChannel: null,
@@ -618,20 +622,18 @@ const makeFileItem = (useUrl = false) => ({
   recordingVenue: '',
   brochures: [],
 })
-
-const addFile = (useUrl = false) => {
+ 
+const addFile    = (useUrl = false) => {
   if (form.trackState === 'SINGLE' && form.files.length >= 1) return
   form.files.push(makeFileItem(useUrl))
 }
-
 const removeFile = (idx) => {
   form.files[idx].brochures.forEach(b => { if (b._preview) URL.revokeObjectURL(b._preview) })
   form.files.splice(idx, 1)
 }
-
 const moveUp   = (idx) => { if (idx <= 0) return; [form.files[idx - 1], form.files[idx]] = [form.files[idx], form.files[idx - 1]] }
 const moveDown = (idx) => { if (idx >= form.files.length - 1) return; [form.files[idx + 1], form.files[idx]] = [form.files[idx], form.files[idx + 1]] }
-
+ 
 const addBrochure    = (fi) => { form.files[fi].brochures.push({ file: null, imageUrl: '', caption: '', _preview: '' }) }
 const removeBrochure = (fi, bi) => {
   const br = form.files[fi].brochures[bi]
@@ -644,15 +646,39 @@ const onBrochureFile = (e, fi, bi) => {
   if (br._preview) URL.revokeObjectURL(br._preview)
   br.file = f; br._preview = URL.createObjectURL(f); br.imageUrl = ''
 }
-
+ 
 const addAttachment = () => {
   form.attachments.push({ _key: ++_keyCounter, fileUrl: '', title: '', attachmentType: 'PDF', sizeBytes: 0, mimeType: '' })
 }
-
+ 
+// ── Duration: seconds → M.SS (119s = 1.59, not 1.98) ──
+const secondsToMSS = (totalSec) => {
+  const s   = Math.round(totalSec)
+  const m   = Math.floor(s / 60)
+  const sec = String(s % 60).padStart(2, '0')
+  return parseFloat(`${m}.${sec}`)
+}
+const mssToSeconds = (val) => {
+  const v = parseFloat((val || 0).toFixed(2))
+  const m = Math.floor(v)
+  const s = Math.round((v - m) * 100)
+  return m * 60 + s
+}
+ 
+// ✅ Auto-extract duration (M.SS) and size (bytes / 1,000,000 = MB) on file select
 const onAudioFile = (e, idx) => {
   const f = e.target.files?.[0]; if (!f) return
-  form.files[idx].file = f
-  form.files[idx].sizeBytes = f.size || 0
+  form.files[idx].file   = f
+  form.files[idx].sizeMb = parseFloat((f.size / 1_000_000).toFixed(2))
+ 
+  // Auto-extract duration via browser Audio API
+  const blobUrl = URL.createObjectURL(f)
+  const audio   = new Audio(blobUrl)
+  audio.addEventListener('loadedmetadata', () => {
+    form.files[idx].durationMinutes = secondsToMSS(audio.duration)
+    URL.revokeObjectURL(blobUrl)
+  }, { once: true })
+ 
   const name = (f.name || '').toLowerCase()
   if      (name.endsWith('.mp3'))  form.files[idx].fileType = 'MP3'
   else if (name.endsWith('.wav'))  form.files[idx].fileType = 'WAV'
@@ -661,9 +687,9 @@ const onAudioFile = (e, idx) => {
   else if (name.endsWith('.flac')) form.files[idx].fileType = 'FLAC'
   else                             form.files[idx].fileType = 'OTHER'
 }
-
+ 
 const previewUrl = (item) => item?.useUrl ? (item.fileUrl || '') : ''
-
+ 
 const setPreview = (refPreview, file) => {
   if (refPreview.value) URL.revokeObjectURL(refPreview.value)
   refPreview.value = file ? URL.createObjectURL(file) : ''
@@ -674,7 +700,7 @@ const onKmrCoverFile = (e) => { const f = e.target.files?.[0]; if (!f) return; k
 const removeKmrCover = () => { setPreview(kmrCoverPreview, null); kmrCoverFile.value = null; form.coverUrlKmr = '' }
 const onHoverFile    = (e) => { const f = e.target.files?.[0]; if (!f) return; hoverFile.value = f; setPreview(hoverPreview, f); form.hoverUrl = '' }
 const removeHover    = () => { setPreview(hoverPreview, null); hoverFile.value = null; form.hoverUrl = '' }
-
+ 
 const applyTrack = (t) => {
   form.soundType        = t.soundType  || ''
   form.trackState       = t.trackState || 'SINGLE'
@@ -688,32 +714,31 @@ const applyTrack = (t) => {
   setPreview(ckbCoverPreview, null); ckbCoverFile.value = null
   setPreview(kmrCoverPreview, null); kmrCoverFile.value = null
   setPreview(hoverPreview,    null); hoverFile.value    = null
-
-  // Single reader
+ 
   form.reader    = t.reader    || ''
   form.directors = Array.isArray(t.directors) ? [...t.directors] : []
   form.terms     = t.terms || ''
   form.thisProjectOfInstitute = !!(t.thisProjectOfInstitute ?? false)
   form.locations = Array.isArray(t.locations) ? [...t.locations] : []
-
-  if (t.ckbContent) { form.ckbContent.title = t.ckbContent.title || ''; form.ckbContent.description = t.ckbContent.description  }
-  if (t.kmrContent) { form.kmrContent.title = t.kmrContent.title || ''; form.kmrContent.description = t.kmrContent.description  }
-
+ 
+  if (t.ckbContent) { form.ckbContent.title = t.ckbContent.title || ''; form.ckbContent.description = t.ckbContent.description }
+  if (t.kmrContent) { form.kmrContent.title = t.kmrContent.title || ''; form.kmrContent.description = t.kmrContent.description }
+ 
   form.tagsCkb     = Array.isArray(t.tags?.ckb)     ? [...t.tags.ckb]     : []
   form.tagsKmr     = Array.isArray(t.tags?.kmr)     ? [...t.tags.kmr]     : []
   form.keywordsCkb = Array.isArray(t.keywords?.ckb) ? [...t.keywords.ckb] : []
   form.keywordsKmr = Array.isArray(t.keywords?.kmr) ? [...t.keywords.kmr] : []
-
+ 
   if (t.topicId) { form.topicId = t.topicId; topicMode.value = 'existing' }
   else           { form.topicId = null;       topicMode.value = 'none' }
   form.clearTopic = false
   form.newTopic   = { nameCkb: '', nameKmr: '' }
-
+ 
   form.albumName       = t.albumName       || ''
   form.publishmentYear = t.publishmentYear || null
   form.cdNumber        = t.cdNumber        || null
   form.totalTracks     = t.totalTracks     || null
-
+ 
   form.files = (t.files || []).map(f => ({
     _key: ++_keyCounter,
     useUrl: true,
@@ -724,8 +749,8 @@ const applyTrack = (t) => {
     title:        f.title        || '',
     fileType:     f.fileType     || 'MP3',
     publishmentYear: f.publishmentYear || null,
-    durationSeconds: Number(f.durationSeconds || 0),
-    sizeBytes:       Number(f.sizeBytes       || 0),
+    durationMinutes: secondsToMSS(Number(f.durationSeconds || 0)),
+    sizeMb:          parseFloat((Number(f.sizeBytes || 0) / 1_000_000).toFixed(2)),
     bitRate:         f.bitRate         || '',
     sampleRate:      f.sampleRate      || '',
     audioChannel:    f.audioChannel    || null,
@@ -736,7 +761,7 @@ const applyTrack = (t) => {
       file: null, imageUrl: b.imageUrl || '', caption: b.caption || '', _preview: ''
     })),
   }))
-
+ 
   form.attachments = (t.attachments || []).map(a => ({
     _key: ++_keyCounter,
     fileUrl:        a.fileUrl        || '',
@@ -746,7 +771,7 @@ const applyTrack = (t) => {
     mimeType:       a.mimeType       || '',
   }))
 }
-
+ 
 const loadTrack = async () => {
   if (!isEdit.value) return
   fetching.value = true
@@ -761,7 +786,7 @@ const loadTrack = async () => {
     fetching.value = false
   }
 }
-
+ 
 const validate = () => {
   const e = {}
   if (!String(form.soundType || '').trim())   e.soundType       = 'جۆری دەنگ پێویستە'
@@ -775,7 +800,7 @@ const validate = () => {
     e.topicId = 'موضوعێک هەڵبژێرە یان حالەتی "بێ موضوع" هەڵبژێرە'
   if (topicMode.value === 'new' && !form.newTopic.nameCkb.trim() && !form.newTopic.nameKmr.trim())
     e.newTopic = 'کەمی یەک ناوی موضوع (CKB یان KMR) پێویستە'
-
+ 
   const count = form.files.length
   if (form.trackState === 'SINGLE' && count !== 1) e.files = 'SINGLE پێویستی بە تەنها ١ فایلە'
   if (form.trackState === 'MULTI'  && count < 1)   e.files = 'کەمی ١ فایل پێویستە'
@@ -785,11 +810,11 @@ const validate = () => {
     else if (!it.useUrl && !it.file)
       e.files = `فایل #${i + 1}: فایلێک هەڵبژێرە`
   })
-
+ 
   errors.value = e
   return !Object.keys(e).length
 }
-
+ 
 const submit = async () => {
   if (!validate()) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -799,20 +824,19 @@ const submit = async () => {
   saving.value = true
   try {
     const allFiles = form.files
-
+ 
     const dto = {
       soundType:    form.soundType,
       trackState:   form.trackState,
       albumOfMemories: form.trackState === 'MULTI' ? form.albumOfMemories : false,
       contentLanguages: form.contentLanguages,
       ckbContent: form.contentLanguages.includes('CKB')
-        ? { title: form.ckbContent.title || null, description: form.ckbContent.description  }
+        ? { title: form.ckbContent.title || null, description: form.ckbContent.description }
         : null,
       kmrContent: form.contentLanguages.includes('KMR')
-        ? { title: form.kmrContent.title || null, description: form.kmrContent.description  }
+        ? { title: form.kmrContent.title || null, description: form.kmrContent.description }
         : null,
       locations:  form.locations,
-      // Single reader
       reader:     form.reader.trim() || null,
       directors:  form.directors,
       terms:      form.terms || null,
@@ -832,8 +856,8 @@ const submit = async () => {
         title:           x.title        || null,
         fileType:        x.fileType     || 'MP3',
         publishmentYear: x.publishmentYear || null,
-        durationSeconds: Number(x.durationSeconds || 0),
-        sizeBytes:       Number(x.sizeBytes       || 0),
+        durationSeconds: mssToSeconds(x.durationMinutes || 0),
+        sizeBytes:       Math.round((x.sizeMb || 0) * 1_000_000),
         bitRate:         x.bitRate         || null,
         sampleRate:      x.sampleRate      || null,
         audioChannel:    x.audioChannel    || null,
@@ -848,7 +872,6 @@ const submit = async () => {
       publishmentYear: form.trackState === 'MULTI' ? (form.publishmentYear || null) : null,
       cdNumber:        form.trackState === 'MULTI' ? (form.cdNumber        || null) : null,
       totalTracks:     form.trackState === 'MULTI' ? (form.totalTracks     || null) : null,
-      // Attachments available for both SINGLE and MULTI
       attachments: form.attachments.filter(a => a.fileUrl).map(a => ({
         fileUrl:        a.fileUrl,
         title:          a.title          || null,
@@ -862,22 +885,20 @@ const submit = async () => {
         : null,
       ...(isEdit.value ? { clearTopic: form.clearTopic } : {}),
     }
-
+ 
     const fd = new FormData()
     fd.append('data', new Blob([JSON.stringify(dto)], { type: 'application/json' }))
     if (ckbCoverFile.value) fd.append('ckbCoverImage',   ckbCoverFile.value)
     if (kmrCoverFile.value) fd.append('kmrCoverImage',   kmrCoverFile.value)
     if (hoverFile.value)    fd.append('hoverCoverImage', hoverFile.value)
-
-    // Audio files
+ 
     allFiles.forEach(x => { if (!x.useUrl && x.file) fd.append('audioFiles', x.file) })
-    // Brochure files — flat list
     allFiles.forEach(f => { f.brochures.forEach(b => { if (b.file) fd.append('brochureFiles', b.file) }) })
-
+ 
     const cfg = { headers: { 'Content-Type': 'multipart/form-data' } }
     if (isEdit.value) await api.put(`/api/v1/sound-tracks/${route.params.id}`, fd, cfg)
     else              await api.post('/api/v1/sound-tracks', fd, cfg)
-
+ 
     showToast('success', isEdit.value ? 'دەنگەکە نوێکرایەوە ✓' : 'دەنگەکە دروستکرا ✓')
     setTimeout(() => router.push('/admin/soundtracks'), 1200)
   } catch (e) {
@@ -887,7 +908,7 @@ const submit = async () => {
     saving.value = false
   }
 }
-
+ 
 const doDelete = async () => {
   if (!confirm(`دڵنیای لە سڕینەوەی دەنگ #${route.params.id}؟`)) return
   try {
@@ -898,12 +919,12 @@ const doDelete = async () => {
     showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
   }
 }
-
+ 
 const showToast = (type, msg) => {
   toast.value = { show: true, type, msg }
   setTimeout(() => { toast.value.show = false }, 4000)
 }
-
+ 
 watch(() => form.trackState, (v) => {
   if (v === 'SINGLE') {
     form.albumOfMemories = false
@@ -913,18 +934,21 @@ watch(() => form.trackState, (v) => {
     }
   }
 })
-
+ 
 watch(() => form.contentLanguages.slice(), (langs) => {
   if (!langs.length) return
   if (!langs.includes(activeLang.value)) activeLang.value = langs[0]
 }, { deep: true })
-
+ 
 onMounted(() => {
   if (!isEdit.value && !form.files.length) addFile(false)
   fetchTopics()
   loadTrack()
 })
 </script>
+ 
+
+
 
 <style scoped>
 .ste { direction:rtl; max-width:1280px; margin:0 auto; }
@@ -1058,6 +1082,19 @@ onMounted(() => {
 .img-block__title { font-weight:900; font-size:.84rem; color:var(--text); margin-bottom:.55rem; display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
 .img-block__hint { font-size:.72rem; color:var(--muted); font-weight:600; }
 .img-sep { height:1px; background:var(--cream-dk); margin:1rem 0; }
+
+/* Add badge style for auto-extracted values */
+.auto-badge {
+  display: inline-block;
+  margin-right: .4rem;
+  padding: .1rem .4rem;
+  border-radius: 4px;
+  font-size: .72rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent, #7c6cfc) 15%, transparent);
+  color: var(--accent, #7c6cfc);
+  vertical-align: middle;
+}
 </style>
 
 <style>

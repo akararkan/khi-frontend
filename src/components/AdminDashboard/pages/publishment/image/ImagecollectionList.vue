@@ -81,9 +81,7 @@
             <th style="width:130px">جۆر</th>
             <th style="width:120px">موضوع</th>
             <th style="width:112px">بەروار</th>
-            <!-- NEW: LOCATION -->
             <th style="width:100px">شوێن</th>
-            <!-- NEW: COLLECTED BY -->
             <th style="width:100px">کۆکەر</th>
             <th style="width:88px">زمان</th>
             <th style="width:72px">وێنە</th>
@@ -94,7 +92,6 @@
           <tr v-for="(c, idx) in filteredItems" :key="c.id" class="tbl__row" @click="openDetail(c)">
             <td><span class="tbl__id">{{ idx + 1 }}</span></td>
             <td>
-              <!-- FIXED: Using correct DTO field names -->
               <div class="cover-wrap" v-if="c.ckbCoverUrl || c.kmrCoverUrl || c.hoverCoverUrl">
                 <img class="cover-img cover-img--base"  :src="c.ckbCoverUrl || c.kmrCoverUrl" loading="lazy" />
                 <img class="cover-img cover-img--hover" :src="c.hoverCoverUrl || c.ckbCoverUrl" loading="lazy" v-if="c.hoverCoverUrl" />
@@ -116,19 +113,8 @@
               <span v-else class="tbl__dash">—</span>
             </td>
             <td class="tbl__date">{{ fmtDate(c.publishmentDate) }}</td>
-            
-            <!-- NEW CELLS -->
-            <td>
-              <div class="tbl__meta" :title="c.ckbContent?.location || c.kmrContent?.location">
-                {{ c.ckbContent?.location || c.kmrContent?.location || '—' }}
-              </div>
-            </td>
-            <td>
-              <div class="tbl__meta" :title="c.ckbContent?.collectedBy || c.kmrContent?.collectedBy">
-                {{ c.ckbContent?.collectedBy || c.kmrContent?.collectedBy || '—' }}
-              </div>
-            </td>
-            
+            <td><div class="tbl__meta" :title="c.ckbContent?.location || c.kmrContent?.location">{{ c.ckbContent?.location || c.kmrContent?.location || '—' }}</div></td>
+            <td><div class="tbl__meta" :title="c.ckbContent?.collectedBy || c.kmrContent?.collectedBy">{{ c.ckbContent?.collectedBy || c.kmrContent?.collectedBy || '—' }}</div></td>
             <td>
               <div class="lang-row">
                 <span v-for="l in (c.contentLanguages||[])" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span>
@@ -181,377 +167,425 @@
     </Teleport>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  DETAIL MODAL - UPDATED WITH MISSING FIELDS                          -->
+    <!--  DETAIL MODAL — BEAUTIFUL FULL-FIELD DISPLAY                         -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
     <Teleport to="body">
-      <Transition name="modal">
+      <Transition name="dk-anim">
         <div v-if="detailItem" class="dk-bg" @click.self="detailItem = null">
           <div class="dk">
-            <button class="dk__close" @click="detailItem = null">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+
+            <!-- ══ CLOSE ══ -->
+            <button class="dk__close" @click="detailItem = null" title="داخستن">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
 
-            <!-- ── Hero ── -->
-            <div
-              class="dk__hero"
-              :style="(detailItem.ckbCoverUrl || detailItem.kmrCoverUrl)
-                ? `background-image:url(${detailItem.ckbCoverUrl || detailItem.kmrCoverUrl})`
-                : ''"
-            >
-              <div v-if="detailItem.hoverCoverUrl" class="dk__hero-hover" :style="`background-image:url(${detailItem.hoverCoverUrl})`" />
-              <div class="dk__hero-grain"></div>
-              <div class="dk__hero-gradient"></div>
+            <!-- ══ HERO ══ -->
+            <div class="dk__hero" :style="heroStyle(detailItem)">
+              <div class="dk__hero-overlay"></div>
+              <!-- Hover image shown on hover -->
+              <div v-if="detailItem.hoverCoverUrl" class="dk__hero-hover-img" :style="`background-image:url(${detailItem.hoverCoverUrl})`"></div>
 
-              <div class="dk__hero-content">
-                <div class="dk__hero-badges">
-                  <span class="dk__badge dk__badge--type">{{ typeLabel(detailItem.collectionType) }}</span>
-                  <span v-if="detailItem.topic" class="dk__badge dk__badge--topic">
-                    {{ detailItem.topic.nameCkb || detailItem.topic.nameKmr }}
-                  </span>
-                  <span v-if="detailItem.hoverCoverUrl" class="dk__badge dk__badge--hover">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
-                    Hover
-                  </span>
-                  <span v-for="lang in detectedLangs(detailItem)" :key="lang" class="dk__badge dk__badge--lang">
-                    {{ lang === 'CKB' ? '🇮🇶 سۆرانی' : '🌍 کورمانجی' }}
-                  </span>
+              <div class="dk__hero-inner">
+                <!-- Top badges row -->
+                <div class="dk__hero-top">
+                  <span class="dk__pill dk__pill--type">{{ typeIcon(detailItem.collectionType) }} {{ typeLabel(detailItem.collectionType) }}</span>
+                  <span v-if="detailItem.topic" class="dk__pill dk__pill--topic">🏷 {{ detailItem.topic.nameCkb || detailItem.topic.nameKmr }}</span>
+                  <span v-for="l in detectedLangs(detailItem)" :key="l" class="dk__pill dk__pill--lang">{{ l === 'CKB' ? '🇮🇶 سۆرانی' : '🌍 کورمانجی' }}</span>
+                  <span v-if="detailItem.hoverCoverUrl" class="dk__pill dk__pill--hover">✦ Hover</span>
                 </div>
 
-                <h2 class="dk__hero-title">{{ detailItem.ckbContent?.title || detailItem.kmrContent?.title || '—' }}</h2>
-                <p v-if="detailItem.ckbContent?.title && detailItem.kmrContent?.title" class="dk__hero-subtitle">{{ detailItem.kmrContent.title }}</p>
+                <!-- Title block -->
+                <div class="dk__hero-titles">
+                  <h2 class="dk__hero-ckb">{{ detailItem.ckbContent?.title || detailItem.kmrContent?.title || '—' }}</h2>
+                  <p v-if="detailItem.kmrContent?.title && detailItem.ckbContent?.title" class="dk__hero-kmr">{{ detailItem.kmrContent.title }}</p>
+                </div>
 
-                <div class="dk__hero-stats">
-                  <div class="dk__stat">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+                <!-- Quick stats strip -->
+                <div class="dk__hero-strip">
+                  <div class="dk__strip-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     {{ detailItem.imageAlbum?.length || 0 }} وێنە
                   </div>
-                  <div class="dk__stat" v-if="detailItem.publishmentDate">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <div class="dk__strip-item" v-if="detailItem.publishmentDate">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     {{ fmtDate(detailItem.publishmentDate) }}
                   </div>
-                  <div class="dk__stat" v-if="detailItem.ckbContent?.collectedBy || detailItem.kmrContent?.collectedBy">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                  <div class="dk__strip-item" v-if="detailItem.ckbContent?.location || detailItem.kmrContent?.location">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ detailItem.ckbContent?.location || detailItem.kmrContent?.location }}
+                  </div>
+                  <div class="dk__strip-item" v-if="detailItem.ckbContent?.collectedBy || detailItem.kmrContent?.collectedBy">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                     {{ detailItem.ckbContent?.collectedBy || detailItem.kmrContent?.collectedBy }}
                   </div>
-                  <div class="dk__stat" v-if="detailItem.ckbContent?.location || detailItem.kmrContent?.location">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    {{ detailItem.ckbContent?.location || detailItem.kmrContent?.location }}
+                  <div class="dk__strip-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>
+                    ID: #{{ detailItem.id }}
                   </div>
                 </div>
               </div>
             </div>
 
+            <!-- ══ BODY ══ -->
             <div class="dk__body">
 
-              <!-- ── 3 Cover Slots ── -->
-              <div class="dk__section">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <!-- ── 1. COVER IMAGES ── -->
+              <section class="dk__sec">
+                <div class="dk__sec-label">
+                  <span class="dk__sec-icon">🖼</span>
                   وێنەی کڤەر
                 </div>
-                <div class="dk__covers-grid">
-                  <!-- CKB -->
-                  <div class="dk__cover-item" :class="{ 'dk__cover-item--empty': !detailItem.ckbCoverUrl }">
-                    <span class="dk__cover-label dk__cover-label--ckb">سۆرانی (CKB)</span>
-                    <div class="dk__cover-img-wrap" :class="{ 'dk__cover-img-wrap--empty': !detailItem.ckbCoverUrl }">
+                <div class="dk__covers">
+                  <!-- CKB Cover -->
+                  <div class="dk__cover-card" :class="{ 'dk__cover-card--empty': !detailItem.ckbCoverUrl }">
+                    <div class="dk__cover-badge dk__cover-badge--ckb">🟡 CKB — سۆرانی</div>
+                    <div class="dk__cover-frame">
                       <img v-if="detailItem.ckbCoverUrl" :src="detailItem.ckbCoverUrl" alt="CKB Cover" />
-                      <template v-else>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                      <div v-else class="dk__cover-none">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         <span>نییە</span>
-                      </template>
+                      </div>
+                    </div>
+                    <div class="dk__cover-url" v-if="detailItem.ckbCoverUrl">
+                      <a :href="detailItem.ckbCoverUrl" target="_blank" class="dk__url-link">{{ shortUrl(detailItem.ckbCoverUrl) }}</a>
                     </div>
                   </div>
-                  <!-- KMR -->
-                  <div class="dk__cover-item" :class="{ 'dk__cover-item--empty': !detailItem.kmrCoverUrl }">
-                    <span class="dk__cover-label dk__cover-label--kmr">کورمانجی (KMR)</span>
-                    <div class="dk__cover-img-wrap" :class="{ 'dk__cover-img-wrap--empty': !detailItem.kmrCoverUrl }">
+                  <!-- KMR Cover -->
+                  <div class="dk__cover-card" :class="{ 'dk__cover-card--empty': !detailItem.kmrCoverUrl }">
+                    <div class="dk__cover-badge dk__cover-badge--kmr">🔵 KMR — کورمانجی</div>
+                    <div class="dk__cover-frame">
                       <img v-if="detailItem.kmrCoverUrl" :src="detailItem.kmrCoverUrl" alt="KMR Cover" />
-                      <template v-else>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                      <div v-else class="dk__cover-none">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         <span>نییە</span>
-                      </template>
+                      </div>
+                    </div>
+                    <div class="dk__cover-url" v-if="detailItem.kmrCoverUrl">
+                      <a :href="detailItem.kmrCoverUrl" target="_blank" class="dk__url-link">{{ shortUrl(detailItem.kmrCoverUrl) }}</a>
                     </div>
                   </div>
-                  <!-- Hover -->
-                  <div class="dk__cover-item" :class="{ 'dk__cover-item--empty': !detailItem.hoverCoverUrl }">
-                    <span class="dk__cover-label dk__cover-label--hover">هۆڤەر</span>
-                    <div class="dk__cover-img-wrap" :class="{ 'dk__cover-img-wrap--empty': !detailItem.hoverCoverUrl, 'dk__cover-img-wrap--hover': !!detailItem.hoverCoverUrl }">
-                      <img v-if="detailItem.hoverCoverUrl" :src="detailItem.hoverCoverUrl" alt="Hover Image" />
-                      <template v-else>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <!-- Hover Cover -->
+                  <div class="dk__cover-card dk__cover-card--hover-slot" :class="{ 'dk__cover-card--empty': !detailItem.hoverCoverUrl }">
+                    <div class="dk__cover-badge dk__cover-badge--hover">✦ Hover Image</div>
+                    <div class="dk__cover-frame dk__cover-frame--hover">
+                      <img v-if="detailItem.hoverCoverUrl" :src="detailItem.hoverCoverUrl" alt="Hover" />
+                      <div v-else class="dk__cover-none">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         <span>نییە</span>
-                      </template>
+                      </div>
+                    </div>
+                    <div class="dk__cover-url" v-if="detailItem.hoverCoverUrl">
+                      <a :href="detailItem.hoverCoverUrl" target="_blank" class="dk__url-link">{{ shortUrl(detailItem.hoverCoverUrl) }}</a>
                     </div>
                   </div>
                 </div>
-              </div>
+              </section>
 
-              <!-- ── Bilingual Content ── -->
-              <div class="dk__section" v-if="detailItem.ckbContent || detailItem.kmrContent">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  ناوەڕۆک و زانیاری
-                  <span class="dk__sec-count" v-if="[detailItem.ckbContent, detailItem.kmrContent].filter(Boolean).length">
-                    {{ [detailItem.ckbContent, detailItem.kmrContent].filter(Boolean).length }} زمان
-                  </span>
+              <!-- ── 2. BILINGUAL CONTENT (ALL FIELDS) ── -->
+              <section class="dk__sec">
+                <div class="dk__sec-label">
+                  <span class="dk__sec-icon">📝</span>
+                  ناوەڕۆکی دووزمانە
                 </div>
+                <div class="dk__bilingual">
 
-                <div class="dk__content-grid" :class="{ 'dk__content-grid--single': !(detailItem.ckbContent && detailItem.kmrContent) }">
-
-                  <!-- ── CKB Content Column ── -->
-                  <div class="dk__content-col" v-if="detailItem.ckbContent">
-                    <div class="dk__lang-tag dk__lang-tag--ckb">🟡 سۆرانی (CKB)</div>
-                    <div class="dk__content-title" v-if="detailItem.ckbContent.title">{{ detailItem.ckbContent.title }}</div>
-                    <p v-if="detailItem.ckbContent.description" class="dk__desc">{{ detailItem.ckbContent.description }}</p>
-                    <div class="dk__meta-rows">
-                      <div class="dk__meta-row" v-if="detailItem.ckbContent.location">
-                        <span class="dk__meta-k">
+                  <!-- CKB Column -->
+                  <div class="dk__lang-col dk__lang-col--ckb" v-if="detailItem.ckbContent || detectedLangs(detailItem).includes('CKB')">
+                    <div class="dk__lang-header">
+                      <span class="dk__lang-flag">🟡</span>
+                      <span class="dk__lang-name">کوردی سۆرانی (CKB)</span>
+                    </div>
+                    <div class="dk__field-list">
+                      <div class="dk__field">
+                        <span class="dk__field-key">ناونیشان</span>
+                        <span class="dk__field-val" :class="{ 'dk__field-val--empty': !detailItem.ckbContent?.title }">
+                          {{ detailItem.ckbContent?.title || '—' }}
+                        </span>
+                      </div>
+                      <div class="dk__field">
+                        <span class="dk__field-key">وەسف</span>
+                        <span class="dk__field-val dk__field-val--text" :class="{ 'dk__field-val--empty': !detailItem.ckbContent?.description }">
+                          {{ detailItem.ckbContent?.description || '—' }}
+                        </span>
+                      </div>
+                      <div class="dk__field">
+                        <span class="dk__field-key">
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                           شوێن
                         </span>
-                        <span class="dk__meta-v">{{ detailItem.ckbContent.location }}</span>
+                        <span class="dk__field-val" :class="{ 'dk__field-val--empty': !detailItem.ckbContent?.location }">
+                          {{ detailItem.ckbContent?.location || '—' }}
+                        </span>
                       </div>
-                      <div class="dk__meta-row" v-if="detailItem.ckbContent.collectedBy">
-                        <span class="dk__meta-k">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      <div class="dk__field">
+                        <span class="dk__field-key">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                           کۆکەر
                         </span>
-                        <span class="dk__meta-v">{{ detailItem.ckbContent.collectedBy }}</span>
+                        <span class="dk__field-val" :class="{ 'dk__field-val--empty': !detailItem.ckbContent?.collectedBy }">
+                          {{ detailItem.ckbContent?.collectedBy || '—' }}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <!-- ── KMR Content Column ── -->
-                  <div class="dk__content-col" v-if="detailItem.kmrContent">
-                    <div class="dk__lang-tag dk__lang-tag--kmr">🔵 Kurmancî (KMR)</div>
-                    <div class="dk__content-title" v-if="detailItem.kmrContent.title">{{ detailItem.kmrContent.title }}</div>
-                    <p v-if="detailItem.kmrContent.description" class="dk__desc">{{ detailItem.kmrContent.description }}</p>
-                    <div class="dk__meta-rows">
-                      <div class="dk__meta-row" v-if="detailItem.kmrContent.location">
-                        <span class="dk__meta-k">
+                  <!-- KMR Column -->
+                  <div class="dk__lang-col dk__lang-col--kmr" v-if="detailItem.kmrContent || detectedLangs(detailItem).includes('KMR')">
+                    <div class="dk__lang-header">
+                      <span class="dk__lang-flag">🔵</span>
+                      <span class="dk__lang-name">Kurdî Kurmancî (KMR)</span>
+                    </div>
+                    <div class="dk__field-list">
+                      <div class="dk__field">
+                        <span class="dk__field-key">Sernav</span>
+                        <span class="dk__field-val" :class="{ 'dk__field-val--empty': !detailItem.kmrContent?.title }">
+                          {{ detailItem.kmrContent?.title || '—' }}
+                        </span>
+                      </div>
+                      <div class="dk__field">
+                        <span class="dk__field-key">Danasîn</span>
+                        <span class="dk__field-val dk__field-val--text" :class="{ 'dk__field-val--empty': !detailItem.kmrContent?.description }">
+                          {{ detailItem.kmrContent?.description || '—' }}
+                        </span>
+                      </div>
+                      <div class="dk__field">
+                        <span class="dk__field-key">
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
                           Cih
                         </span>
-                        <span class="dk__meta-v">{{ detailItem.kmrContent.location }}</span>
+                        <span class="dk__field-val" :class="{ 'dk__field-val--empty': !detailItem.kmrContent?.location }">
+                          {{ detailItem.kmrContent?.location || '—' }}
+                        </span>
                       </div>
-                      <div class="dk__meta-row" v-if="detailItem.kmrContent.collectedBy">
-                        <span class="dk__meta-k">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      <div class="dk__field">
+                        <span class="dk__field-key">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                           Berhevkar
                         </span>
-                        <span class="dk__meta-v">{{ detailItem.kmrContent.collectedBy }}</span>
+                        <span class="dk__field-val" :class="{ 'dk__field-val--empty': !detailItem.kmrContent?.collectedBy }">
+                          {{ detailItem.kmrContent?.collectedBy || '—' }}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                 </div>
-              </div>
+              </section>
 
-              <!-- ── Image Album WITH METADATA ── -->
-              <div class="dk__section" v-if="detailItem.imageAlbum?.length">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
+              <!-- ── 3. TAGS & KEYWORDS ── -->
+              <section class="dk__sec" v-if="hasTags(detailItem)">
+                <div class="dk__sec-label">
+                  <span class="dk__sec-icon">🏷</span>
+                  تاگ و کلیلەوشەکان
+                </div>
+                <div class="dk__tags-wrap">
+                  <div class="dk__tag-row" v-if="detailItem.tags?.ckb?.length">
+                    <span class="dk__tag-label dk__tag-label--ckb">تاگی سۆرانی</span>
+                    <div class="dk__tag-chips">
+                      <span v-for="t in detailItem.tags.ckb" :key="t" class="dk__chip dk__chip--ckb">{{ t }}</span>
+                    </div>
+                  </div>
+                  <div class="dk__tag-row" v-if="detailItem.tags?.kmr?.length">
+                    <span class="dk__tag-label dk__tag-label--kmr">تاگی کورمانجی</span>
+                    <div class="dk__tag-chips">
+                      <span v-for="t in detailItem.tags.kmr" :key="t" class="dk__chip dk__chip--kmr">{{ t }}</span>
+                    </div>
+                  </div>
+                  <div class="dk__tag-row" v-if="detailItem.keywords?.ckb?.length">
+                    <span class="dk__tag-label dk__tag-label--kw">کلیلەوشەی سۆرانی</span>
+                    <div class="dk__tag-chips">
+                      <span v-for="k in detailItem.keywords.ckb" :key="k" class="dk__chip dk__chip--kw">{{ k }}</span>
+                    </div>
+                  </div>
+                  <div class="dk__tag-row" v-if="detailItem.keywords?.kmr?.length">
+                    <span class="dk__tag-label dk__tag-label--kw">کلیلەوشەی کورمانجی</span>
+                    <div class="dk__tag-chips">
+                      <span v-for="k in detailItem.keywords.kmr" :key="k" class="dk__chip dk__chip--kw">{{ k }}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ── 4. IMAGE ALBUM (FULL METADATA) ── -->
+              <section class="dk__sec" v-if="detailItem.imageAlbum?.length">
+                <div class="dk__sec-label">
+                  <span class="dk__sec-icon">🎞</span>
                   وێنەکانی ئەلبووم
                   <span class="dk__sec-count">{{ detailItem.imageAlbum.length }}</span>
                 </div>
-                <div class="dk__album-grid">
-                  <div v-for="(img, i) in detailItem.imageAlbum" :key="img.id || i" class="dk__album-item">
-                    <div class="dk__album-num">{{ i + 1 }}</div>
-                    
-                    <!-- Image -->
-                    <div class="dk__album-img-wrap">
-                      <img v-if="img.imageUrl || img.externalUrl" :src="img.imageUrl || img.externalUrl" loading="lazy" @error="e => e.target.style.display='none'" />
-                      <div v-else class="dk__album-img-empty">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                <div class="dk__album">
+                  <div v-for="(img, i) in detailItem.imageAlbum" :key="img.id || i" class="dk__album-row">
+
+                    <!-- Thumbnail -->
+                    <div class="dk__album-thumb">
+                      <span class="dk__album-num">{{ i + 1 }}</span>
+                      <div class="dk__album-img">
+                        <img v-if="img.imageUrl || img.externalUrl" :src="img.imageUrl || img.externalUrl" loading="lazy" @error="e => e.target.style.display='none'" />
+                        <div v-else class="dk__album-noimg">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                        </div>
                       </div>
                     </div>
 
-                    <!-- Info -->
-                    <div class="dk__album-meta">
-                      <!-- NEW: Metadata Chips (The missing fields!) -->
-                      <div v-if="img.widthPx || img.heightPx || img.fileSizeBytes" class="dk__album-tech">
-                        <span v-if="img.widthPx && img.heightPx" class="dk__tech-chip dk__tech-chip--dim">
-                          {{ img.widthPx }}×{{ img.heightPx }}
-                          <small v-if="img.aspectRatio">({{ img.aspectRatio.toFixed(2) }})</small>
+                    <!-- All fields -->
+                    <div class="dk__album-data">
+                      <!-- Tech metadata chips -->
+                      <div class="dk__album-tech" v-if="img.widthPx || img.heightPx || img.fileSizeBytes || img.mimeType">
+                        <span v-if="img.widthPx && img.heightPx" class="dk__tech dk__tech--dim">
+                          📐 {{ img.widthPx }}×{{ img.heightPx }}px
+                          <em v-if="img.aspectRatio">({{ img.aspectRatio.toFixed(2) }})</em>
                         </span>
-                        <span v-if="img.humanReadableSize" class="dk__tech-chip dk__tech-chip--size">
-                          {{ img.humanReadableSize }}
+                        <span v-if="img.humanReadableSize || img.fileSizeBytes" class="dk__tech dk__tech--size">
+                          📦 {{ img.humanReadableSize || formatBytes(img.fileSizeBytes) }}
                         </span>
-                        <span v-if="img.mimeType" class="dk__tech-chip dk__tech-chip--mime">
-                          {{ img.mimeType.replace('image/', '') }}
+                        <span v-if="img.mimeType" class="dk__tech dk__tech--mime">
+                          {{ img.mimeType }}
+                        </span>
+                        <span v-if="img.widthPx && img.heightPx" class="dk__tech dk__tech--orient">
+                          {{ img.widthPx > img.heightPx ? '↔ Landscape' : img.heightPx > img.widthPx ? '↕ Portrait' : '⬜ Square' }}
                         </span>
                       </div>
 
-                      <!-- URLs Indicator -->
-                      <div class="dk__album-source" v-if="img.externalUrl || img.embedUrl">
-                        <span v-if="img.externalUrl" class="dk__source-badge dk__source-badge--ext">دەرەکی</span>
-                        <span v-if="img.embedUrl" class="dk__source-badge dk__source-badge--embed">Embed</span>
-                      </div>
-
-                      <div v-if="img.captionCkb || img.captionKmr" class="dk__album-captions">
-                        <div v-if="img.captionCkb" class="dk__album-cap-row">
-                          <span class="dk__album-lang-dot dk__album-lang-dot--ckb">CKB</span>
-                          <span class="dk__album-caption">{{ img.captionCkb }}</span>
+                      <!-- Captions -->
+                      <div class="dk__album-caps" v-if="img.captionCkb || img.captionKmr">
+                        <div class="dk__album-cap-row" v-if="img.captionCkb">
+                          <span class="dk__album-lang--ckb">CKB</span>
+                          <strong>{{ img.captionCkb }}</strong>
                         </div>
-                        <div v-if="img.captionKmr" class="dk__album-cap-row">
-                          <span class="dk__album-lang-dot dk__album-lang-dot--kmr">KMR</span>
-                          <span class="dk__album-caption">{{ img.captionKmr }}</span>
+                        <div class="dk__album-cap-row" v-if="img.captionKmr">
+                          <span class="dk__album-lang--kmr">KMR</span>
+                          <strong>{{ img.captionKmr }}</strong>
                         </div>
                       </div>
-                      <div v-if="img.descriptionCkb || img.descriptionKmr" class="dk__album-descs">
-                        <div v-if="img.descriptionCkb" class="dk__album-desc-row">
-                          <span class="dk__album-lang-dot dk__album-lang-dot--ckb">CKB</span>
-                          <span class="dk__album-desc">{{ img.descriptionCkb }}</span>
+
+                      <!-- Descriptions -->
+                      <div class="dk__album-descs" v-if="img.descriptionCkb || img.descriptionKmr">
+                        <div class="dk__album-desc-row" v-if="img.descriptionCkb">
+                          <span class="dk__album-lang--ckb">CKB</span>
+                          <span class="dk__album-desc-text">{{ img.descriptionCkb }}</span>
                         </div>
-                        <div v-if="img.descriptionKmr" class="dk__album-desc-row">
-                          <span class="dk__album-lang-dot dk__album-lang-dot--kmr">KMR</span>
-                          <span class="dk__album-desc">{{ img.descriptionKmr }}</span>
+                        <div class="dk__album-desc-row" v-if="img.descriptionKmr">
+                          <span class="dk__album-lang--kmr">KMR</span>
+                          <span class="dk__album-desc-text">{{ img.descriptionKmr }}</span>
                         </div>
                       </div>
-                      <div class="dk__album-links">
-                        <a v-if="img.externalUrl" :href="img.externalUrl" target="_blank" class="dk__ext-link">
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                          لینکی دەرەکی
-                        </a>
-                        <a v-if="img.embedUrl" :href="img.embedUrl" target="_blank" class="dk__ext-link dk__ext-link--embed">
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                          Embed
-                        </a>
+
+                      <!-- URL fields -->
+                      <div class="dk__album-urls" v-if="img.imageUrl || img.externalUrl || img.embedUrl">
+                        <a v-if="img.imageUrl"    :href="img.imageUrl"    target="_blank" class="dk__album-url dk__album-url--s3">☁ S3 URL</a>
+                        <a v-if="img.externalUrl" :href="img.externalUrl" target="_blank" class="dk__album-url dk__album-url--ext">↗ دەرەکی</a>
+                        <a v-if="img.embedUrl"    :href="img.embedUrl"    target="_blank" class="dk__album-url dk__album-url--embed">&lt;/&gt; Embed</a>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              <!-- ── Topic Card ── -->
-              <div class="dk__section" v-if="detailItem.topic">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                  موضوع / بابەت
-                </div>
-                <div class="dk__topic-card">
-                  <div class="dk__topic-icon">🏷</div>
-                  <div class="dk__topic-info">
-                    <span class="dk__topic-name">{{ detailItem.topic.nameCkb || '—' }}</span>
-                    <span v-if="detailItem.topic.nameKmr" class="dk__topic-name-alt">{{ detailItem.topic.nameKmr }}</span>
-                    <span class="dk__topic-id">ID: {{ detailItem.topic.id }}</span>
                   </div>
                 </div>
-              </div>
+              </section>
 
-              <!-- ── Tags & Keywords ── -->
-              <div class="dk__section" v-if="hasTags(detailItem)">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                  تاگ و کلیلەوشەکان
-                </div>
-                <div class="dk__tags-grid">
-                  <div v-if="detailItem.tags?.ckb?.length" class="dk__tag-group">
-                    <span class="dk__tag-label">تاگ (سۆرانی)</span>
-                    <div class="dk__tag-list">
-                      <span v-for="t in detailItem.tags.ckb" :key="'tc'+t" class="dk__chip dk__chip--ckb">{{ t }}</span>
-                    </div>
-                  </div>
-                  <div v-if="detailItem.tags?.kmr?.length" class="dk__tag-group">
-                    <span class="dk__tag-label">تاگ (کورمانجی)</span>
-                    <div class="dk__tag-list">
-                      <span v-for="t in detailItem.tags.kmr" :key="'tk'+t" class="dk__chip dk__chip--kmr">{{ t }}</span>
-                    </div>
-                  </div>
-                  <div v-if="detailItem.keywords?.ckb?.length" class="dk__tag-group">
-                    <span class="dk__tag-label">کلیلەوشە (سۆرانی)</span>
-                    <div class="dk__tag-list">
-                      <span v-for="k in detailItem.keywords.ckb" :key="'kc'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
-                    </div>
-                  </div>
-                  <div v-if="detailItem.keywords?.kmr?.length" class="dk__tag-group">
-                    <span class="dk__tag-label">کلیلەوشە (کورمانجی)</span>
-                    <div class="dk__tag-list">
-                      <span v-for="k in detailItem.keywords.kmr" :key="'kk'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ── Language Cards ── -->
-              <div class="dk__section" v-if="detectedLangs(detailItem).length">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-                  زمانی ناوەڕۆک
-                </div>
-                <div class="dk__lang-cards">
-                  <div v-for="lang in detectedLangs(detailItem)" :key="lang"
-                    class="dk__lang-card" :class="lang === 'CKB' ? 'dk__lang-card--ckb' : 'dk__lang-card--kmr'">
-                    <span class="dk__lang-card-flag">{{ lang === 'CKB' ? '🇮🇶' : '🌍' }}</span>
-                    <div class="dk__lang-card-info">
-                      <span class="dk__lang-card-code">{{ lang }}</span>
-                      <span class="dk__lang-card-name">{{ lang === 'CKB' ? 'کوردی سۆرانی' : 'Kurdî Kurmancî' }}</span>
-                    </div>
-                    <svg class="dk__lang-card-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ── General Info Grid ── -->
-              <div class="dk__section">
-                <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <!-- ── 5. GENERAL INFO GRID (ALL FIELDS) ── -->
+              <section class="dk__sec">
+                <div class="dk__sec-label">
+                  <span class="dk__sec-icon">📋</span>
                   زانیاری گشتی
                 </div>
                 <div class="dk__info-grid">
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">🆔</span>
-                    <div class="dk__info-data"><span class="dk__info-label">ناسنامە</span><span class="dk__info-value">#{{ detailItem.id }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">🆔 ناسنامە</span>
+                    <span class="dk__info-v">#{{ detailItem.id }}</span>
                   </div>
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">🗂️</span>
-                    <div class="dk__info-data"><span class="dk__info-label">جۆری کۆکراوە</span><span class="dk__info-value">{{ typeLabel(detailItem.collectionType) }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">🗂 جۆری کۆکراوە</span>
+                    <span class="dk__info-v">
+                      <span class="type-pill" :class="`type-pill--${(detailItem.collectionType||'').toLowerCase()}`">
+                        {{ typeIcon(detailItem.collectionType) }} {{ typeLabel(detailItem.collectionType) }}
+                      </span>
+                    </span>
                   </div>
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">🖼</span>
-                    <div class="dk__info-data"><span class="dk__info-label">کڤەری CKB</span><span class="dk__info-value" :class="detailItem.ckbCoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.ckbCoverUrl ? '✓ هەیە' : '— نییە' }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">🏷 موضوع / بابەت</span>
+                    <span class="dk__info-v">
+                      <span v-if="detailItem.topic" class="dk__info-topic">
+                        {{ detailItem.topic.nameCkb || '—' }}
+                        <em v-if="detailItem.topic.nameKmr">/ {{ detailItem.topic.nameKmr }}</em>
+                        <small>(#{{ detailItem.topic.id }})</small>
+                      </span>
+                      <span v-else class="dk__info-v--empty">— نییە</span>
+                    </span>
                   </div>
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">🖼</span>
-                    <div class="dk__info-data"><span class="dk__info-label">کڤەری KMR</span><span class="dk__info-value" :class="detailItem.kmrCoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.kmrCoverUrl ? '✓ هەیە' : '— نییە' }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">📅 بەرواری بڵاوکردنەوە</span>
+                    <span class="dk__info-v" :class="{ 'dk__info-v--empty': !detailItem.publishmentDate }">
+                      {{ detailItem.publishmentDate ? fmtDate(detailItem.publishmentDate) : '— دیاری نەکراوە' }}
+                    </span>
                   </div>
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">🎨</span>
-                    <div class="dk__info-data"><span class="dk__info-label">Hover Image</span><span class="dk__info-value" :class="detailItem.hoverCoverUrl ? 'dk__info-value--yes' : ''">{{ detailItem.hoverCoverUrl ? '✓ هەیە' : '— نییە' }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">🌐 زمانی ناوەڕۆک</span>
+                    <span class="dk__info-v">
+                      <div class="lang-row" style="margin-top:2px">
+                        <span v-for="l in detectedLangs(detailItem)" :key="l" class="lang-dot" :class="`lang-dot--${l.toLowerCase()}`">{{ l }}</span>
+                      </div>
+                    </span>
                   </div>
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">📸</span>
-                    <div class="dk__info-data"><span class="dk__info-label">ژمارەی وێنەکان</span><span class="dk__info-value">{{ detailItem.imageAlbum?.length || 0 }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">📸 ژمارەی وێنەکان</span>
+                    <span class="dk__info-v">{{ detailItem.imageAlbum?.length || 0 }} وێنە</span>
                   </div>
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">🏷</span>
-                    <div class="dk__info-data"><span class="dk__info-label">موضوع</span><span class="dk__info-value" :class="detailItem.topic ? 'dk__info-value--yes' : ''">{{ detailItem.topic ? (detailItem.topic.nameCkb || detailItem.topic.nameKmr) : '— نییە' }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">🖼 کڤەری CKB</span>
+                    <span class="dk__info-v" :class="detailItem.ckbCoverUrl ? 'dk__info-v--yes' : 'dk__info-v--empty'">
+                      {{ detailItem.ckbCoverUrl ? '✓ هەیە' : '— نییە' }}
+                    </span>
                   </div>
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">📅</span>
-                    <div class="dk__info-data"><span class="dk__info-label">بەرواری بڵاوکردنەوە</span><span class="dk__info-value">{{ detailItem.publishmentDate ? fmtDate(detailItem.publishmentDate) : '—' }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">🖼 کڤەری KMR</span>
+                    <span class="dk__info-v" :class="detailItem.kmrCoverUrl ? 'dk__info-v--yes' : 'dk__info-v--empty'">
+                      {{ detailItem.kmrCoverUrl ? '✓ هەیە' : '— نییە' }}
+                    </span>
                   </div>
-                  <div class="dk__info-item">
-                    <span class="dk__info-icon">📅</span>
-                    <div class="dk__info-data"><span class="dk__info-label">دروستکراوە</span><span class="dk__info-value">{{ fmtDateFull(detailItem.createdAt) }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">✦ Hover Image</span>
+                    <span class="dk__info-v" :class="detailItem.hoverCoverUrl ? 'dk__info-v--yes' : 'dk__info-v--empty'">
+                      {{ detailItem.hoverCoverUrl ? '✓ هەیە' : '— نییە' }}
+                    </span>
                   </div>
-                  <div class="dk__info-item" v-if="detailItem.updatedAt">
-                    <span class="dk__info-icon">🔄</span>
-                    <div class="dk__info-data"><span class="dk__info-label">دوایین نوێکردنەوە</span><span class="dk__info-value">{{ fmtDateFull(detailItem.updatedAt) }}</span></div>
+
+                  <div class="dk__info-cell">
+                    <span class="dk__info-k">🕐 دروستکراوە</span>
+                    <span class="dk__info-v">{{ fmtDateFull(detailItem.createdAt) }}</span>
                   </div>
+
+                  <div class="dk__info-cell" v-if="detailItem.updatedAt">
+                    <span class="dk__info-k">🔄 دوایین نوێکردنەوە</span>
+                    <span class="dk__info-v">{{ fmtDateFull(detailItem.updatedAt) }}</span>
+                  </div>
+
                 </div>
-              </div>
+              </section>
 
             </div>
 
-            <!-- Footer -->
+            <!-- ══ STICKY FOOTER ══ -->
             <div class="dk__foot">
               <RouterLink :to="`/admin/image-collections/${detailItem.id}/edit`" class="btn btn--primary btn--sm">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
                 دەستکاریکردن
               </RouterLink>
-              <button class="btn btn--ghost btn--sm" @click="detailItem = null">داخستن</button>
+              <button class="btn btn--danger btn--sm" @click="() => { confirmDelete(detailItem); detailItem = null }">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                سڕینەوە
+              </button>
+              <button class="btn btn--ghost btn--sm" style="margin-right:auto" @click="detailItem = null">داخستن</button>
             </div>
+
           </div>
         </div>
       </Transition>
@@ -581,38 +615,29 @@ let   toastTimer   = null
 const normalize = (d = {}) => {
   const out = { ...d }
 
-  // CRITICAL FIX: Map DTO field names correctly (hoverCoverUrl, not hoverUrl)
-  out.ckbCoverUrl = d.ckbCoverUrl || ''
-  out.kmrCoverUrl = d.kmrCoverUrl || ''
-  out.hoverCoverUrl = d.hoverCoverUrl || ''  // Correct DTO field name
+  out.ckbCoverUrl   = d.ckbCoverUrl   || ''
+  out.kmrCoverUrl   = d.kmrCoverUrl   || ''
+  out.hoverCoverUrl = d.hoverCoverUrl || ''
 
   out.topic = d.topicId
     ? { id: d.topicId, nameCkb: d.topicNameCkb || '', nameKmr: d.topicNameKmr || '' }
-    : null
+    : (d.topic || null)
 
   out.contentLanguages = Array.isArray(d.contentLanguages) ? [...d.contentLanguages] : []
-
-  out.tags     = { ckb: [...(d.tags?.ckb     || [])], kmr: [...(d.tags?.kmr     || [])] }
+  out.tags     = { ckb: [...(d.tags?.ckb || [])], kmr: [...(d.tags?.kmr || [])] }
   out.keywords = { ckb: [...(d.keywords?.ckb || [])], kmr: [...(d.keywords?.kmr || [])] }
 
-  // NEW: Normalize album items with metadata
   out.imageAlbum = Array.isArray(d.imageAlbum)
     ? d.imageAlbum.map(img => ({
         ...img,
-        // Ensure metadata fields exist
-        widthPx: img.widthPx || null,
-        heightPx: img.heightPx || null,
-        fileSizeBytes: img.fileSizeBytes || null,
-        mimeType: img.mimeType || null,
         aspectRatio: img.aspectRatio || (img.widthPx && img.heightPx ? img.widthPx / img.heightPx : null),
-        humanReadableSize: img.humanReadableSize || formatBytes(img.fileSizeBytes)
+        humanReadableSize: img.humanReadableSize || formatBytes(img.fileSizeBytes),
       })).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     : []
 
   return out
 }
 
-// Helper for formatting bytes if backend doesn't send human readable
 function formatBytes(bytes) {
   if (!bytes) return null
   if (bytes < 1024) return bytes + ' B'
@@ -621,75 +646,62 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
 }
 
-// ── Topics for filter dropdown ────────────────────────────────────────────────
 const availableTopics = computed(() => {
   const seen = new Set()
-  const result = []
-  items.value.forEach(item => {
+  return items.value.reduce((acc, item) => {
     if (item.topic && !seen.has(item.topic.id)) {
-      seen.add(item.topic.id)
-      result.push(item.topic)
+      seen.add(item.topic.id); acc.push(item.topic)
     }
-  })
-  return result
+    return acc
+  }, [])
 })
 
-// ── Filtered list ─────────────────────────────────────────────────────────────
 const filteredItems = computed(() => {
   let list = items.value
-
   if (searchQ.value.trim()) {
     const q = searchQ.value.trim().toLowerCase()
     list = list.filter(c =>
-      (c.ckbContent?.title        || '').toLowerCase().includes(q) ||
-      (c.kmrContent?.title        || '').toLowerCase().includes(q) ||
-      (c.ckbContent?.description  || '').toLowerCase().includes(q) ||
-      (c.kmrContent?.description  || '').toLowerCase().includes(q) ||
-      (c.ckbContent?.collectedBy  || '').toLowerCase().includes(q) ||
-      (c.kmrContent?.collectedBy  || '').toLowerCase().includes(q) ||
-      (c.ckbContent?.location     || '').toLowerCase().includes(q) ||
-      (c.kmrContent?.location     || '').toLowerCase().includes(q) ||
-      (c.topic?.nameCkb           || '').toLowerCase().includes(q) ||
-      (c.topic?.nameKmr           || '').toLowerCase().includes(q) ||
+      (c.ckbContent?.title       || '').toLowerCase().includes(q) ||
+      (c.kmrContent?.title       || '').toLowerCase().includes(q) ||
+      (c.ckbContent?.description || '').toLowerCase().includes(q) ||
+      (c.kmrContent?.description || '').toLowerCase().includes(q) ||
+      (c.ckbContent?.collectedBy || '').toLowerCase().includes(q) ||
+      (c.kmrContent?.collectedBy || '').toLowerCase().includes(q) ||
+      (c.ckbContent?.location    || '').toLowerCase().includes(q) ||
+      (c.kmrContent?.location    || '').toLowerCase().includes(q) ||
+      (c.topic?.nameCkb          || '').toLowerCase().includes(q) ||
+      (c.topic?.nameKmr          || '').toLowerCase().includes(q) ||
       [...(c.tags?.ckb || []), ...(c.tags?.kmr || [])].some(t => t.toLowerCase().includes(q)) ||
       [...(c.keywords?.ckb || []), ...(c.keywords?.kmr || [])].some(k => k.toLowerCase().includes(q))
     )
   }
-
-  if (filterLang.value) list = list.filter(c => {
-    const langs = c.contentLanguages?.length
-      ? c.contentLanguages
-      : [c.ckbContent ? 'CKB' : null, c.kmrContent ? 'KMR' : null].filter(Boolean)
-    return langs.includes(filterLang.value)
-  })
+  if (filterLang.value) {
+    list = list.filter(c => {
+      const langs = c.contentLanguages?.length ? c.contentLanguages
+        : [c.ckbContent ? 'CKB' : null, c.kmrContent ? 'KMR' : null].filter(Boolean)
+      return langs.includes(filterLang.value)
+    })
+  }
   if (filterType.value)  list = list.filter(c => c.collectionType === filterType.value)
   if (filterTopic.value) list = list.filter(c => c.topic?.id === Number(filterTopic.value))
-
   return list
 })
 
-// ── Data loading ──────────────────────────────────────────────────────────────
 const load = async () => {
-  loading.value = true
-  error.value   = ''
+  loading.value = true; error.value = ''
   try {
     const { data } = await api.get('/api/v1/image-collections')
     const payload = data?.data ?? data ?? []
     const arr = Array.isArray(payload) ? payload
-              : Array.isArray(payload?.content) ? payload.content : []
+      : Array.isArray(payload?.content) ? payload.content : []
     items.value = arr.map(normalize)
   } catch (e) {
     error.value = e?.response?.data?.message || e.message || 'هەڵەیەک ڕوویدا'
-  } finally {
-    loading.value = false
-  }
+  } finally { loading.value = false }
 }
 
-// ── Detail modal ──────────────────────────────────────────────────────────────
-const openDetail = (c) => { detailItem.value = normalize(c) }
-const onKeydown  = (e) => { if (e.key === 'Escape' && detailItem.value) detailItem.value = null }
-
-// ── Delete ────────────────────────────────────────────────────────────────────
+const openDetail  = (c) => { detailItem.value = normalize(c) }
+const onKeydown   = (e) => { if (e.key === 'Escape' && detailItem.value) detailItem.value = null }
 const confirmDelete = (c) => { delTarget.value = c }
 
 const doDelete = async () => {
@@ -708,23 +720,30 @@ const doDelete = async () => {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const bestTitle = (c) => c?.ckbContent?.title || c?.kmrContent?.title || ''
-const hasTags   = (c) => c?.tags?.ckb?.length || c?.tags?.kmr?.length || c?.keywords?.ckb?.length || c?.keywords?.kmr?.length
+const bestTitle   = (c) => c?.ckbContent?.title || c?.kmrContent?.title || ''
+const hasTags     = (c) => c?.tags?.ckb?.length || c?.tags?.kmr?.length || c?.keywords?.ckb?.length || c?.keywords?.kmr?.length
 
 const detectedLangs = (c) => {
   if (!c) return []
   if (c.contentLanguages?.length) return c.contentLanguages
-  const langs = []
-  if (c.ckbContent && (c.ckbContent.title || c.ckbContent.description)) langs.push('CKB')
-  if (c.kmrContent && (c.kmrContent.title || c.kmrContent.description)) langs.push('KMR')
-  return langs
+  const l = []
+  if (c.ckbContent && (c.ckbContent.title || c.ckbContent.description)) l.push('CKB')
+  if (c.kmrContent && (c.kmrContent.title || c.kmrContent.description)) l.push('KMR')
+  return l
 }
 
-const typeLabel = (t) => ({
-  SINGLE: 'تەنها وێنە',
-  GALLERY: 'گەلەری',
-  PHOTO_STORY: 'چیرۆکی وێنە'
-}[t] || t || '—')
+const typeLabel = (t) => ({ SINGLE: 'تەنها وێنە', GALLERY: 'گەلەری', PHOTO_STORY: 'چیرۆکی وێنە' }[t] || t || '—')
+const typeIcon  = (t) => ({ SINGLE: '🖼', GALLERY: '🗂', PHOTO_STORY: '📖' }[t] || '📁')
+
+const heroStyle = (c) => {
+  const url = c.ckbCoverUrl || c.kmrCoverUrl
+  return url ? `background-image: url(${url})` : ''
+}
+
+const shortUrl = (url) => {
+  try { return new URL(url).pathname.split('/').pop() || url.slice(-32) }
+  catch { return url.slice(-32) }
+}
 
 const showToast = (type, msg) => {
   clearTimeout(toastTimer)
@@ -740,8 +759,7 @@ const fmtDateFull = (d) => {
   if (!d) return '—'
   const dt = new Date(d)
   return dt.toLocaleDateString('ckb', { year: 'numeric', month: 'long', day: 'numeric' })
-    + '  ·  '
-    + dt.toLocaleTimeString('ckb', { hour: '2-digit', minute: '2-digit' })
+    + ' · ' + dt.toLocaleTimeString('ckb', { hour: '2-digit', minute: '2-digit' })
 }
 
 onMounted(() => { load(); window.addEventListener('keydown', onKeydown) })
@@ -749,79 +767,9 @@ onBeforeUnmount(() => { clearTimeout(toastTimer); window.removeEventListener('ke
 </script>
 
 <style scoped>
-/* ─── NEW TABLE COLUMNS STYLES ─── */
-.tbl__meta {
-  font-size: 0.82rem;
-  color: var(--muted);
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ─── ALBUM TECH METADATA (The missing fields display) ─── */
-.dk__album-tech {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.dk__tech-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 5px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  font-family: monospace;
-}
-
-.dk__tech-chip--dim {
-  background: rgba(30, 64, 175, 0.08);
-  color: #1e40af;
-  border: 1px solid rgba(30, 64, 175, 0.15);
-}
-
-.dk__tech-chip--size {
-  background: rgba(140, 21, 21, 0.08);
-  color: #8c1515;
-  border: 1px solid rgba(140, 21, 21, 0.15);
-}
-
-.dk__tech-chip--mime {
-  background: rgba(5, 150, 105, 0.08);
-  color: #059669;
-  border: 1px solid rgba(5, 150, 105, 0.15);
-  text-transform: uppercase;
-  font-size: 0.7rem;
-}
-
-.dk__album-source {
-  display: flex;
-  gap: 0.35rem;
-  margin-bottom: 0.4rem;
-}
-
-.dk__source-badge {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  font-weight: 700;
-}
-
-.dk__source-badge--ext {
-  background: rgba(30, 64, 175, 0.1);
-  color: #1e40af;
-}
-
-.dk__source-badge--embed {
-  background: rgba(124, 58, 237, 0.1);
-  color: #7c3aed;
-}
-
-/* ─── EXISTING STYLES FROM ORIGINAL (Preserved) ─── */
+/* ══════════════════════════════════════════════════════════════
+   BASE PAGE
+══════════════════════════════════════════════════════════════ */
 .icl { direction:rtl; max-width:1400px; margin:0 auto; }
 .icl__head { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; gap:1rem; flex-wrap:wrap; }
 .icl__title { font-size:1.55rem; font-weight:700; color:var(--text); }
@@ -835,7 +783,7 @@ onBeforeUnmount(() => { clearTimeout(toastTimer); window.removeEventListener('ke
 .btn--danger { background:#c0392b; color:#fff; border-color:#c0392b; }
 .btn--danger:hover { background:#a93226; }
 .btn--sm { padding:.45rem .85rem; font-size:.82rem; }
-.btn:disabled { opacity:.5; cursor:not-allowed; transform:none!important; }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none !important; }
 
 .icl__bar { display:flex; gap:.75rem; margin-bottom:1.25rem; flex-wrap:wrap; }
 .search { flex:1; min-width:200px; position:relative; display:flex; align-items:center; }
@@ -874,26 +822,26 @@ onBeforeUnmount(() => { clearTimeout(toastTimer); window.removeEventListener('ke
 .tbl__name--kmr { font-weight:500; color:var(--muted); }
 .tbl__date { font-size:.82rem; color:var(--muted); white-space:nowrap; }
 .tbl__dash { color:var(--border); }
+.tbl__meta { font-size:.82rem; color:var(--muted); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
 .cover-wrap { width:50px; height:38px; border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative; }
 .cover-img { width:100%; height:100%; object-fit:cover; display:block; position:absolute; inset:0; transition:opacity .2s, transform .2s; }
-.cover-img--base  { opacity:1; transform:scale(1); }
+.cover-img--base { opacity:1; transform:scale(1); }
 .cover-img--hover { opacity:0; transform:scale(1.05); }
 .cover-wrap:hover .cover-img--hover { opacity:1; transform:scale(1); }
 .cover-wrap:hover .cover-img--base  { opacity:0; }
 .cover-empty { width:50px; height:38px; border-radius:8px; border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--border); }
-.cover-hover-badge { position:absolute; bottom:2px; left:2px; width:14px; height:14px; border-radius:3px; background:rgba(124,58,237,.85); color:#fff; font-size:.55rem; font-weight:900; display:flex; align-items:center; justify-content:center; z-index:5; pointer-events:none; }
+.cover-hover-badge { position:absolute; bottom:2px; left:2px; width:14px; height:14px; border-radius:3px; background:rgba(124,58,237,.85); color:#fff; font-size:.55rem; font-weight:900; display:flex; align-items:center; justify-content:center; z-index:5; }
 
 .type-pill { display:inline-flex; align-items:center; gap:.3rem; padding:.22rem .65rem; border-radius:99px; font-size:.73rem; font-weight:700; white-space:nowrap; }
-.type-pill--single      { background:rgba(40,90,220,.08); color:#1a47a0; border:1px solid rgba(40,90,220,.18); }
-.type-pill--gallery     { background:rgba(140,21,21,.08); color:var(--crimson); border:1px solid rgba(140,21,21,.14); }
-.type-pill--photo_story { background:rgba(80,40,140,.08); color:#5028a0; border:1px solid rgba(80,40,140,.16); }
+.type-pill--single      { background:rgba(40,90,220,.08);  color:#1a47a0; border:1px solid rgba(40,90,220,.18); }
+.type-pill--gallery     { background:rgba(140,21,21,.08);  color:var(--crimson); border:1px solid rgba(140,21,21,.14); }
+.type-pill--photo_story { background:rgba(80,40,140,.08);  color:#5028a0; border:1px solid rgba(80,40,140,.16); }
 
-.topic-pill { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .6rem; border-radius:99px; background:rgba(140,21,21,.07); color:var(--crimson); border:1px solid rgba(140,21,21,.15); font-size:.75rem; font-weight:700; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
+.topic-pill { display:inline-flex; padding:.2rem .6rem; border-radius:99px; background:rgba(140,21,21,.07); color:var(--crimson); border:1px solid rgba(140,21,21,.15); font-size:.75rem; font-weight:700; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lang-dot { display:inline-flex; padding:.18rem .5rem; border-radius:6px; font-size:.72rem; font-weight:700; }
 .lang-dot--ckb { background:rgba(254,221,0,.2); color:#806e00; border:1px solid rgba(254,221,0,.4); }
-.lang-dot--kmr { background:rgba(30,90,200,.1); color:#1a47a0; border:1px solid rgba(30,90,200,.2); }
+.lang-dot--kmr { background:rgba(30,90,200,.1);  color:#1a47a0; border:1px solid rgba(30,90,200,.2); }
 .lang-row { display:flex; gap:.3rem; flex-wrap:wrap; }
 .img-pill { display:inline-flex; align-items:center; gap:.35rem; font-size:.8rem; color:var(--muted); font-weight:600; }
 
@@ -903,6 +851,9 @@ onBeforeUnmount(() => { clearTimeout(toastTimer); window.removeEventListener('ke
 .act--edit:hover { background:rgba(30,150,80,.08); border-color:rgba(30,150,80,.28); color:#166044; }
 .act--del:hover  { background:rgba(140,21,21,.08); border-color:rgba(140,21,21,.25); color:var(--crimson); }
 
+/* ══════════════════════════════════════════════════════════════
+   DELETE MODAL
+══════════════════════════════════════════════════════════════ */
 .overlay { position:fixed; inset:0; z-index:200; background:rgba(20,10,10,.5); display:flex; align-items:center; justify-content:center; padding:1rem; }
 .del-modal { background:var(--white); border-radius:var(--radius-lg); padding:2rem; max-width:400px; width:100%; box-shadow:0 30px 80px rgba(0,0,0,.25); text-align:center; }
 .del-modal__ico { width:62px; height:62px; border-radius:50%; background:rgba(140,21,21,.07); border:1px solid rgba(140,21,21,.14); display:flex; align-items:center; justify-content:center; margin:0 auto .85rem; }
@@ -912,129 +863,308 @@ onBeforeUnmount(() => { clearTimeout(toastTimer); window.removeEventListener('ke
 .spinner { width:13px; height:13px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; display:inline-block; }
 @keyframes spin { to { transform:rotate(360deg) } }
 
-/* ── Detail Modal ── */
-.dk-bg { position:fixed; inset:0; z-index:1000; background:rgba(10,8,6,.6); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:1rem; }
-.dk { background:#FDFCFB; border-radius:20px; width:100%; max-width:820px; max-height:92vh; overflow-y:auto; box-shadow:0 32px 80px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.06); position:relative; animation:dk-enter .35s cubic-bezier(.16,1,.3,1) both; }
-@keyframes dk-enter { from{opacity:0;transform:scale(.95) translateY(16px)} to{opacity:1;transform:scale(1) translateY(0)} }
+/* ══════════════════════════════════════════════════════════════
+   DETAIL MODAL — FULL REDESIGN
+══════════════════════════════════════════════════════════════ */
+.dk-bg {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(8, 6, 4, 0.65);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
 
-.dk__close { position:absolute; top:12px; left:12px; z-index:20; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.92); border:1px solid rgba(0,0,0,.08); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:.2s; color:#6E6B66; }
-.dk__close:hover { background:#fff; color:#2E2D29; transform:scale(1.08); }
+.dk {
+  background: #FDFCFB;
+  border-radius: 20px;
+  width: 100%; max-width: 860px;
+  max-height: 93vh; overflow-y: auto;
+  box-shadow: 0 40px 100px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.05);
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140,21,21,.2) transparent;
+}
 
-.dk__hero { position:relative; min-height:240px; background:linear-gradient(135deg,#1a0505 0%,#4a1010 40%,#8C1515 100%); background-size:cover; background-position:center; border-radius:20px 20px 0 0; overflow:hidden; }
-.dk__hero-hover { position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity .22s ease; pointer-events:none; }
-.dk__hero:hover .dk__hero-hover { opacity:1; }
-.dk__hero-grain { position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; }
-.dk__hero-gradient { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.3) 40%,transparent 70%); pointer-events:none; }
-.dk__hero-content { position:relative; z-index:5; padding:1.5rem 1.5rem 1.3rem; display:flex; flex-direction:column; justify-content:flex-end; min-height:240px; gap:.55rem; }
-.dk__hero-badges { display:flex; flex-wrap:wrap; gap:.35rem; }
-.dk__badge { display:inline-flex; align-items:center; gap:.25rem; padding:.22rem .6rem; border-radius:99px; font-size:.72rem; font-weight:700; backdrop-filter:blur(8px); }
-.dk__badge--type  { background:rgba(255,255,255,.15); color:rgba(255,255,255,.9); border:1px solid rgba(255,255,255,.18); }
-.dk__badge--topic { background:rgba(140,21,21,.4); color:#fecdd3; border:1px solid rgba(255,255,255,.15); }
-.dk__badge--hover { background:rgba(124,58,237,.35); color:#e9d5ff; border:1px solid rgba(124,58,237,.4); }
-.dk__badge--lang  { background:rgba(255,255,255,.12); color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.2); font-size:.7rem; }
-.dk__hero-title    { color:#fff; font-size:1.45rem; font-weight:900; margin:0; line-height:1.35; letter-spacing:-.01em; }
-.dk__hero-subtitle { color:rgba(255,255,255,.6); font-size:.88rem; margin:0; font-weight:600; }
-.dk__hero-stats { display:flex; gap:.9rem; margin-top:.25rem; flex-wrap:wrap; }
-.dk__stat { display:inline-flex; align-items:center; gap:.3rem; font-size:.76rem; font-weight:700; color:rgba(255,255,255,.7); }
+/* ── Close ── */
+.dk__close {
+  position: absolute; top: 14px; left: 14px; z-index: 30;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,.85); backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,0,0,.1);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #555; transition: .18s;
+}
+.dk__close:hover { background: #fff; color: #111; transform: scale(1.1); }
 
-.dk__body { padding:1.4rem 1.5rem; display:flex; flex-direction:column; gap:1.5rem; }
-.dk__sec-head { display:flex; align-items:center; gap:.5rem; font-size:.82rem; font-weight:800; color:#8C1515; text-transform:uppercase; letter-spacing:.06em; padding-bottom:.6rem; border-bottom:2px solid rgba(140,21,21,.1); margin-bottom:.85rem; flex-wrap:wrap; }
-.dk__sec-count { background:rgba(140,21,21,.08); border:1px solid rgba(140,21,21,.15); border-radius:99px; padding:.1rem .5rem; font-size:.72rem; color:#8C1515; }
+/* ── Hero ── */
+.dk__hero {
+  position: relative; min-height: 260px;
+  background: linear-gradient(135deg, #1a0505 0%, #4a1010 50%, #8C1515 100%);
+  background-size: cover; background-position: center;
+  border-radius: 20px 20px 0 0; overflow: hidden;
+}
+.dk__hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.35) 45%, rgba(0,0,0,.1) 100%);
+  pointer-events: none;
+}
+.dk__hero-hover-img {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: 0; transition: opacity .3s ease; pointer-events: none;
+}
+.dk__hero:hover .dk__hero-hover-img { opacity: 1; }
 
-.dk__covers-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.85rem; }
-@media (max-width:600px) { .dk__covers-grid { grid-template-columns:1fr 1fr; } }
-.dk__cover-item { display:flex; flex-direction:column; gap:.4rem; }
-.dk__cover-item--empty { opacity:.45; }
-.dk__cover-label { display:inline-flex; padding:.18rem .55rem; border-radius:6px; font-size:.7rem; font-weight:800; align-self:flex-start; }
-.dk__cover-label--ckb   { background:rgba(200,168,0,.12); color:#8a7000; border:1px solid rgba(200,168,0,.2); }
-.dk__cover-label--kmr   { background:rgba(74,122,240,.1);  color:#2d5ac0; border:1px solid rgba(74,122,240,.18); }
-.dk__cover-label--hover { background:rgba(124,58,237,.08); color:#6d28d9; border:1px solid rgba(124,58,237,.18); }
-.dk__cover-img-wrap { border-radius:10px; overflow:hidden; border:1px solid #E8E5E0; aspect-ratio:1/1; background:#F0EEEB; display:flex; align-items:center; justify-content:center; }
-.dk__cover-img-wrap--hover { border-style:dashed; border-color:rgba(124,58,237,.3); background:rgba(124,58,237,.04); }
-.dk__cover-img-wrap--empty { flex-direction:column; gap:.35rem; color:#C0BDB8; font-size:.75rem; font-weight:600; }
-.dk__cover-img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+.dk__hero-inner {
+  position: relative; z-index: 5;
+  padding: 1.4rem 1.6rem 1.3rem;
+  min-height: 260px; display: flex; flex-direction: column;
+  justify-content: flex-end; gap: .6rem;
+}
 
-.dk__content-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-@media (max-width:600px) { .dk__content-grid { grid-template-columns:1fr; } }
-.dk__content-col { padding:1rem; border-radius:12px; background:#fff; border:1px solid #EEECE8; }
-.dk__lang-tag { display:inline-flex; padding:.18rem .55rem; border-radius:6px; font-size:.7rem; font-weight:800; margin-bottom:.65rem; }
-.dk__lang-tag--ckb { background:rgba(200,168,0,.12); color:#8a7000; border:1px solid rgba(200,168,0,.2); }
-.dk__lang-tag--kmr { background:rgba(74,122,240,.1);  color:#2d5ac0; border:1px solid rgba(74,122,240,.18); }
-.dk__desc { font-size:.88rem; color:#3E3C38; line-height:1.7; margin:0 0 .65rem; }
-.dk__meta-rows { display:flex; flex-direction:column; gap:.4rem; }
-.dk__meta-row { display:flex; align-items:baseline; gap:.65rem; font-size:.85rem; }
-.dk__meta-k { flex:0 0 auto; font-size:.73rem; font-weight:700; color:#B0ADA7; display:inline-flex; align-items:center; gap:.25rem; min-width:55px; }
-.dk__meta-v { color:#2E2D29; font-weight:600; }
-.dk__content-title { font-size:1rem; font-weight:800; color:#2E2D29; margin-bottom:.5rem; line-height:1.4; }
-.dk__content-grid--single { grid-template-columns:1fr; }
+.dk__hero-top { display: flex; flex-wrap: wrap; gap: .3rem; }
 
-.dk__album-grid { display:flex; flex-direction:column; gap:.65rem; }
-.dk__album-item { display:flex; gap:.75rem; padding:.8rem 1rem; background:#fff; border:1px solid #EEECE8; border-radius:12px; transition:.15s; }
-.dk__album-item:hover { border-color:rgba(140,21,21,.2); box-shadow:0 2px 12px rgba(140,21,21,.06); }
-.dk__album-num { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#8C1515,#a31d1d); color:#fff; font-size:.72rem; font-weight:900; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.dk__album-img-wrap { width:72px; height:60px; border-radius:8px; overflow:hidden; border:1px solid #E8E5E0; background:#F0EEEB; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-.dk__album-img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
-.dk__album-img-empty { display:flex; align-items:center; justify-content:center; width:100%; height:100%; color:#C0BDB8; }
-.dk__album-meta { flex:1; min-width:0; display:flex; flex-direction:column; gap:.25rem; }
-.dk__album-caption { font-weight:700; font-size:.88rem; color:#2E2D29; }
-.dk__album-desc { font-size:.82rem; color:#767571; line-height:1.5; }
-.dk__album-links { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.25rem; }
-.dk__ext-link { display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; font-weight:700; color:#4338ca; text-decoration:none; padding:.28rem .6rem; border-radius:7px; background:rgba(67,56,202,.06); border:1px solid rgba(67,56,202,.12); transition:.15s; }
-.dk__ext-link:hover { background:rgba(67,56,202,.12); }
-.dk__ext-link--embed { color:#7c3aed; background:rgba(124,58,237,.06); border-color:rgba(124,58,237,.12); }
+.dk__pill {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .22rem .65rem; border-radius: 99px;
+  font-size: .72rem; font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+.dk__pill--type  { background: rgba(255,255,255,.15); color: rgba(255,255,255,.92); border: 1px solid rgba(255,255,255,.2); }
+.dk__pill--topic { background: rgba(140,21,21,.45);   color: #fecdd3; border: 1px solid rgba(255,255,255,.1); }
+.dk__pill--lang  { background: rgba(255,255,255,.12); color: rgba(255,255,255,.88); border: 1px solid rgba(255,255,255,.18); }
+.dk__pill--hover { background: rgba(124,58,237,.35);  color: #e9d5ff; border: 1px solid rgba(124,58,237,.4); }
 
-.dk__topic-card { display:flex; align-items:center; gap:.75rem; padding:.9rem 1rem; border-radius:12px; background:rgba(140,21,21,.04); border:1.5px solid rgba(140,21,21,.12); }
-.dk__topic-icon { font-size:1.4rem; }
-.dk__topic-info { display:flex; flex-direction:column; gap:.15rem; }
-.dk__topic-name { font-weight:800; font-size:.92rem; color:#8C1515; }
-.dk__topic-name-alt { font-size:.82rem; color:#767571; font-weight:600; }
-.dk__topic-id { font-size:.72rem; color:#B0ADA7; font-weight:600; }
+.dk__hero-titles { display: flex; flex-direction: column; gap: .2rem; }
+.dk__hero-ckb    { color: #fff; font-size: 1.5rem; font-weight: 900; margin: 0; line-height: 1.3; letter-spacing: -.01em; }
+.dk__hero-kmr    { color: rgba(255,255,255,.6); font-size: .9rem; font-weight: 600; margin: 0; }
 
-.dk__tags-grid { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
-@media (max-width:600px) { .dk__tags-grid { grid-template-columns:1fr; } }
-.dk__tag-group { display:flex; flex-direction:column; gap:.4rem; }
-.dk__tag-label { font-size:.74rem; font-weight:700; color:#9E9A94; }
-.dk__tag-list { display:flex; flex-wrap:wrap; gap:.3rem; }
-.dk__chip { display:inline-flex; padding:.22rem .6rem; border-radius:8px; font-size:.78rem; font-weight:700; }
-.dk__chip--ckb { background:rgba(140,21,21,.07);  color:#8C1515; border:1px solid rgba(140,21,21,.12); }
-.dk__chip--kmr { background:rgba(67,56,202,.07);  color:#4338ca; border:1px solid rgba(67,56,202,.12); }
-.dk__chip--kw  { background:rgba(15,118,110,.07); color:#0f766e; border:1px solid rgba(15,118,110,.12); }
+.dk__hero-strip {
+  display: flex; flex-wrap: wrap; gap: .6rem 1.2rem;
+  padding-top: .35rem;
+  border-top: 1px solid rgba(255,255,255,.12);
+}
+.dk__strip-item {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .75rem; font-weight: 700;
+  color: rgba(255,255,255,.65);
+}
 
-.dk__lang-cards { display:flex; gap:.75rem; flex-wrap:wrap; }
-.dk__lang-card { display:flex; align-items:center; gap:.75rem; padding:.85rem 1.1rem; border-radius:12px; flex:1; min-width:160px; }
-.dk__lang-card--ckb { background:rgba(200,168,0,.07); border:1.5px solid rgba(200,168,0,.2); }
-.dk__lang-card--kmr { background:rgba(74,122,240,.06); border:1.5px solid rgba(74,122,240,.18); }
-.dk__lang-card-flag { font-size:1.4rem; flex-shrink:0; }
-.dk__lang-card-info { display:flex; flex-direction:column; gap:.1rem; flex:1; }
-.dk__lang-card-code { font-size:.7rem; font-weight:800; letter-spacing:.06em; }
-.dk__lang-card--ckb .dk__lang-card-code { color:#8a7000; }
-.dk__lang-card--kmr .dk__lang-card-code { color:#2d5ac0; }
-.dk__lang-card-name { font-size:.86rem; font-weight:700; color:#2E2D29; }
-.dk__lang-card-check { flex-shrink:0; }
-.dk__lang-card--ckb .dk__lang-card-check { color:#ca8a04; }
-.dk__lang-card--kmr .dk__lang-card-check { color:#3b6fd4; }
+/* ── Body ── */
+.dk__body { padding: 1.4rem 1.6rem; display: flex; flex-direction: column; gap: 1.6rem; }
 
-.dk__info-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid #EEECE8; border-radius:12px; overflow:hidden; background:#fff; }
-@media (max-width:500px) { .dk__info-grid { grid-template-columns:1fr; } }
-.dk__info-item { display:flex; align-items:flex-start; gap:.65rem; padding:.75rem 1rem; border-bottom:1px solid #F5F3F0; border-left:1px solid #F5F3F0; }
-.dk__info-item:nth-child(odd) { border-left:none; }
-.dk__info-item:last-child,.dk__info-item:nth-last-child(2):nth-child(odd) { border-bottom:none; }
-.dk__info-icon { font-size:1rem; flex-shrink:0; margin-top:.1rem; }
-.dk__info-data { display:flex; flex-direction:column; gap:.1rem; min-width:0; }
-.dk__info-label { font-size:.72rem; font-weight:700; color:#9E9A94; text-transform:uppercase; letter-spacing:.04em; }
-.dk__info-value { font-size:.86rem; font-weight:700; color:#2E2D29; word-break:break-word; }
-.dk__info-value--yes { color:#0f766e; }
+/* ── Section ── */
+.dk__sec {}
+.dk__sec-label {
+  display: flex; align-items: center; gap: .45rem;
+  font-size: .73rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--crimson);
+  padding-bottom: .65rem;
+  border-bottom: 2px solid rgba(140,21,21,.1);
+  margin-bottom: 1rem;
+}
+.dk__sec-icon { font-size: 1rem; }
+.dk__sec-count {
+  margin-right: auto;
+  background: rgba(140,21,21,.08); color: var(--crimson);
+  border: 1px solid rgba(140,21,21,.14);
+  border-radius: 99px; padding: .1rem .55rem; font-size: .7rem;
+}
 
-.dk__foot { padding:1rem 1.5rem; border-top:1px solid #F0EEEB; display:flex; gap:.6rem; background:#FDFCFB; border-radius:0 0 20px 20px; position:sticky; bottom:0; }
+/* ── Cover cards ── */
+.dk__covers { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; }
+@media (max-width: 580px) { .dk__covers { grid-template-columns: 1fr 1fr; } }
 
-.dk__album-captions,.dk__album-descs { display:flex; flex-direction:column; gap:.18rem; }
-.dk__album-captions { margin-bottom:.1rem; }
-.dk__album-cap-row,.dk__album-desc-row { display:flex; align-items:baseline; gap:.4rem; }
-.dk__album-lang-dot { flex-shrink:0; font-size:.62rem; font-weight:800; padding:.1rem .35rem; border-radius:5px; line-height:1.4; }
-.dk__album-lang-dot--ckb { background:rgba(140,21,21,.08); color:#8C1515; border:1px solid rgba(140,21,21,.12); }
-.dk__album-lang-dot--kmr { background:rgba(67,56,202,.08); color:#4338ca; border:1px solid rgba(67,56,202,.12); }
-.dk__album-cap-row .dk__album-caption { font-weight:700; font-size:.86rem; color:#2E2D29; }
-.dk__album-desc-row .dk__album-desc   { font-size:.8rem; color:#767571; line-height:1.5; }
+.dk__cover-card {
+  display: flex; flex-direction: column; gap: .4rem;
+  background: #fff; border: 1.5px solid #EEECE8;
+  border-radius: 14px; padding: .75rem; overflow: hidden;
+}
+.dk__cover-card--empty { opacity: .45; }
+.dk__cover-card--hover-slot { border-style: dashed; border-color: rgba(124,58,237,.25); background: rgba(124,58,237,.02); }
+
+.dk__cover-badge {
+  display: inline-flex; align-self: flex-start;
+  padding: .18rem .55rem; border-radius: 6px;
+  font-size: .68rem; font-weight: 800;
+}
+.dk__cover-badge--ckb   { background: rgba(200,168,0,.12); color: #8a7000; border: 1px solid rgba(200,168,0,.2); }
+.dk__cover-badge--kmr   { background: rgba(74,122,240,.1);  color: #2d5ac0; border: 1px solid rgba(74,122,240,.18); }
+.dk__cover-badge--hover { background: rgba(124,58,237,.08); color: #6d28d9; border: 1px solid rgba(124,58,237,.18); }
+
+.dk__cover-frame {
+  aspect-ratio: 4/3; border-radius: 8px; overflow: hidden;
+  background: #F0EEEB; border: 1px solid #E8E5E0;
+  display: flex; align-items: center; justify-content: center;
+}
+.dk__cover-frame--hover { border-style: dashed; border-color: rgba(124,58,237,.2); }
+.dk__cover-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dk__cover-none { display: flex; flex-direction: column; align-items: center; gap: .35rem; color: #C8C5C0; font-size: .73rem; }
+
+.dk__cover-url { font-size: .68rem; }
+.dk__url-link { color: var(--muted); text-decoration: none; word-break: break-all; }
+.dk__url-link:hover { color: var(--crimson); text-decoration: underline; }
+
+/* ── Bilingual content ── */
+.dk__bilingual { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 580px) { .dk__bilingual { grid-template-columns: 1fr; } }
+
+.dk__lang-col {
+  border-radius: 14px; padding: 1rem; border: 1.5px solid #EEECE8; background: #fff;
+}
+.dk__lang-col--ckb { border-top: 4px solid rgba(200,168,0,.5); }
+.dk__lang-col--kmr { border-top: 4px solid rgba(74,122,240,.45); }
+
+.dk__lang-header {
+  display: flex; align-items: center; gap: .5rem;
+  margin-bottom: .85rem;
+}
+.dk__lang-flag { font-size: 1.1rem; }
+.dk__lang-name { font-size: .78rem; font-weight: 800; color: #4a4742; }
+
+.dk__field-list { display: flex; flex-direction: column; gap: .6rem; }
+.dk__field { display: flex; flex-direction: column; gap: .18rem; }
+
+.dk__field-key {
+  display: inline-flex; align-items: center; gap: .25rem;
+  font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  color: #A8A5A0;
+}
+.dk__field-val {
+  font-size: .88rem; font-weight: 600; color: #2E2D29;
+  line-height: 1.45;
+}
+.dk__field-val--text { font-weight: 400; color: #4E4C48; line-height: 1.65; white-space: pre-line; }
+.dk__field-val--empty { color: #C0BDB8; font-style: italic; font-weight: 400; }
+
+/* ── Tags ── */
+.dk__tags-wrap { display: flex; flex-direction: column; gap: .75rem; }
+.dk__tag-row { display: flex; align-items: flex-start; gap: .75rem; flex-wrap: wrap; }
+.dk__tag-label {
+  flex-shrink: 0; min-width: 130px; font-size: .7rem; font-weight: 800;
+  padding: .22rem .6rem; border-radius: 6px; letter-spacing: .04em;
+}
+.dk__tag-label--ckb  { background: rgba(140,21,21,.07);  color: #8C1515; border: 1px solid rgba(140,21,21,.12); }
+.dk__tag-label--kmr  { background: rgba(67,56,202,.07);  color: #4338ca; border: 1px solid rgba(67,56,202,.12); }
+.dk__tag-label--kw   { background: rgba(15,118,110,.07); color: #0f766e; border: 1px solid rgba(15,118,110,.12); }
+.dk__tag-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.dk__chip { display: inline-flex; padding: .22rem .6rem; border-radius: 8px; font-size: .78rem; font-weight: 700; }
+.dk__chip--ckb { background: rgba(140,21,21,.07);  color: #8C1515; border: 1px solid rgba(140,21,21,.12); }
+.dk__chip--kmr { background: rgba(67,56,202,.07);  color: #4338ca; border: 1px solid rgba(67,56,202,.12); }
+.dk__chip--kw  { background: rgba(15,118,110,.07); color: #0f766e; border: 1px solid rgba(15,118,110,.12); }
+
+/* ── Album rows ── */
+.dk__album { display: flex; flex-direction: column; gap: .7rem; }
+
+.dk__album-row {
+  display: flex; gap: .85rem;
+  background: #fff; border: 1.5px solid #EEECE8; border-radius: 14px;
+  padding: .85rem 1rem; transition: .15s;
+}
+.dk__album-row:hover { border-color: rgba(140,21,21,.2); box-shadow: 0 3px 14px rgba(140,21,21,.07); }
+
+.dk__album-thumb {
+  display: flex; flex-direction: column; align-items: center; gap: .4rem; flex-shrink: 0;
+}
+.dk__album-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, #8C1515, #b52020);
+  color: #fff; font-size: .7rem; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.dk__album-img {
+  width: 78px; height: 64px; border-radius: 9px; overflow: hidden;
+  border: 1px solid #E8E5E0; background: #F0EEEB;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.dk__album-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dk__album-noimg { color: #C0BDB8; }
+
+.dk__album-data { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .45rem; }
+
+/* Tech chips */
+.dk__album-tech { display: flex; flex-wrap: wrap; gap: .35rem; }
+.dk__tech {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .2rem .5rem; border-radius: 6px;
+  font-size: .72rem; font-weight: 700; font-family: monospace;
+}
+.dk__tech em { font-style: normal; opacity: .65; font-size: .65rem; }
+.dk__tech--dim    { background: rgba(30,64,175,.07);  color: #1e40af; border: 1px solid rgba(30,64,175,.14); }
+.dk__tech--size   { background: rgba(140,21,21,.07);  color: #8C1515; border: 1px solid rgba(140,21,21,.14); }
+.dk__tech--mime   { background: rgba(5,150,105,.07);  color: #059669; border: 1px solid rgba(5,150,105,.14); text-transform: uppercase; }
+.dk__tech--orient { background: rgba(100,60,200,.07); color: #5b30c0; border: 1px solid rgba(100,60,200,.12); }
+
+/* Captions & descriptions */
+.dk__album-caps, .dk__album-descs { display: flex; flex-direction: column; gap: .2rem; }
+.dk__album-cap-row, .dk__album-desc-row { display: flex; align-items: baseline; gap: .45rem; }
+.dk__album-lang--ckb, .dk__album-lang--kmr {
+  flex-shrink: 0; font-size: .6rem; font-weight: 900;
+  padding: .08rem .35rem; border-radius: 5px;
+}
+.dk__album-lang--ckb { background: rgba(140,21,21,.08); color: #8C1515; border: 1px solid rgba(140,21,21,.12); }
+.dk__album-lang--kmr { background: rgba(67,56,202,.08); color: #4338ca; border: 1px solid rgba(67,56,202,.12); }
+.dk__album-cap-row strong { font-size: .87rem; color: #2E2D29; font-weight: 700; }
+.dk__album-desc-text { font-size: .8rem; color: #767571; line-height: 1.5; }
+
+/* URLs */
+.dk__album-urls { display: flex; gap: .4rem; flex-wrap: wrap; }
+.dk__album-url {
+  display: inline-flex; align-items: center; gap: .28rem;
+  font-size: .74rem; font-weight: 700;
+  padding: .25rem .6rem; border-radius: 7px; text-decoration: none;
+  transition: .15s;
+}
+.dk__album-url--s3    { background: rgba(15,118,110,.06); color: #0f766e; border: 1px solid rgba(15,118,110,.14); }
+.dk__album-url--ext   { background: rgba(30,64,175,.06);  color: #1e40af; border: 1px solid rgba(30,64,175,.14); }
+.dk__album-url--embed { background: rgba(124,58,237,.06); color: #7c3aed; border: 1px solid rgba(124,58,237,.14); }
+.dk__album-url:hover  { filter: brightness(1.1); transform: translateY(-1px); }
+
+/* ── Info grid ── */
+.dk__info-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1.5px solid #EEECE8; border-radius: 14px;
+  overflow: hidden; background: #fff;
+}
+@media (max-width: 480px) { .dk__info-grid { grid-template-columns: 1fr; } }
+
+.dk__info-cell {
+  display: flex; flex-direction: column; gap: .25rem;
+  padding: .85rem 1.1rem;
+  border-bottom: 1px solid #F2F0ED;
+  border-left: 1px solid #F2F0ED;
+}
+.dk__info-cell:nth-child(odd) { border-left: none; }
+.dk__info-cell:last-child, .dk__info-cell:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+
+.dk__info-k {
+  font-size: .69rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .05em; color: #B0ADA7;
+}
+.dk__info-v {
+  font-size: .88rem; font-weight: 700; color: #2E2D29;
+  word-break: break-word; line-height: 1.4;
+}
+.dk__info-v--yes   { color: #0f766e; }
+.dk__info-v--empty { color: #C0BDB8; font-style: italic; font-weight: 400; font-size: .82rem; }
+.dk__info-topic { display: flex; flex-direction: column; gap: .08rem; }
+.dk__info-topic em    { font-style: normal; color: #767571; font-size: .8rem; font-weight: 600; }
+.dk__info-topic small { color: #B0ADA7; font-size: .72rem; font-weight: 600; }
+
+/* ── Footer ── */
+.dk__foot {
+  position: sticky; bottom: 0;
+  display: flex; gap: .6rem; align-items: center;
+  padding: .9rem 1.6rem;
+  background: rgba(253,252,251,.95); backdrop-filter: blur(8px);
+  border-top: 1px solid #EEECE8;
+  border-radius: 0 0 20px 20px;
+}
+
+/* ══ TRANSITIONS ══ */
+.dk-anim-enter-active, .dk-anim-leave-active { transition: .3s cubic-bezier(.16,1,.3,1); }
+.dk-anim-enter-from, .dk-anim-leave-to { opacity: 0; }
+.dk-anim-enter-from .dk, .dk-anim-leave-to .dk { transform: scale(.96) translateY(14px); }
 
 .fade-enter-active,.fade-leave-active { transition:opacity .15s }
 .fade-enter-from,.fade-leave-to { opacity:0 }
@@ -1044,5 +1174,4 @@ onBeforeUnmount(() => { clearTimeout(toastTimer); window.removeEventListener('ke
 .modal-enter-from,.modal-leave-to { opacity:0 }
 .modal-enter-active .del-modal,.modal-leave-active .del-modal { transition:.25s ease }
 .modal-enter-from .del-modal,.modal-leave-to .del-modal { transform:scale(.94) translateY(8px) }
-.modal-enter-from .dk,.modal-leave-to .dk { transform:scale(.96) translateY(12px) }
 </style>
