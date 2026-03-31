@@ -1,13 +1,11 @@
 <template>
-  <main id="main-content" class="about" :dir="dir" :lang="langAttr">
+  <main id="main-content" class="stanford-about" :dir="dir" :lang="langAttr">
 
-    <!-- ══ LOADING ═══════════════════════════════════════════ -->
     <div v-if="loading" class="state-screen">
       <div class="su-dots"><span/><span/><span/></div>
       <p class="state-caption">{{ t('loading') }}</p>
     </div>
 
-    <!-- ══ ERROR ══════════════════════════════════════════════ -->
     <div v-else-if="error" class="state-screen">
       <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/>
@@ -16,15 +14,12 @@
       <button class="su-text-btn" @click="fetchAbout">{{ t('retry') }}</button>
     </div>
 
-    <!-- ══ EMPTY ═══════════════════════════════════════════════ -->
     <div v-else-if="!page" class="state-screen">
       <p class="state-caption">{{ t('empty') }}</p>
     </div>
 
-    <!-- ══ PAGE ════════════════════════════════════════════════ -->
     <template v-else>
 
-      <!-- ── Language toggle ───────────────────────── -->
       <div v-if="hasBothLangs" class="lang-bar">
         <div class="lang-bar__inner">
           <button class="lang-bar__btn" :class="{ 'lang-bar__btn--active': lang === 'ckb' }" @click="setLang('ckb')">
@@ -39,158 +34,139 @@
         </div>
       </div>
 
-      <!-- ── Hero ─────────────────────────────────── -->
-      <div class="hero" role="img" :aria-label="pageTitle">
-        <img :src="heroImage" alt="" class="hero__photo" loading="eager" fetchpriority="high" />
-        <div class="hero__veil" aria-hidden="true"></div>
-      </div>
+      <section v-if="heroImage" class="su-hero" role="img" :aria-label="pageTitle">
+        <img :src="heroImage" alt="" class="su-hero__img" loading="eager" fetchpriority="high" />
+        <div class="su-hero__overlay" aria-hidden="true"></div>
+      </section>
 
-      <!-- ── Page intro (title + lead paragraph) ───── -->
-      <div class="intro">
-        <h1 class="intro__title">{{ pageTitle }}</h1>
-        <p v-if="pageSubtitle" class="intro__lead">{{ pageSubtitle }}</p>
-      </div>
+      <header class="su-intro">
+        <h1 class="su-intro__title">{{ pageTitle }}</h1>
+        <p v-if="pageSubtitle" class="su-intro__lead">{{ pageSubtitle }}</p>
+      </header>
 
-      <!-- ── Content blocks ─────────────────────────── -->
-      <div class="content-stack">
+      <div class="su-stack">
         <template v-for="(block, idx) in pairedBlocks" :key="`b${idx}`">
 
-          <div
-            v-if="idx > 0 && block.type !== 'stats' && pairedBlocks[idx-1].type !== 'stats'"
-            class="su-rule"
-            aria-hidden="true"
-          ></div>
+          <div v-if="idx > 0 && block.type !== 'stats' && pairedBlocks[idx-1].type !== 'stats'" class="su-rule" aria-hidden="true"></div>
 
-          <!-- TEXT + IMAGE pair → alternating two-column -->
-          <section
-            v-if="block.type === 'pair'"
-            class="su-duo"
-            :class="{ 'su-duo--flip': idx % 2 !== 0 }"
-          >
-            <div class="su-duo__body">
-              <h2 v-if="bTitle(block.text)" class="su-h">{{ bTitle(block.text) }}</h2>
+          <section v-if="block.type === 'pair'" class="su-duo" :class="{ 'su-duo--reversed': idx % 2 !== 0 }">
+            <div class="su-duo__text">
+              <h2 v-if="bTitle(block.text)" class="su-block-h">{{ bTitle(block.text) }}</h2>
               <div class="su-prose" v-html="fmt(bText(block.text))"></div>
-              <a
-                v-if="block.text.mediaUrl"
-                :href="resolveUrl(block.text.mediaUrl)"
-                class="su-btn"
-                target="_blank" rel="noopener"
-              >{{ t('readMore') }}</a>
+              <a v-if="block.text.mediaUrl" :href="resolveUrl(block.text.mediaUrl)" class="su-btn" target="_blank" rel="noopener">{{ t('readMore') }}</a>
             </div>
-            <figure class="su-fig" @click="openLb(block.image)">
-              <div class="su-fig__crop">
-                <img :src="resolveUrl(block.image.mediaUrl)" :alt="bAlt(block.image)" loading="lazy" />
+            
+            <div class="su-duo__media">
+              <div v-if="block.media.contentType === 'VIDEO'" class="su-video-wrapper shadow">
+                 <iframe v-if="isEmbed(block.media.mediaUrl)" :src="toEmbed(block.media.mediaUrl)" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                 <video v-else controls preload="metadata" :src="resolveUrl(block.media.mediaUrl)"></video>
               </div>
-              <figcaption v-if="bTitle(block.image) || bText(block.image)" class="su-fig__cap">
-                <strong v-if="bTitle(block.image)">{{ bTitle(block.image) }}</strong>
-                <template v-if="bTitle(block.image) && bText(block.image)"> — </template>
-                {{ bText(block.image) }}
-              </figcaption>
-            </figure>
-          </section>
-
-          <!-- TEXT standalone -->
-          <section v-else-if="block.type === 'text'" class="su-text" :id="`s${block.data.sequence}`">
-            <h2 v-if="bTitle(block.data)" class="su-h">{{ bTitle(block.data) }}</h2>
-            <div class="su-prose su-prose--wide" v-html="fmt(bText(block.data))"></div>
-          </section>
-
-          <!-- IMAGE standalone -->
-          <figure v-else-if="block.type === 'image'" class="su-img-full" :id="`s${block.data.sequence}`" @click="openLb(block.data)">
-            <div class="su-img-full__crop">
-              <img :src="resolveUrl(block.data.mediaUrl)" :alt="bAlt(block.data)" loading="lazy" />
-            </div>
-            <figcaption v-if="bTitle(block.data) || bText(block.data)" class="su-fig__cap">
-              <strong v-if="bTitle(block.data)">{{ bTitle(block.data) }}</strong>
-              <template v-if="bTitle(block.data) && bText(block.data)"> — </template>
-              {{ bText(block.data) }}
-            </figcaption>
-          </figure>
-
-          <!-- VIDEO -->
-          <section v-else-if="block.type === 'video'" class="su-media" :id="`s${block.data.sequence}`">
-            <h2 v-if="bTitle(block.data)" class="su-h">{{ bTitle(block.data) }}</h2>
-            <div class="su-video">
-              <iframe v-if="isEmbed(block.data.mediaUrl)" :src="toEmbed(block.data.mediaUrl)"
-                frameborder="0" allowfullscreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-              </iframe>
-              <video v-else controls preload="metadata">
-                <source :src="resolveUrl(block.data.mediaUrl)" />
-              </video>
-            </div>
-            <p v-if="bText(block.data)" class="su-caption">{{ bText(block.data) }}</p>
-          </section>
-
-          <!-- AUDIO -->
-          <section v-else-if="block.type === 'audio'" class="su-audio-row" :id="`s${block.data.sequence}`">
-            <div class="su-audio-row__info">
-              <h2 v-if="bTitle(block.data)" class="su-h su-h--sm">{{ bTitle(block.data) }}</h2>
-              <p v-if="bText(block.data)" class="su-prose">{{ bText(block.data) }}</p>
-            </div>
-            <audio controls class="su-audio-row__el" preload="metadata">
-              <source :src="resolveUrl(block.data.mediaUrl)" />
-            </audio>
-          </section>
-
-          <!-- QUOTE -->
-          <section v-else-if="block.type === 'quote'" class="su-pullquote" :id="`s${block.data.sequence}`">
-            <div class="su-pullquote__inner">
-              <span class="su-pullquote__deco" aria-hidden="true">"</span>
-              <blockquote class="su-pullquote__body">
-                <p>{{ bText(block.data) }}</p>
-                <cite v-if="bTitle(block.data)">{{ bTitle(block.data) }}</cite>
-              </blockquote>
+              <figure v-else class="su-figure" @click="openLb(block.media)">
+                <div class="su-figure__crop">
+                  <img :src="resolveUrl(block.media.mediaUrl)" :alt="bAlt(block.media)" loading="lazy" />
+                </div>
+                <figcaption v-if="bTitle(block.media) || bText(block.media)" class="su-figure__cap">
+                  <strong v-if="bTitle(block.media)">{{ bTitle(block.media) }}</strong>
+                  <template v-if="bTitle(block.media) && bText(block.media)"> — </template>
+                  {{ bText(block.media) }}
+                </figcaption>
+              </figure>
             </div>
           </section>
 
-          <!-- STATS -->
+          <section v-else-if="block.type === 'text'" class="su-text-block" :id="`s${block.data.sequence}`">
+            <div class="su-container">
+              <h2 v-if="bTitle(block.data)" class="su-block-h">{{ bTitle(block.data) }}</h2>
+              <div class="su-prose su-prose--wide" v-html="fmt(bText(block.data))"></div>
+            </div>
+          </section>
+
+          <section v-else-if="block.type === 'image' || block.type === 'gallery'" class="su-media-block" :id="`s${block.data.sequence}`">
+             <div class="su-container">
+               <figure class="su-figure su-figure--full" @click="openLb(block.data)">
+                 <div class="su-figure__crop">
+                   <img :src="resolveUrl(block.data.mediaUrl)" :alt="bAlt(block.data)" loading="lazy" />
+                 </div>
+                 <figcaption v-if="bTitle(block.data) || bText(block.data)" class="su-figure__cap">
+                   <strong v-if="bTitle(block.data)">{{ bTitle(block.data) }}</strong>
+                   <template v-if="bTitle(block.data) && bText(block.data)"> — </template>
+                   {{ bText(block.data) }}
+                 </figcaption>
+               </figure>
+             </div>
+          </section>
+
+          <section v-else-if="block.type === 'video'" class="su-media-block" :id="`s${block.data.sequence}`">
+            <div class="su-container">
+              <h2 v-if="bTitle(block.data)" class="su-block-h center">{{ bTitle(block.data) }}</h2>
+              <div class="su-video-wrapper shadow">
+                <iframe v-if="isEmbed(block.data.mediaUrl)" :src="toEmbed(block.data.mediaUrl)" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                <video v-else controls preload="metadata">
+                  <source :src="resolveUrl(block.data.mediaUrl)" />
+                </video>
+              </div>
+              <p v-if="bText(block.data)" class="su-caption">{{ bText(block.data) }}</p>
+            </div>
+          </section>
+
+          <section v-else-if="block.type === 'audio'" class="su-audio-block" :id="`s${block.data.sequence}`">
+            <div class="su-container">
+              <div class="su-audio-row">
+                <div class="su-audio-row__info">
+                  <h2 v-if="bTitle(block.data)" class="su-block-h su-block-h--sm">{{ bTitle(block.data) }}</h2>
+                  <p v-if="bText(block.data)" class="su-prose">{{ bText(block.data) }}</p>
+                </div>
+                <audio controls class="su-audio-row__el" preload="metadata">
+                  <source :src="resolveUrl(block.data.mediaUrl)" />
+                </audio>
+              </div>
+            </div>
+          </section>
+
+          <section v-else-if="block.type === 'quote'" class="su-quote-block" :id="`s${block.data.sequence}`">
+            <blockquote class="su-quote">
+              <p class="su-quote__text">“{{ bText(block.data) }}”</p>
+              <cite v-if="bTitle(block.data)" class="su-quote__author">— {{ bTitle(block.data) }}</cite>
+            </blockquote>
+          </section>
+
           <section v-else-if="block.type === 'stats'" class="su-stats-band" :id="`s${block.data.sequence}`">
-            <div class="su-stats-band__inner">
-              <h2 v-if="bTitle(block.data)" class="su-h su-h--light su-h--center">{{ bTitle(block.data) }}</h2>
-              <p v-if="bText(block.data)" class="su-prose su-prose--light su-prose--center">{{ bText(block.data) }}</p>
-              <div v-if="getStats(block.data).length" class="su-stats">
-                <div class="su-stats__item" v-for="(s, si) in getStats(block.data)" :key="si">
-                  <span class="su-stats__num">{{ s.value }}</span>
-                  <span class="su-stats__bar" aria-hidden="true"></span>
-                  <span class="su-stats__lbl">{{ s.label }}</span>
+            <div class="su-container">
+              <h2 v-if="bTitle(block.data)" class="su-block-h center light">{{ bTitle(block.data) }}</h2>
+              <p v-if="bText(block.data)" class="su-prose center light">{{ bText(block.data) }}</p>
+              
+              <div v-if="getStats(block.data).length" class="su-stats-grid">
+                <div v-for="(s, si) in getStats(block.data)" :key="si" class="su-stat-card">
+                  <span class="su-stat-val">{{ s.value }}</span>
+                  <span class="su-stat-bar" aria-hidden="true"></span>
+                  <span class="su-stat-lbl">{{ s.label }}</span>
                 </div>
               </div>
             </div>
           </section>
 
-          <!-- GALLERY -->
-          <figure v-else-if="block.type === 'gallery'" class="su-img-full" :id="`s${block.data.sequence}`" @click="openLb(block.data)">
-            <div class="su-img-full__crop">
-              <img :src="resolveUrl(block.data.mediaUrl)" :alt="bAlt(block.data)" loading="lazy" />
-            </div>
-            <figcaption v-if="bTitle(block.data)" class="su-fig__cap">{{ bTitle(block.data) }}</figcaption>
-          </figure>
-
         </template>
       </div>
 
-      <!-- ── Meta ─────────────────────────────────── -->
       <div v-if="pageMetaDesc" class="su-meta">
-        <p>{{ pageMetaDesc }}</p>
+        <div class="su-container">
+          <p>{{ pageMetaDesc }}</p>
+        </div>
       </div>
 
-      <!-- ── Multi-page nav ────────────────────────── -->
       <nav v-if="allPages.length > 1" class="su-page-nav" :aria-label="t('pagesNav')">
-        <span class="su-page-nav__label">{{ t('otherPages') }}</span>
-        <div class="su-page-nav__list">
-          <button
-            v-for="p in allPages" :key="p.id"
-            class="su-page-nav__item"
-            :class="{ 'su-page-nav__item--current': p.id === page.id }"
-            @click="switchPage(p)"
-          >{{ getPageTitle(p) }}</button>
+        <div class="su-container su-page-nav__inner">
+          <span class="su-page-nav__label">{{ t('otherPages') }}</span>
+          <div class="su-page-nav__list">
+            <button v-for="p in allPages" :key="p.id" class="su-page-nav__item" :class="{ 'su-page-nav__item--current': p.id === page.id }" @click="switchPage(p)">
+              {{ getPageTitle(p) }}
+            </button>
+          </div>
         </div>
       </nav>
 
     </template>
 
-    <!-- ══ LIGHTBOX ════════════════════════════════════════════ -->
     <Teleport to="body">
       <Transition name="lb">
         <div v-if="lightbox" class="su-lb" role="dialog" :aria-label="t('imageView')" @click.self="lightbox = null">
@@ -245,9 +221,11 @@ function pickContent(block) {
   if (primary?.title || primary?.contentText || primary?.altText) return primary ?? {}
   return secondary ?? {}
 }
+
 const bTitle = block => pickContent(block)?.title       || ''
 const bText  = block => pickContent(block)?.contentText || ''
 const bAlt   = block => pickContent(block)?.altText     || bTitle(block) || ''
+
 function setLang(l) { lang.value = l }
 
 const hasBothLangs = computed(() => !!(page.value?.ckbContent?.title && page.value?.kmrContent?.title))
@@ -258,6 +236,7 @@ const activePage = computed(() => {
   const f = lang.value === 'ckb' ? page.value.kmrContent : page.value.ckbContent
   return { title: p?.title||f?.title||'', subtitle: p?.subtitle||f?.subtitle||'', metaDescription: p?.metaDescription||f?.metaDescription||'' }
 })
+
 const pageTitle    = computed(() => activePage.value.title)
 const pageSubtitle = computed(() => activePage.value.subtitle)
 const pageMetaDesc = computed(() => activePage.value.metaDescription)
@@ -291,15 +270,24 @@ function switchPage(p) {
 const blocks = computed(() =>
   (page.value?.blocks || []).slice().sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
 )
+
+// UPDATED: Now pairs TEXT with either IMAGE or VIDEO to fix layout crashes
 const pairedBlocks = computed(() => {
   const raw = blocks.value; const out = []; let i = 0
   while (i < raw.length) {
     const cur = raw[i]; const next = raw[i + 1]
-    if (cur.contentType === 'TEXT' && next?.contentType === 'IMAGE') { out.push({ type:'pair', text:cur, image:next }); i+=2 }
-    else { out.push({ type: cur.contentType.toLowerCase(), data: cur }); i++ }
+    if (cur.contentType === 'TEXT' && (next?.contentType === 'IMAGE' || next?.contentType === 'VIDEO')) { 
+      out.push({ type:'pair', text:cur, media:next }); 
+      i+=2 
+    }
+    else { 
+      out.push({ type: cur.contentType.toLowerCase(), data: cur }); 
+      i++ 
+    }
   }
   return out
 })
+
 const heroImage = computed(() => {
   if (page.value?.heroImageUrl) return resolveUrl(page.value.heroImageUrl)
   const img = blocks.value.find(b => b.contentType === 'IMAGE' && b.mediaUrl)
@@ -312,11 +300,14 @@ function resolveUrl(url) {
   if (url.startsWith('http')) return url
   return `${API_ROOT}${url.startsWith('/') ? '' : '/'}${url}`
 }
+
 function fmt(text) {
   if (!text) return ''
   return text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('')
 }
+
 function isEmbed(url) { return url && (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com')) }
+
 function toEmbed(url) {
   if (!url) return ''
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
@@ -325,52 +316,66 @@ function toEmbed(url) {
   if (vm) return `https://player.vimeo.com/video/${vm[1]}`
   return url
 }
+
 function getStats(block) {
   try { const m = block.metadata; if (m?.items && Array.isArray(m.items)) return m.items; if (Array.isArray(m)) return m; return [] }
   catch { return [] }
 }
-function openLb(block) { lightbox.value = block }
+
+function openLb(block) { 
+  if(block.contentType !== 'VIDEO' && block.contentType !== 'AUDIO') {
+    lightbox.value = block 
+  }
+}
+
 onMounted(fetchAbout)
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,700;0,8..60,900;1,8..60,300&family=Source+Sans+3:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;0,8..60,900;1,8..60,300&family=Source+Sans+3:wght@300;400;600;700&display=swap');
 
 /* ── tokens ─────────────────────────────────────────── */
-.about {
-  --red:    #8C1515;
-  --red-dk: #6f1111;
-  --gold:   #C9AA71;
-  --text:   #2E2D29;
-  --muted:  #767571;
-  --line:   #D1CFC9;
-  --pale:   #F4F4F2;
-  --dark:   #1C1A18;
-  --w:      1100px;
-  --serif:  'Source Serif 4', Georgia, 'Times New Roman', serif;
-  --sans:   'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
-
+.stanford-about {
+  /* Official Stanford Brand Specs */
+  --cardinal: #8C1515;
+  --cardinal-dark: #6f1111;
+  --black: #2E2D29;
+  --sandstone: #F4F4F2;
+  --gold: #C9AA71;
+  --warm-grey: #767571;
+  --fog: #DAD8D2;
+  --line: #D1CFC9;
+  
+  --serif: 'Source Serif 4', Georgia, serif;
+  --sans: 'Source Sans 3', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --max-w: 1200px;
+  
+  background-color: #fff;
+  color: var(--black);
   font-family: var(--sans);
-  font-size: 17px;
-  line-height: 1.78;
-  color: var(--text);
-  background: #fff;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  overflow-x: hidden;
+}
+
+.su-container {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 52px);
 }
 
 /* ── loading / error states ────────────────────────── */
 .state-screen {
   min-height: 60vh; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 16px; text-align: center; padding: 48px; color: var(--muted);
+  gap: 16px; text-align: center; padding: 48px; color: var(--warm-grey);
 }
 .state-caption { font-size: 1.05rem; }
-.state-err     { color: var(--red); font-weight: 600; font-size: 1.05rem; }
-.state-icon    { width: 40px; height: 40px; color: var(--red); opacity: .65; }
+.state-err     { color: var(--cardinal); font-weight: 600; font-size: 1.05rem; }
+.state-icon    { width: 40px; height: 40px; color: var(--cardinal); opacity: .65; }
 .su-dots       { display: flex; gap: 9px; align-items: center; }
 .su-dots span  {
-  width: 11px; height: 11px; border-radius: 50%; background: var(--red);
+  width: 11px; height: 11px; border-radius: 50%; background: var(--cardinal);
   animation: dot-pulse 1.3s ease-in-out infinite;
 }
 .su-dots span:nth-child(2) { animation-delay: .18s; background: #b33; }
@@ -378,329 +383,272 @@ onMounted(fetchAbout)
 @keyframes dot-pulse { 0%,80%,100%{transform:scale(.55);opacity:.35} 40%{transform:scale(1);opacity:1} }
 .su-text-btn {
   background: none; border: none; padding: 0;
-  font: 700 1rem var(--sans); color: var(--red);
+  font: 700 1rem var(--sans); color: var(--cardinal);
   text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
 }
-.su-text-btn:hover { color: var(--red-dk); }
 
 /* ── language bar ──────────────────────────────────── */
 .lang-bar {
   position: sticky; top: 0; z-index: 50;
   background: rgba(255,255,255,.96); backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--fog);
 }
 .lang-bar__inner {
-  max-width: var(--w); margin-inline: auto;
+  max-width: var(--max-w); margin-inline: auto;
   padding-inline: clamp(20px,4vw,52px);
   height: 46px; display: flex; align-items: center;
 }
-.lang-bar__sep { width: 1px; height: 16px; background: var(--line); flex-shrink: 0; }
+.lang-bar__sep { width: 1px; height: 16px; background: var(--fog); flex-shrink: 0; }
 .lang-bar__btn {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 0 18px; height: 46px; background: none; border: none;
   font: 600 .82rem var(--sans); letter-spacing: .04em;
-  color: var(--muted); cursor: pointer; position: relative; transition: color .18s;
+  color: var(--warm-grey); cursor: pointer; position: relative; transition: color .18s;
 }
 .lang-bar__btn::after {
   content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-  height: 2px; background: var(--red); transform: scaleX(0); transition: transform .2s;
+  height: 2px; background: var(--cardinal); transform: scaleX(0); transition: transform .2s;
 }
-.lang-bar__btn--active         { color: var(--text); font-weight: 700; }
+.lang-bar__btn--active         { color: var(--black); font-weight: 700; }
 .lang-bar__btn--active::after  { transform: scaleX(1); }
-.lang-bar__btn:hover           { color: var(--text); }
+.lang-bar__btn:hover           { color: var(--black); }
 .lang-bar__dot                 { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.lang-bar__dot--ckb            { background: var(--red); }
+.lang-bar__dot--ckb            { background: var(--cardinal); }
 .lang-bar__dot--kmr            { background: #1d6bbf; }
 
-/* ── hero — full-bleed photo ──────────────────────── */
-.hero { position: relative; overflow: hidden; background: var(--dark); }
-.hero__photo {
-  display: block; width: 100%;
-  height: clamp(240px, 42vw, 560px);
-  object-fit: cover; object-position: center 32%;
+/* ── HERO ─────────────────────────────────────────── */
+.su-hero {
+  position: relative;
+  height: 60vh;
+  min-height: 400px;
+  overflow: hidden;
+  background: var(--black);
 }
-.hero__veil {
+
+.su-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.su-hero__overlay {
   position: absolute; inset: auto 0 0 0; height: 180px;
   background: linear-gradient(to top, #fff 0%, rgba(255,255,255,0) 100%);
   pointer-events: none;
 }
 
-/* ── page intro ────────────────────────────────────
-   Centred bold serif title + light lead paragraph.
-   Matches Stanford's "Who We Are" section exactly.
-───────────────────────────────────────────────────── */
-.intro {
+/* ── INTRO ────────────────────────────────────────── */
+.su-intro {
   text-align: center;
-  padding: 3rem clamp(2rem, 9vw, 7rem) 3.8rem;
-  max-width: var(--w);
-  margin-inline: auto;
-}
-
-/* Large bold black serif — "Who We Are" */
-.intro__title {
-  font-family: var(--serif);
-  font-size: clamp(2rem, 4.6vw, 3rem);
-  font-weight: 900;
-  line-height: 1.06;
-  letter-spacing: -.02em;
-  color: var(--text);
-  margin: 0 0 1.8rem;
-}
-
-/* Light-weight centred serif lead paragraph */
-.intro__lead {
-  font-family: var(--serif);
-  font-size: clamp(1.02rem, 1.45vw, 1.2rem);
-  font-weight: 300;
-  line-height: 1.84;
-  color: var(--text);
-  max-width: 780px;
+  padding: 80px clamp(20px, 6vw, 80px) 60px;
+  max-width: 950px;
   margin: 0 auto;
 }
 
-/* ── section dividers ──────────────────────────────── */
+.su-intro__title {
+  font-family: var(--serif);
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+  font-weight: 900; 
+  line-height: 1.05;
+  color: var(--black);
+  margin-bottom: 30px;
+  letter-spacing: -0.02em;
+}
+
+.su-intro__lead {
+  font-family: var(--serif);
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--warm-grey);
+}
+
+/* ── Content rules ────────────────────────────────── */
 .su-rule {
   border: none; border-top: 1px solid var(--line);
-  max-width: var(--w); margin: 0 auto;
+  max-width: var(--max-w); margin: 0 auto;
   padding-inline: clamp(20px, 4vw, 52px);
 }
-.content-stack .su-rule { max-width: 100%; }
+.su-stack .su-rule { max-width: 100%; }
 
-/* ── section headings ──────────────────────────────
-   Bold serif, compact size — NO red underline bar.
-   Matches "Excellence in education across disciplines"
-───────────────────────────────────────────────────── */
-.su-h {
-  font-family: var(--serif);
-  font-size: clamp(1.05rem, 1.7vw, 1.28rem);
-  font-weight: 700;
-  line-height: 1.26;
-  color: var(--text);
-  margin: 0 0 1rem;
-}
-.su-h--sm     { font-size: clamp(1rem, 1.5vw, 1.15rem); }
-.su-h--light  { color: rgba(255,255,255,.95); }
-.su-h--center { text-align: center; }
-
-/* ── prose body ────────────────────────────────────── */
-.su-prose             { font-size: 1rem; line-height: 1.82; color: var(--text); }
-.su-prose--wide       { max-width: 74ch; }
-.su-prose--center     { text-align: center; }
-.su-prose--light      { color: rgba(255,255,255,.72); }
-.su-prose :deep(p)    { margin: 0 0 .88em; }
-.su-prose :deep(p:last-child) { margin: 0; }
-
-/* ── solid red button ──────────────────────────────
-   Stanford's rectangular "Learn more about academics"
-   button — zero border-radius, cardinal red fill.
-───────────────────────────────────────────────────── */
-.su-btn {
-  display: inline-block;
-  margin-top: 1.4rem;
-  padding: .78rem 1.6rem;
-  background: var(--red);
-  color: #fff;
-  font-family: var(--sans);
-  font-size: .88rem;
-  font-weight: 400;
-  line-height: 1;
-  text-decoration: none;
-  border: none;
-  border-radius: 0;
-  cursor: pointer;
-  transition: background .15s;
-  white-space: nowrap;
-}
-.su-btn:hover { background: var(--red-dk); }
-
-/* ── content stack ─────────────────────────────────── */
-.content-stack { display: flex; flex-direction: column; padding-bottom: 72px; }
-
-/* standalone text */
-.su-text {
-  max-width: var(--w); margin-inline: auto;
-  padding: 52px clamp(20px,4vw,52px);
-}
-
-/* ── two-column duo layout ─────────────────────────
-   Text left / image right by default.
-   .su-duo--flip  →  image left / text right.
-   Uses direction trick to flip columns in RTL context.
-───────────────────────────────────────────────────── */
+/* ── DUO (Alternating Grid) ───────────────────────── */
 .su-duo {
-  max-width: var(--w);
-  margin-inline: auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(32px, 5vw, 76px);
-  align-items: start;
-  padding: clamp(2.6rem, 4.5vw, 4.5rem) clamp(20px, 4vw, 52px);
+  gap: clamp(40px, 8vw, 100px);
+  align-items: center;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 80px clamp(20px, 4vw, 52px);
 }
 
-/* flip: swap column order */
-.su-duo--flip     { direction: ltr; }
-.su-duo--flip > * { direction: rtl; }
+.su-duo--reversed { direction: ltr; }
+.su-duo--reversed > * { direction: rtl; }
 
-@media (max-width: 820px) {
-  .su-duo         { grid-template-columns: 1fr; gap: 20px; }
-  .su-duo--flip   { direction: rtl; }
-  .su-duo--flip > *{ direction: rtl; }
+.su-block-h {
+  font-family: var(--serif);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 700;
+  margin-bottom: 25px;
+  color: var(--black);
+  line-height: 1.2;
+}
+.su-block-h.center { text-align: center; }
+.su-block-h.light { color: #fff; }
+.su-block-h--sm { font-size: clamp(1.2rem, 2vw, 1.5rem); }
+
+.su-prose {
+  font-size: 1.15rem;
+  line-height: 1.75;
+}
+.su-prose.center { text-align: center; }
+.su-prose.light { color: rgba(255,255,255,0.8); }
+.su-prose :deep(p) { margin: 0 0 1em; }
+.su-prose :deep(p:last-child) { margin: 0; }
+
+.su-btn {
+  display: inline-block;
+  background-color: var(--cardinal);
+  color: #ffffff;
+  padding: 12px 24px;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border-radius: 0; 
+  margin-top: 25px;
+  transition: background-color 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+.su-btn:hover { background-color: var(--cardinal-dark); }
+
+/* ── MEDIA (Video / Standalone) ───────────────────── */
+.su-text-block, .su-media-block, .su-audio-block {
+  padding: 60px 0;
 }
 
-.su-duo__body { padding-top: 2px; }
-
-/* ── figure / image ────────────────────────────────── */
-.su-fig           { margin: 0; cursor: zoom-in; }
-.su-img-full      { cursor: zoom-in; }
-
-.su-fig__crop     { overflow: hidden; background: var(--pale); }
-.su-img-full__crop {
-  overflow: hidden; background: var(--pale);
-  max-width: var(--w); margin-inline: auto;
-  padding-inline: clamp(20px,4vw,52px);
+.su-video-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.su-video-wrapper.shadow {
+  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+.su-video-wrapper iframe, .su-video-wrapper video {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
 }
 
-/* Fixed height so images fill the column uniformly */
-.su-fig__crop img {
-  display: block; width: 100%;
-  height: clamp(220px, 28vw, 400px);
-  object-fit: cover;
-  transition: transform .5s cubic-bezier(.2,.8,.2,1);
+.su-caption {
+  margin-top: 15px; font-size: 0.95rem; color: var(--warm-grey);
+  font-style: italic; text-align: center;
 }
-.su-img-full__crop img {
-  display: block; width: 100%;
-  max-height: 480px; object-fit: cover;
-  transition: transform .5s cubic-bezier(.2,.8,.2,1);
+
+/* ── IMAGES ───────────────────────────────────────── */
+.su-figure { cursor: zoom-in; margin: 0; }
+.su-figure__crop { overflow: hidden; background: var(--sandstone); border-radius: 2px; }
+.su-figure__crop img {
+  width: 100%; display: block;
+  transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
-.su-fig:hover .su-fig__crop img,
-.su-img-full:hover .su-img-full__crop img { transform: scale(1.04); }
+.su-figure:hover .su-figure__crop img { transform: scale(1.03); }
+.su-figure__cap {
+  margin-top: 15px; font-size: 0.95rem; color: var(--warm-grey);
+  font-family: var(--sans); border-inline-start: 2px solid var(--cardinal);
+  padding-inline-start: 15px;
+}
+.su-figure__cap strong { color: var(--black); }
 
-.su-fig__cap       { margin-top: 10px; font: 400 .84rem/1.55 var(--sans); color: var(--muted); }
-.su-fig__cap strong{ color: var(--text); }
-
-/* ── video ─────────────────────────────────────────── */
-.su-media    { max-width: var(--w); margin-inline: auto; padding: 52px clamp(20px,4vw,52px); }
-.su-video    { position: relative; aspect-ratio: 16/9; background: #111; overflow: hidden; margin-bottom: 10px; }
-.su-video iframe, .su-video video { position: absolute; inset: 0; width: 100%; height: 100%; }
-.su-caption  { font: 400 .87rem/1.55 var(--sans); color: var(--muted); }
-
-/* ── audio row ─────────────────────────────────────── */
+/* ── AUDIO ────────────────────────────────────────── */
 .su-audio-row {
-  display: flex; align-items: center; gap: 48px; flex-wrap: wrap;
-  max-width: var(--w); margin-inline: auto;
-  padding: 32px clamp(20px,4vw,52px);
-  border-top: 3px solid var(--red); background: var(--pale);
+  display: flex; align-items: center; gap: 40px; flex-wrap: wrap;
+  padding: 40px; border-top: 3px solid var(--cardinal); background: var(--sandstone);
 }
-.su-audio-row__info { flex: 1; min-width: 200px; }
-.su-audio-row__el   { flex: 0 0 260px; width: 260px; }
-@media (max-width: 700px) { .su-audio-row__el{width:100%;flex:none} .su-audio-row{gap:16px} }
+.su-audio-row__info { flex: 1; min-width: 250px; }
+.su-audio-row__el   { flex: 0 0 300px; width: 300px; }
 
-/* ── pull quote ─────────────────────────────────────── */
-.su-pullquote { background: var(--pale); padding: 64px 0; }
-.su-pullquote__inner {
-  max-width: var(--w); margin-inline: auto;
-  padding-inline: clamp(20px,4vw,52px);
-  max-width: 840px; position: relative; padding-inline-start: 72px;
+/* ── STATS ────────────────────────────────────────── */
+.su-stats-band {
+  background: var(--black); color: #fff; padding: 100px 0; margin: 40px 0;
 }
-.su-pullquote__deco {
-  position: absolute; inset-inline-start: clamp(20px,4vw,52px); top: -14px;
-  font: 300 9rem/1 var(--serif); color: var(--red); opacity: .14;
-  pointer-events: none; user-select: none;
+.su-stats-grid {
+  display: flex; justify-content: center; flex-wrap: wrap;
+  margin-top: 50px; gap: 60px;
 }
-.su-pullquote__body { margin: 0; }
-.su-pullquote__body p {
-  font: 300 clamp(19px,2.6vw,27px)/1.58 var(--serif);
-  font-style: italic; color: var(--text); margin: 0 0 18px;
+.su-stat-card { text-align: center; flex: 1; min-width: 180px; }
+.su-stat-val {
+  display: block; font-family: var(--serif); font-size: clamp(3.5rem, 6vw, 5rem);
+  font-weight: 700; color: var(--gold); line-height: 1; margin-bottom: 15px;
 }
-.su-pullquote__body cite {
-  display: block; font: 700 .76rem var(--sans); font-style: normal;
-  letter-spacing: .1em; text-transform: uppercase; color: var(--red);
+.su-stat-bar {
+  display: block; width: 40px; height: 2px; background: rgba(255,255,255,0.2); margin: 0 auto 15px;
+}
+.su-stat-lbl {
+  display: block; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; font-size: 0.9rem; color: var(--fog);
 }
 
-/* ── stats band ─────────────────────────────────────── */
-.su-stats-band       { background: var(--dark); padding: 64px 0; }
-.su-stats-band__inner{ max-width: var(--w); margin-inline: auto; padding-inline: clamp(20px,4vw,52px); }
-.su-stats {
-  display: flex; flex-wrap: wrap;
-  border-top: 1px solid rgba(255,255,255,.12); margin-top: 44px;
+/* ── QUOTES ───────────────────────────────────────── */
+.su-quote-block {
+  background: var(--sandstone); padding: 100px 0; text-align: center; margin: 40px 0;
 }
-.su-stats__item {
-  flex: 1; min-width: 130px; padding: 32px 24px;
-  border-inline-end: 1px solid rgba(255,255,255,.1); text-align: center;
+.su-quote { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+.su-quote__text {
+  font-family: var(--serif); font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-style: italic; font-weight: 300; color: var(--cardinal);
+  margin: 0 auto 30px; line-height: 1.4;
 }
-.su-stats__item:last-child { border-inline-end: none; }
-.su-stats__num { display: block; font: 300 clamp(2.4rem,4.8vw,3.6rem)/1 var(--serif); color: var(--gold); margin-bottom: 12px; }
-.su-stats__bar { display: block; width: 26px; height: 2px; background: rgba(255,255,255,.18); margin: 0 auto 12px; }
-.su-stats__lbl { display: block; font: 700 .7rem var(--sans); text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.45); }
-@media (max-width:700px){
-  .su-stats{flex-direction:column}
-  .su-stats__item{border-inline-end:none;border-bottom:1px solid rgba(255,255,255,.08);padding:20px 16px}
-  .su-stats__item:last-child{border-bottom:none}
+.su-quote__author {
+  display: block; font-family: var(--sans); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.85rem;
+  color: var(--warm-grey); font-style: normal;
 }
 
-/* ── meta + page nav ────────────────────────────────── */
+/* ── META & NAV ───────────────────────────────────── */
 .su-meta {
-  max-width: var(--w); margin-inline: auto;
-  padding: 24px clamp(20px,4vw,52px) 48px;
-  border-top: 1px solid var(--line); color: var(--muted);
-  font: 400 .92rem/1.72 var(--sans);
+  padding: 40px 0 60px; border-top: 1px solid var(--line);
+  color: var(--warm-grey); font-size: 0.95rem;
 }
-.su-meta p { margin: 0; max-width: 72ch; }
-
-.su-page-nav {
-  max-width: var(--w); margin-inline: auto;
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  padding: 24px clamp(20px,4vw,52px) 60px; border-top: 1px solid var(--line);
-}
-.su-page-nav__label { font: 700 .72rem var(--sans); letter-spacing: .11em; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
-.su-page-nav__list  { display: flex; gap: 8px; flex-wrap: wrap; }
+.su-page-nav { padding: 0 0 80px; }
+.su-page-nav__inner { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+.su-page-nav__label { font: 700 .75rem var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--warm-grey); }
+.su-page-nav__list  { display: flex; gap: 10px; flex-wrap: wrap; }
 .su-page-nav__item  {
   background: none; border: 1px solid var(--line); border-radius: 2px;
-  padding: 7px 16px; font: 600 .86rem var(--sans); color: var(--text);
-  cursor: pointer; transition: border-color .14s, color .14s, background .14s;
+  padding: 8px 18px; font: 600 .9rem var(--sans); color: var(--black);
+  cursor: pointer; transition: all .15s;
 }
-.su-page-nav__item:hover           { border-color: var(--red); color: var(--red); }
-.su-page-nav__item--current        { background: var(--red); border-color: var(--red); color: #fff; }
+.su-page-nav__item:hover { border-color: var(--cardinal); color: var(--cardinal); }
+.su-page-nav__item--current { background: var(--cardinal); border-color: var(--cardinal); color: #fff; }
 
-/* ── lightbox ───────────────────────────────────────── */
+/* ── LIGHTBOX ─────────────────────────────────────── */
 .su-lb {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(10,8,6,.94);
-  display: flex; align-items: center; justify-content: center;
-  padding: 52px 20px 24px;
+  position: fixed; inset: 0; z-index: 9999; background: rgba(10,8,6,.96);
+  display: flex; align-items: center; justify-content: center; padding: 40px 20px;
 }
 .su-lb__close {
-  position: absolute; top: 14px; inset-inline-end: 18px;
-  width: 40px; height: 40px; border-radius: 50%;
-  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.2);
-  color: rgba(255,255,255,.8); display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background .14s, border-color .14s, color .14s;
+  position: absolute; top: 20px; inset-inline-end: 20px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.su-lb__close svg  { width: 17px; height: 17px; }
-.su-lb__close:hover{ background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.5); color:#fff; }
-.su-lb__fig        { margin: 0; text-align: center; }
-.su-lb__fig img    { max-width: 88vw; max-height: 76vh; display: block; margin: 0 auto; border-radius: 2px; }
-.su-lb__fig figcaption { margin-top: 12px; color: rgba(255,255,255,.55); font: 400 .84rem var(--sans); text-align: center; max-width: 58ch; margin-inline: auto; }
-.su-lb__fig figcaption strong { color: rgba(255,255,255,.9); }
+.su-lb__close:hover { background: rgba(255,255,255,.2); }
+.su-lb__fig img { max-width: 90vw; max-height: 80vh; display: block; margin: 0 auto; border-radius: 2px; }
+.su-lb__fig figcaption { margin-top: 15px; color: rgba(255,255,255,.7); font: 400 .9rem var(--sans); text-align: center; }
+.su-lb__fig figcaption strong { color: #fff; }
 
-/* ── lightbox transition ────────────────────────────── */
-.lb-enter-active { transition: opacity .26s ease, transform .26s ease; }
-.lb-leave-active { transition: opacity .18s ease; }
-.lb-enter-from   { opacity: 0; transform: scale(.97); }
-.lb-leave-to     { opacity: 0; }
+.lb-enter-active, .lb-leave-active { transition: opacity .25s ease; }
+.lb-enter-from, .lb-leave-to { opacity: 0; }
 
-/* ── responsive ─────────────────────────────────────── */
-@media (max-width: 840px) {
-  .hero__photo { height: clamp(190px,48vw,360px); }
-  .intro       { padding-block: 2rem 2.8rem; }
-  .su-text, .su-media, .su-duo { padding-block: 36px; }
-  .su-pullquote { padding-block: 44px; }
-  .su-stats-band{ padding-block: 44px; }
-}
-@media (max-width: 600px) {
-  .intro__title { letter-spacing: 0; }
-  .lang-bar__btn{ padding-inline: 10px; }
-  .su-pullquote__inner { padding-inline-start: 28px; }
-  .su-pullquote__deco  { font-size: 5.5rem; }
+/* ── RESPONSIVE ───────────────────────────────────── */
+@media (max-width: 900px) {
+  .su-duo { grid-template-columns: 1fr; gap: 40px; padding-block: 60px; }
+  .su-duo--reversed { direction: rtl; } /* Reset stack logic for mobile */
+  .su-audio-row__el { width: 100%; flex: none; }
+  .su-stats-grid { gap: 40px; }
 }
 </style>
