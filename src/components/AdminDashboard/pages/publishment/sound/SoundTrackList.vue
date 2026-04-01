@@ -394,17 +394,15 @@
                 </div>
               </div>
 
-              <!-- Tags & Keywords -->
-              <div class="dk__section" v-if="detailItem.tagsCkb?.length || detailItem.tagsKmr?.length || detailItem.keywordsCkb?.length || detailItem.keywordsKmr?.length">
+              <!-- Tags -->
+              <div class="dk__section" v-if="detailItem.tagsCkb?.length || detailItem.tagsKmr?.length">
                 <div class="dk__sec-head">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                  تاگ و کلیلەوشەکان
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                  تاگەکان
                 </div>
                 <div class="dk__tags-grid">
                   <div v-if="detailItem.tagsCkb?.length"     class="dk__tag-group"><span class="dk__tag-label">تاگ (سۆرانی)</span>    <div class="dk__tag-list"><span v-for="t in detailItem.tagsCkb"     :key="'tc'+t" class="dk__chip dk__chip--ckb">{{ t }}</span></div></div>
                   <div v-if="detailItem.tagsKmr?.length"     class="dk__tag-group"><span class="dk__tag-label">تاگ (کورمانجی)</span>  <div class="dk__tag-list"><span v-for="t in detailItem.tagsKmr"     :key="'tk'+t" class="dk__chip dk__chip--kmr">{{ t }}</span></div></div>
-                  <div v-if="detailItem.keywordsCkb?.length" class="dk__tag-group"><span class="dk__tag-label">کلیلەوشە (سۆرانی)</span><div class="dk__tag-list"><span v-for="k in detailItem.keywordsCkb" :key="'kc'+k" class="dk__chip dk__chip--kw">{{ k }}</span></div></div>
-                  <div v-if="detailItem.keywordsKmr?.length" class="dk__tag-group"><span class="dk__tag-label">کلیلەوشە (کورمانجی)</span><div class="dk__tag-list"><span v-for="k in detailItem.keywordsKmr" :key="'kk'+k" class="dk__chip dk__chip--kw">{{ k }}</span></div></div>
                 </div>
               </div>
 

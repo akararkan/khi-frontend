@@ -509,17 +509,7 @@
           </div>
         </section>
 
-        <!-- Keywords -->
-        <section class="chips-section chips-section--alt" v-if="pKeywords(activeProject).length">
-          <div class="container">
-            <div class="chips-block">
-              <h3 class="chips-block__heading">{{ lang.t('projects.keywords') }}</h3>
-              <div class="chips-row">
-                <span v-for="k in pKeywords(activeProject)" :key="k" class="chip chip--kw">{{ k }}</span>
-              </div>
-            </div>
-          </div>
-        </section>
+
 
         <!-- Related -->
         <section class="related" v-if="relatedProjects.length">
@@ -580,6 +570,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { API_BASE_URL } from '../consts.js'
 import { useLanguageStore } from '@/stores/useLanguageStore'
@@ -589,7 +580,8 @@ const heroImage = 'https://images.unsplash.com/photo-1497366216548-37526070297c?
 const fallbackCover = 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=1400&q=80'
 
 /* ── GLOBAL LANGUAGE STORE ── */
-const lang = useLanguageStore()
+const lang  = useLanguageStore()
+const route = useRoute()
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -1180,9 +1172,13 @@ watch(
 )
 
 /* ── Lifecycle ── */
-onMounted(() => {
-  fetchProjects(true)
+onMounted(async () => {
+  await fetchProjects(true)
   window.addEventListener('keydown', handleKeydown)
+  if (route.query.id) {
+    const target = projects.value.find(p => String(p.id) === String(route.query.id))
+    if (target) openProject(target)
+  }
 })
 
 onUnmounted(() => {

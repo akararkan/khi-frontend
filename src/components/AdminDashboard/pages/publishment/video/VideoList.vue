@@ -481,11 +481,11 @@
                 </div>
               </section>
 
-              <!-- ⑥  TAGS & KEYWORDS ──────────────────────────── -->
-              <section class="vd__sec" v-if="(detailItem.tagsCkb?.length || detailItem.tagsKmr?.length || detailItem.keywordsCkb?.length || detailItem.keywordsKmr?.length)">
+              <!-- ⑥  TAGS ──────────────────────────── -->
+              <section class="vd__sec" v-if="detailItem.tagsCkb?.length || detailItem.tagsKmr?.length">
                 <h3 class="vd__sec-title">
                   <span class="vd__sec-icon">🏷</span>
-                  تاگ و کیووەردەکان
+                  تاگەکان
                 </h3>
                 <div class="tags-section">
                   <!-- Tags CKB -->
@@ -500,20 +500,6 @@
                     <div class="tags-group__label tags-group__label--kmr">تاگی کورمانجی</div>
                     <div class="tags-group__items">
                       <span v-for="t in detailItem.tagsKmr" :key="t" class="tag-pill tag-pill--kmr">{{ t }}</span>
-                    </div>
-                  </div>
-                  <!-- Keywords CKB -->
-                  <div v-if="detailItem.keywordsCkb?.length" class="tags-group">
-                    <div class="tags-group__label tags-group__label--kw">کیووەردی سۆرانی</div>
-                    <div class="tags-group__items">
-                      <span v-for="k in detailItem.keywordsCkb" :key="k" class="tag-pill tag-pill--kw">{{ k }}</span>
-                    </div>
-                  </div>
-                  <!-- Keywords KMR -->
-                  <div v-if="detailItem.keywordsKmr?.length" class="tags-group">
-                    <div class="tags-group__label tags-group__label--kw">کیووەردی کورمانجی</div>
-                    <div class="tags-group__items">
-                      <span v-for="k in detailItem.keywordsKmr" :key="k" class="tag-pill tag-pill--kw">{{ k }}</span>
                     </div>
                   </div>
                 </div>

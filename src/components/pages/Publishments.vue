@@ -276,13 +276,6 @@
                 <div v-if="pTagsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsKmr(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div>
               </div>
             </div>
-            <div class="sfm-block" v-if="pKeywordsCkb(activeItem).length || pKeywordsKmr(activeItem).length">
-              <h3 class="sfm-block__title">{{ lbl('keywords') }}</h3>
-              <div class="sfm-bilingual-tags">
-                <div v-if="pKeywordsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsCkb(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div>
-                <div v-if="pKeywordsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsKmr(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div>
-              </div>
-            </div>
             <div class="sfm-block" v-if="activeItem.attachments?.length">
               <h3 class="sfm-block__title">هاوپێچەکان <span class="sfm-count">{{ activeItem.attachments.length }}</span></h3>
               <div class="sfm-attachments">
@@ -382,7 +375,6 @@
               <div class="sfm-block" v-if="activeItem.contentLanguages?.length"><h3 class="sfm-block__title">زمانی ناوەڕۆک</h3><div class="sfm-chips"><span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">{{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}</span></div></div>
               <div class="sfm-block" v-if="pTopicName(activeItem)"><h3 class="sfm-block__title">بابەت</h3><div class="sfm-chips"><span class="sfm-chip sfm-chip--topic">🏷️ {{ pTopicName(activeItem) }}</span></div></div>
               <div class="sfm-block" v-if="pTagsCkb(activeItem).length || pTagsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('tags') }}</h3><div class="sfm-bilingual-tags"><div v-if="pTagsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsCkb(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div><div v-if="pTagsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsKmr(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div></div></div>
-              <div class="sfm-block" v-if="pKeywordsCkb(activeItem).length || pKeywordsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('keywords') }}</h3><div class="sfm-bilingual-tags"><div v-if="pKeywordsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsCkb(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div><div v-if="pKeywordsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsKmr(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div></div></div>
               <div class="sfm-block sfm-block--timestamps"><div class="sfm-ts" v-if="activeItem.createdAt"><span class="sfm-ts__label">دروستکراوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span></div><div class="sfm-ts" v-if="activeItem.updatedAt"><span class="sfm-ts__label">نوێکراوەتەوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span></div></div>
             </div>
           </div>
@@ -418,7 +410,6 @@
               <div class="sfm-block" v-if="activeItem.contentLanguages?.length"><h3 class="sfm-block__title">زمانی ناوەڕۆک</h3><div class="sfm-chips"><span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">{{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}</span></div></div>
               <div class="sfm-block" v-if="pTopicName(activeItem)"><h3 class="sfm-block__title">بابەت</h3><div class="sfm-chips"><span class="sfm-chip sfm-chip--topic">🏷️ {{ pTopicName(activeItem) }}</span></div></div>
               <div class="sfm-block" v-if="pTagsCkb(activeItem).length || pTagsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('tags') }}</h3><div class="sfm-bilingual-tags"><div v-if="pTagsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsCkb(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div><div v-if="pTagsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsKmr(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div></div></div>
-              <div class="sfm-block" v-if="pKeywordsCkb(activeItem).length || pKeywordsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('keywords') }}</h3><div class="sfm-bilingual-tags"><div v-if="pKeywordsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsCkb(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div><div v-if="pKeywordsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsKmr(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div></div></div>
               <div class="sfm-block sfm-block--timestamps"><div class="sfm-ts" v-if="activeItem.createdAt"><span class="sfm-ts__label">دروستکراوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span></div><div class="sfm-ts" v-if="activeItem.updatedAt"><span class="sfm-ts__label">نوێکراوەتەوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span></div></div>
             </div>
           </div>
@@ -459,7 +450,6 @@
               <div class="sfm-block" v-if="activeItem.contentLanguages?.length"><h3 class="sfm-block__title">زمانی ناوەڕۆک</h3><div class="sfm-chips"><span v-for="l in activeItem.contentLanguages" :key="l" class="sfm-chip">{{ l === 'CKB' ? 'سۆرانی' : l === 'KMR' ? 'کورمانجی' : l }}</span></div></div>
               <div class="sfm-block" v-if="activeItem.ckbCoverUrl || activeItem.kmrCoverUrl || activeItem.hoverCoverUrl"><h3 class="sfm-block__title">کڤەرەکان</h3><div class="cover-slots-grid"><div class="cover-slot-full" v-if="activeItem.ckbCoverUrl" @click="openFullscreen(activeItem.ckbCoverUrl)"><img :src="activeItem.ckbCoverUrl" alt="CKB" @error="onImgError($event)" /><span class="cover-slot-full__lbl">سۆرانی</span></div><div class="cover-slot-full" v-if="activeItem.kmrCoverUrl" @click="openFullscreen(activeItem.kmrCoverUrl)"><img :src="activeItem.kmrCoverUrl" alt="KMR" @error="onImgError($event)" /><span class="cover-slot-full__lbl">کورمانجی</span></div><div class="cover-slot-full" v-if="activeItem.hoverCoverUrl" @click="openFullscreen(activeItem.hoverCoverUrl)"><img :src="activeItem.hoverCoverUrl" alt="Hover" @error="onImgError($event)" /><span class="cover-slot-full__lbl">هۆڤەر</span></div></div></div>
               <div class="sfm-block" v-if="pTagsCkb(activeItem).length || pTagsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('tags') }}</h3><div class="sfm-bilingual-tags"><div v-if="pTagsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsCkb(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div><div v-if="pTagsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="tag in pTagsKmr(activeItem)" :key="tag" class="sfm-chip sfm-chip--tag" @click="searchByTagGlobal(tag)">#{{ tag }}</span></div></div></div></div>
-              <div class="sfm-block" v-if="pKeywordsCkb(activeItem).length || pKeywordsKmr(activeItem).length"><h3 class="sfm-block__title">{{ lbl('keywords') }}</h3><div class="sfm-bilingual-tags"><div v-if="pKeywordsCkb(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--ckb" style="margin-bottom:8px">سۆرانی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsCkb(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div><div v-if="pKeywordsKmr(activeItem).length"><span class="sfm-lang-badge sfm-lang-badge--kmr" style="margin-bottom:8px">کورمانجی</span><div class="sfm-chips" style="margin-top:8px"><span v-for="kw in pKeywordsKmr(activeItem)" :key="kw" class="sfm-chip sfm-chip--kw">{{ kw }}</span></div></div></div></div>
               <div class="sfm-block sfm-block--timestamps"><div class="sfm-ts" v-if="activeItem.createdAt"><span class="sfm-ts__label">دروستکراوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.createdAt) }}</span></div><div class="sfm-ts" v-if="activeItem.updatedAt"><span class="sfm-ts__label">نوێکراوەتەوە:</span><span class="sfm-ts__val">{{ formatDate(activeItem.updatedAt) }}</span></div></div>
             </div>
           </div>
@@ -597,11 +587,13 @@
  
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { API_BASE_URL } from '../consts.js'
 import { useLanguageStore } from '@/stores/useLanguageStore'
- 
-const lang = useLanguageStore()
+
+const lang  = useLanguageStore()
+const route = useRoute()
 const fallbackCover = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f4f4f5'/%3E%3Crect x='160' y='95' width='80' height='65' rx='8' fill='%23e4e4e7'/%3E%3Ccircle cx='185' cy='118' r='10' fill='%23d4d4d8'/%3E%3Cpolygon points='160,160 200,125 230,148 260,125 280,160' fill='%23d4d4d8'/%3E%3C/svg%3E"
 const currentYear = new Date().getFullYear()
 const audioError = ref(null)
@@ -917,7 +909,25 @@ function handleKeydown(e) {
 }
 function handleClickOutside(e) { if (!e.target.closest('.tabnav__item')) openDropdownKey.value = null }
 watch(() => lang.activeLang, () => { if (isFullscreen.value) isFullscreen.value = false })
-onMounted(() => { fetchAll(); window.addEventListener('keydown', handleKeydown); document.addEventListener('click', handleClickOutside) })
+onMounted(async () => {
+  await fetchAll()
+  window.addEventListener('keydown', handleKeydown)
+  document.addEventListener('click', handleClickOutside)
+  if (route.query.id && route.query.type) {
+    const typeMap = {
+      video:   { tab: 'video',   list: videos },
+      sound:   { tab: 'sound',   list: sounds },
+      writing: { tab: 'writing', list: writings },
+      image:   { tab: 'image',   list: images },
+    }
+    const entry = typeMap[route.query.type]
+    if (entry) {
+      activeTab.value = entry.tab
+      const target = entry.list.value.find(i => String(i.id) === String(route.query.id))
+      if (target) openItem(target)
+    }
+  }
+})
 onUnmounted(() => { stopAudio(); if (slideTimer) clearInterval(slideTimer); if (dropCloseTimer) clearTimeout(dropCloseTimer); window.removeEventListener('keydown', handleKeydown); document.removeEventListener('click', handleClickOutside) })
 </script>
 

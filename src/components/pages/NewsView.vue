@@ -305,12 +305,12 @@
               </section>
 
               <!-- Keywords -->
-              <section class="kw-section" v-if="nKeywords(activeNews).length">
+              <!-- <section class="kw-section" v-if="nKeywords(activeNews).length">
                 <h4 class="kw-heading">{{ lbl('keywords') }}</h4>
                 <div class="kw-cloud">
                   <span v-for="kw in nKeywords(activeNews)" :key="kw" class="kw-tag">{{ kw }}</span>
                 </div>
-              </section>
+              </section> -->
 
             </main>
 
@@ -400,12 +400,14 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { useLanguageStore } from '@/stores/useLanguageStore'
 import { API_BASE_URL } from '@/components/consts.js'
 
-const lang = useLanguageStore()
-const api = axios.create({ baseURL: API_BASE_URL, timeout: 15000 })
+const lang  = useLanguageStore()
+const route = useRoute()
+const api   = axios.create({ baseURL: API_BASE_URL, timeout: 15000 })
 
 // ── i18n ──────────────────────────────────────────────────────
 const i18n = {
@@ -596,6 +598,10 @@ onMounted(async () => {
   try {
     const { data } = await api.get('/news')
     newsList.value = data?.data || data || []
+    if (route.query.id) {
+      const target = newsList.value.find(n => String(n.id) === String(route.query.id))
+      if (target) openNews(target)
+    }
   } catch (err) {
     console.error('[News] fetch error:', err)
   } finally {

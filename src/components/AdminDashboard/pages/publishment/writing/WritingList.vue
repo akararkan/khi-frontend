@@ -295,9 +295,9 @@
                 </div>
               </div>
 
-              <!-- Tags & Keywords -->
-              <div class="dk__section" v-if="detailItem.tagsCkb?.length || detailItem.tagsKmr?.length || detailItem.keywordsCkb?.length || detailItem.keywordsKmr?.length">
-                <div class="dk__sec-head"># تاگ و کلیلەوشەکان</div>
+              <!-- Tags -->
+              <div class="dk__section" v-if="detailItem.tagsCkb?.length || detailItem.tagsKmr?.length">
+                <div class="dk__sec-head"># تاگەکان</div>
                 <div class="dk__tags-grid">
                   <div v-if="detailItem.tagsCkb?.length" class="dk__tag-group">
                     <span class="dk__tag-label">تاگ (سۆرانی)</span>
@@ -309,18 +309,6 @@
                     <span class="dk__tag-label">تاگ (کورمانجی)</span>
                     <div class="dk__tag-list">
                       <span v-for="t in detailItem.tagsKmr" :key="'tk'+t" class="dk__chip dk__chip--kmr">{{ t }}</span>
-                    </div>
-                  </div>
-                  <div v-if="detailItem.keywordsCkb?.length" class="dk__tag-group">
-                    <span class="dk__tag-label">کلیلەوشە (سۆرانی)</span>
-                    <div class="dk__tag-list">
-                      <span v-for="k in detailItem.keywordsCkb" :key="'kc'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
-                    </div>
-                  </div>
-                  <div v-if="detailItem.keywordsKmr?.length" class="dk__tag-group">
-                    <span class="dk__tag-label">کلیلەوشە (کورمانجی)</span>
-                    <div class="dk__tag-list">
-                      <span v-for="k in detailItem.keywordsKmr" :key="'kk'+k" class="dk__chip dk__chip--kw">{{ k }}</span>
                     </div>
                   </div>
                 </div>

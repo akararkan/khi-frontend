@@ -56,6 +56,8 @@ import AdminAboutEditor from './components/AdminDashboard/pages/about/AdminAbout
 import ContactList   from './components/AdminDashboard/pages/contact/ContactList.vue'
 import ContactEditor from './components/AdminDashboard/pages/contact/ContactEditor.vue'
 
+import SearchResults from './components/SearchResult.vue'
+
 const routes = [
   // ── Public ────────────────────────────────────────────────────
   { path: '/',             name: 'Home',         component: Home },
@@ -67,6 +69,8 @@ const routes = [
   { path: '/publishments', name: 'Publishments', component: Publishments },
   { path: '/projects',     name: 'Projects',     component: Projects },
   { path: '/news',         name: 'News',         component: NewsView },
+  { path: '/search',  name: 'Search',       component: SearchResults },
+  
 
   // ── Auth ──────────────────────────────────────────────────────
   { path: '/login',    name: 'Login',    component: Login,    meta: { guestOnly: true } },

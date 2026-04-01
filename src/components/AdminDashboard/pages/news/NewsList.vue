@@ -510,28 +510,6 @@
                     </Transition>
                   </div>
 
-                  <div class="acc" v-if="activeKeywords(detail).length">
-                    <button class="acc__hd" @click="toggleAcc('kw')">
-                      <span class="acc__hd-left">
-                        <span class="acc__ico acc__ico--kw">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-                          </svg>
-                        </span>
-                        <span class="acc__title">کیووەردەکان</span>
-                        <span class="acc__badge acc__badge--kw">{{ activeKeywords(detail).length }}</span>
-                      </span>
-                      <svg class="acc__chevron" :class="{ 'acc__chevron--open': openAccordions.has('kw') }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
-                    </button>
-                    <Transition name="acc-body">
-                      <div v-if="openAccordions.has('kw')" class="acc__body">
-                        <div class="acc__chips">
-                          <span v-for="t in activeKeywords(detail)" :key="t" class="acc__chip acc__chip--kw">{{ t }}</span>
-                        </div>
-                      </div>
-                    </Transition>
-                  </div>
-
                   <div class="acc" v-if="allMediaItems.length">
                     <button class="acc__hd" @click="toggleAcc('media')">
                       <span class="acc__hd-left">

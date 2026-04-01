@@ -372,11 +372,11 @@
                 </div>
               </section>
 
-              <!-- ── 3. TAGS & KEYWORDS ── -->
-              <section class="dk__sec" v-if="hasTags(detailItem)">
+              <!-- ── 3. TAGS ── -->
+              <section class="dk__sec" v-if="detailItem?.tags?.ckb?.length || detailItem?.tags?.kmr?.length">
                 <div class="dk__sec-label">
                   <span class="dk__sec-icon">🏷</span>
-                  تاگ و کلیلەوشەکان
+                  تاگەکان
                 </div>
                 <div class="dk__tags-wrap">
                   <div class="dk__tag-row" v-if="detailItem.tags?.ckb?.length">
@@ -389,18 +389,6 @@
                     <span class="dk__tag-label dk__tag-label--kmr">تاگی کورمانجی</span>
                     <div class="dk__tag-chips">
                       <span v-for="t in detailItem.tags.kmr" :key="t" class="dk__chip dk__chip--kmr">{{ t }}</span>
-                    </div>
-                  </div>
-                  <div class="dk__tag-row" v-if="detailItem.keywords?.ckb?.length">
-                    <span class="dk__tag-label dk__tag-label--kw">کلیلەوشەی سۆرانی</span>
-                    <div class="dk__tag-chips">
-                      <span v-for="k in detailItem.keywords.ckb" :key="k" class="dk__chip dk__chip--kw">{{ k }}</span>
-                    </div>
-                  </div>
-                  <div class="dk__tag-row" v-if="detailItem.keywords?.kmr?.length">
-                    <span class="dk__tag-label dk__tag-label--kw">کلیلەوشەی کورمانجی</span>
-                    <div class="dk__tag-chips">
-                      <span v-for="k in detailItem.keywords.kmr" :key="k" class="dk__chip dk__chip--kw">{{ k }}</span>
                     </div>
                   </div>
                 </div>

@@ -4,16 +4,16 @@
     <div class="scroll-progress" :style="{ transform: `scaleX(${scrollProgress})` }" />
 
     <!-- MAIN NAVIGATION -->
-    <nav 
-      class="main-nav" 
-      :class="{ 
-        'is-scrolled': isScrolled, 
+    <nav
+      class="main-nav"
+      :class="{
+        'is-scrolled': isScrolled,
         'is-hidden': isNavHidden,
-        'is-at-top': isAtTop 
+        'is-at-top': isAtTop
       }"
     >
       <div class="main-nav__container">
-        <!-- Logo (Image) -->
+        <!-- Logo -->
         <router-link to="/" class="main-nav__logo">
           <img
             src="@/assets/images/khi_logo.jpeg"
@@ -36,7 +36,7 @@
           </li>
         </ul>
 
-        <!-- ★ Library & Archive Buttons ★ -->
+        <!-- Library & Archive Buttons -->
         <div class="featured-btns">
           <router-link to="/library" class="featured-btn featured-btn--library">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
@@ -59,7 +59,7 @@
         <!-- Right Actions -->
         <div class="main-nav__actions">
           <!-- Search Button -->
-          <button class="main-nav__search-btn" @click="openSearch" :aria-label="lang.t('nav.search')">
+          <button class="main-nav__search-btn" @click="router.push('/search')" :aria-label="lang.t('nav.search')">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -157,7 +157,7 @@
             <span class="login-btn__text">{{ lang.t('nav.login') }}</span>
           </router-link>
 
-          <!-- ── Language Switcher ── -->
+          <!-- Language Switcher -->
           <div class="lang-switcher" ref="langSwitcherRef">
             <button class="lang-switcher__trigger" @click="toggleLangMenu" :aria-expanded="langMenuOpen">
               <div class="lang-switcher__flag">
@@ -218,72 +218,6 @@
       </div>
     </nav>
 
-    <!-- SEARCH OVERLAY -->
-    <Transition name="search-fade">
-      <div class="search-overlay" v-show="searchOpen" @click.self="closeSearch">
-        <div class="search-overlay__content">
-          <button class="search-overlay__close" @click="closeSearch" :aria-label="lang.t('ui.close')">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-          <h2 class="search-overlay__title">{{ lang.t('search.title') }}</h2>
-          <div class="search-overlay__form">
-            <input
-              ref="searchInputRef"
-              type="text"
-              class="search-overlay__input"
-              :placeholder="lang.t('search.placeholder')"
-              v-model="searchQuery"
-              @input="onSearchInput"
-              @keyup.enter="performSearch"
-              @keyup.escape="closeSearch"
-            />
-            <button class="search-overlay__submit" @click="performSearch" :aria-label="lang.t('nav.search')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.3-4.3"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Live Search Results -->
-          <div class="search-results" v-if="searchQuery.trim().length >= 2">
-            <div v-if="searchLoading" class="search-results__loading">
-              <span class="search-spinner"></span>
-            </div>
-            <div v-else-if="searchResults.length" class="search-results__list">
-              <button
-                v-for="(result, idx) in searchResults.slice(0, 8)"
-                :key="`${result._type}-${result.id}-${idx}`"
-                class="search-result-item"
-                @click="goToResult(result)"
-              >
-                <span class="search-result-item__icon">{{ result._icon }}</span>
-                <div class="search-result-item__info">
-                  <span class="search-result-item__title">{{ result._title }}</span>
-                  <span class="search-result-item__meta">{{ result._typeName }}</span>
-                </div>
-                <svg class="search-result-item__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </button>
-            </div>
-            <div v-else class="search-results__empty">
-              {{ lang.activeLang === 'CKB' ? 'هیچ ئەنجامێک نەدۆزرایەوە' : 'Encam nehat dîtin' }}
-            </div>
-          </div>
-          <div class="search-overlay__quick">
-            <span class="search-overlay__quick-label">{{ lang.t('search.quickLabel') }}</span>
-            <router-link to="/library" class="search-overlay__quick-link" @click="closeSearch">{{ lang.t('nav.library') }}</router-link>
-            <router-link to="/archive" class="search-overlay__quick-link" @click="closeSearch">{{ lang.t('nav.archive') }}</router-link>
-            <router-link to="/publishments" class="search-overlay__quick-link" @click="closeSearch">{{ lang.t('nav.publishments') }}</router-link>
-            <router-link to="/projects" class="search-overlay__quick-link" @click="closeSearch">{{ lang.t('nav.projects') }}</router-link>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
     <!-- MOBILE MENU -->
     <Transition name="mobile-slide">
       <div class="mobile-menu" v-show="mobileMenuOpen">
@@ -311,7 +245,7 @@
             <input type="text" :placeholder="lang.t('nav.searchPlaceholder')" v-model="searchQuery" @keyup.enter="performSearch" />
           </div>
 
-          <!-- ★ Mobile Library & Archive Buttons ★ -->
+          <!-- Mobile Library & Archive Buttons -->
           <div class="mobile-menu__featured">
             <router-link to="/library" class="mobile-featured-btn mobile-featured-btn--library" @click="closeMobileMenu">
               <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
@@ -408,10 +342,10 @@
           </div>
 
           <div class="mobile-menu__quick">
-            <router-link to="/students" @click="closeMobileMenu">{{ lang.t('mobile.students') }}</router-link>
+            <router-link to="/students"    @click="closeMobileMenu">{{ lang.t('mobile.students') }}</router-link>
             <router-link to="/researchers" @click="closeMobileMenu">{{ lang.t('mobile.researchers') }}</router-link>
-            <router-link to="/visitors" @click="closeMobileMenu">{{ lang.t('mobile.visitors') }}</router-link>
-            <router-link to="/partners" @click="closeMobileMenu">{{ lang.t('mobile.partners') }}</router-link>
+            <router-link to="/visitors"    @click="closeMobileMenu">{{ lang.t('mobile.visitors') }}</router-link>
+            <router-link to="/partners"    @click="closeMobileMenu">{{ lang.t('mobile.partners') }}</router-link>
           </div>
         </div>
       </div>
@@ -420,23 +354,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useLanguageStore } from '@/stores/useLanguageStore'
-import axios from 'axios'
-import { API_BASE_URL } from './consts.js'
 
 const router    = useRouter()
 const authStore = useAuthStore()
 const lang      = useLanguageStore()
 
-const api = axios.create({ baseURL: API_BASE_URL, timeout: 12000 })
-
 // ── State ──────────────────────────────────────────────────────────
 const searchQuery     = ref('')
-const searchOpen      = ref(false)
-const searchInputRef  = ref(null)
 const langMenuOpen    = ref(false)
 const langSwitcherRef = ref(null)
 const mobileMenuOpen  = ref(false)
@@ -448,110 +376,18 @@ const scrollProgress  = ref(0)
 const userMenuOpen    = ref(false)
 const userMenuRef     = ref(null)
 
-// New: Track scroll-up amount for smart reveal
-const scrollUpStartY  = ref(0)
-const scrollUpThreshold = 40 // px - navbar reveals after scrolling up this amount
+const scrollUpStartY    = ref(0)
+const scrollUpThreshold = 40
 
 const avatarError = ref(false)
 watch(() => authStore.profileImage, () => { avatarError.value = false })
 
-// ── Live Search State ────────────────────────────────────────────
-const searchResults = ref([])
-const searchLoading = ref(false)
-const searchCache = ref({ sounds: [], videos: [], writings: [], images: [], news: [], projects: [] })
-let searchDebounce = null
-
-async function loadSearchData() {
-  if (searchCache.value.sounds.length || searchCache.value.videos.length) return
-  try {
-    const [s, v, w, i, n, p] = await Promise.allSettled([
-      api.get('/soundtracks'),
-      api.get('/videos', { params: { page: 0, size: 200 } }),
-      api.get('/writings', { params: { page: 0, size: 200 } }),
-      api.get('/image-collections'),
-      api.get('/news'),
-      api.get('/projects/getAll', { params: { page: 0, size: 50 } })
-    ])
-    if (s.status === 'fulfilled') { const d = s.value.data; searchCache.value.sounds = Array.isArray(d) ? d : d?.data || [] }
-    if (v.status === 'fulfilled') { const d = v.value.data; searchCache.value.videos = d?.content || d?.data?.content || [] }
-    if (w.status === 'fulfilled') { const d = w.value.data; searchCache.value.writings = d?.data?.content || d?.content || [] }
-    if (i.status === 'fulfilled') { const d = i.value.data; searchCache.value.images = d?.data || d || [] }
-    if (n.status === 'fulfilled') { searchCache.value.news = n.value.data?.data || n.value.data || [] }
-    if (p.status === 'fulfilled') { const d = p.value.data; searchCache.value.projects = d?.data?.content || d?.content || [] }
-  } catch (e) { console.warn('Search data load error:', e.message) }
-}
-
-function getTitle(item) {
-  const c = lang.activeLang === 'CKB'
-  return (c ? item.ckbContent?.title : item.kmrContent?.title) || (c ? item.kmrContent?.title : item.ckbContent?.title) || ''
-}
-function getDesc(item) {
-  const c = lang.activeLang === 'CKB'
-  return (c ? item.ckbContent?.description : item.kmrContent?.description) || (c ? item.kmrContent?.description : item.ckbContent?.description) || ''
-}
-
-function searchInItem(item, q) {
-  const title = getTitle(item).toLowerCase()
-  const desc = getDesc(item).toLowerCase()
-  const tags = [...(item.tagsCkb || []), ...(item.tagsKmr || []), ...(item.tags?.ckb || []), ...(item.tags?.kmr || [])].join(' ').toLowerCase()
-  const keywords = [...(item.keywordsCkb || []), ...(item.keywordsKmr || []), ...(item.keywords?.ckb || []), ...(item.keywords?.kmr || [])].join(' ').toLowerCase()
-  const writer = (item.ckbContent?.writer || item.kmrContent?.writer || '').toLowerCase()
-  const director = (item.ckbContent?.director || item.kmrContent?.director || item.director || '').toLowerCase()
-  return title.includes(q) || desc.includes(q) || tags.includes(q) || keywords.includes(q) || writer.includes(q) || director.includes(q)
-}
-
-function runSearch(q) {
-  if (!q || q.length < 2) { searchResults.value = []; return }
-  const al = lang.activeLang === 'CKB'
-  const typeName = (ckb, kmr) => al ? ckb : kmr
-  const results = []
-  
-  searchCache.value.videos.forEach(item => {
-    if (searchInItem(item, q)) results.push({ ...item, _type: 'video', _icon: '🎬', _title: getTitle(item), _typeName: typeName('ڤیدیۆ', 'Vîdyo') })
-  })
-  searchCache.value.sounds.forEach(item => {
-    if (searchInItem(item, q)) results.push({ ...item, _type: 'sound', _icon: '🎵', _title: getTitle(item), _typeName: typeName('دەنگ', 'Deng') })
-  })
-  searchCache.value.writings.forEach(item => {
-    if (searchInItem(item, q)) results.push({ ...item, _type: 'writing', _icon: '📚', _title: getTitle(item), _typeName: typeName('نووسین', 'Nivîsar') })
-  })
-  searchCache.value.images.forEach(item => {
-    if (searchInItem(item, q)) results.push({ ...item, _type: 'image', _icon: '🖼️', _title: getTitle(item), _typeName: typeName('وێنە', 'Wêne') })
-  })
-  searchCache.value.news.forEach(item => {
-    if (searchInItem(item, q)) results.push({ ...item, _type: 'news', _icon: '📰', _title: getTitle(item), _typeName: typeName('هەواڵ', 'Nûçe') })
-  })
-  searchCache.value.projects.forEach(item => {
-    if (searchInItem(item, q)) results.push({ ...item, _type: 'project', _icon: '📂', _title: getTitle(item), _typeName: typeName('پڕۆژە', 'Proje') })
-  })
-  
-  searchResults.value = results
-}
-
-function onSearchInput() {
-  clearTimeout(searchDebounce)
-  searchDebounce = setTimeout(() => {
-    const q = searchQuery.value.trim().toLowerCase()
-    if (q.length < 2) { searchResults.value = []; return }
-    searchLoading.value = true
-    loadSearchData().then(() => {
-      runSearch(q)
-      searchLoading.value = false
-    })
-  }, 300)
-}
-
-function goToResult(result) {
-  closeSearch()
+// ── ★ Mobile search → /search results page ───────────────────────
+function performSearch() {
+  const q = searchQuery.value.trim()
+  if (!q) return
   closeMobileMenu()
-  if (result._type === 'project') {
-    router.push('/projects')
-  } else if (result._type === 'news') {
-    router.push('/')
-    nextTick(() => document.getElementById('news')?.scrollIntoView({ behavior: 'smooth' }))
-  } else {
-    router.push('/publishments')
-  }
+  router.push({ path: '/search', query: { q } })
 }
 
 // ── Role display label ────────────────────────────────────────────
@@ -571,7 +407,7 @@ const dialects = [
   { code: 'KMR', name: 'Kurdî (Kurmancî)', shortName: 'Kurdî', description: 'Kurdiya Bakur' },
 ]
 
-// ── Menu items ──
+// ── Menu items ────────────────────────────────────────────────────
 const menuItems = computed(() => [
   { path: '/',             label: lang.t('nav.home') },
   { path: '/projects',     label: lang.t('nav.projects') },
@@ -581,52 +417,45 @@ const menuItems = computed(() => [
   { path: '/contact',      label: lang.t('nav.contact') },
 ])
 
-// ── Smart Scroll Logic with Up-Threshold ───────────────────────────
+// ── Smart Scroll ──────────────────────────────────────────────────
 let ticking = false
 
 function handleScroll() {
   if (!ticking) {
     window.requestAnimationFrame(() => {
       const currentScrollY = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
-      
-      // Calculate scroll progress (0 to 1)
+      const docHeight      = document.documentElement.scrollHeight - window.innerHeight
+
       scrollProgress.value = docHeight > 0 ? currentScrollY / docHeight : 0
-      
-      // Determine scroll direction
+
       const scrollingDown = currentScrollY > lastScrollY.value
-      const hideThreshold = 100 // Min scroll before hiding starts
-      
-      // Update basic states
-      isAtTop.value = currentScrollY < 10
+      const hideThreshold = 100
+
+      isAtTop.value    = currentScrollY < 10
       isScrolled.value = currentScrollY > 10
-      
-      // Smart hide/show logic with threshold for scrolling up:
+
       if (currentScrollY < hideThreshold) {
-        // Always show when near top
-        isNavHidden.value = false
-        scrollUpStartY.value = 0 // Reset tracking
+        isNavHidden.value    = false
+        scrollUpStartY.value = 0
       } else if (!mobileMenuOpen.value) {
         if (scrollingDown) {
-          // Scrolling down: Hide navbar (with small buffer)
           if (currentScrollY > lastScrollY.value + 5) {
-            isNavHidden.value = true
-            scrollUpStartY.value = currentScrollY // Mark where we started hiding
+            isNavHidden.value    = true
+            scrollUpStartY.value = currentScrollY
           }
         } else {
-          // Scrolling up: Only show after scrolling up by threshold amount
           if (isNavHidden.value) {
             const scrolledUpAmount = scrollUpStartY.value - currentScrollY
             if (scrolledUpAmount > scrollUpThreshold) {
-              isNavHidden.value = false
-              scrollUpStartY.value = 0 // Reset
+              isNavHidden.value    = false
+              scrollUpStartY.value = 0
             }
           }
         }
       }
-      
+
       lastScrollY.value = currentScrollY
-      ticking = false
+      ticking           = false
     })
     ticking = true
   }
@@ -638,6 +467,7 @@ function toggleLangMenu()    { langMenuOpen.value = !langMenuOpen.value }
 
 // ── Auth ──────────────────────────────────────────────────────────
 function toggleUserMenu() { userMenuOpen.value = !userMenuOpen.value }
+
 async function handleLogout() {
   userMenuOpen.value = false
   closeMobileMenu()
@@ -645,57 +475,28 @@ async function handleLogout() {
   window.location.href = '/login?logout=1'
 }
 
-// ── Search ────────────────────────────────────────────────────────
-function openSearch() {
-  searchOpen.value = true
-  document.body.style.overflow = 'hidden'
-  nextTick(() => searchInputRef.value?.focus())
-  loadSearchData()
-}
-function closeSearch() {
-  searchOpen.value = false
-  searchQuery.value = ''
-  searchResults.value = []
-  document.body.style.overflow = ''
-}
-function performSearch() {
-  if (searchQuery.value.trim()) {
-    const q = searchQuery.value.trim().toLowerCase()
-    searchLoading.value = true
-    loadSearchData().then(() => {
-      runSearch(q)
-      searchLoading.value = false
-      if (searchResults.value.length === 1) {
-        goToResult(searchResults.value[0])
-      }
-    })
-  }
-}
 
 // ── Mobile ────────────────────────────────────────────────────────
 function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value
   document.body.style.overflow = mobileMenuOpen.value ? 'hidden' : ''
-  // When opening mobile menu, ensure nav is visible
-  if (mobileMenuOpen.value) {
-    isNavHidden.value = false
-  }
+  if (mobileMenuOpen.value) isNavHidden.value = false
 }
+
 function closeMobileMenu() {
-  mobileMenuOpen.value = false
+  mobileMenuOpen.value         = false
   document.body.style.overflow = ''
 }
 
 // ── Click outside ─────────────────────────────────────────────────
 function handleClickOutside(e) {
   if (langSwitcherRef.value && !langSwitcherRef.value.contains(e.target)) langMenuOpen.value = false
-  if (userMenuRef.value    && !userMenuRef.value.contains(e.target))    userMenuOpen.value = false
+  if (userMenuRef.value     && !userMenuRef.value.contains(e.target))     userMenuOpen.value = false
 }
 
 // ── Keyboard ──────────────────────────────────────────────────────
 function handleKeydown(e) {
   if (e.key === 'Escape') {
-    if (searchOpen.value)     closeSearch()
     if (mobileMenuOpen.value) closeMobileMenu()
     langMenuOpen.value = false
     userMenuOpen.value = false
@@ -707,15 +508,15 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   document.addEventListener('click', handleClickOutside)
   document.addEventListener('keydown', handleKeydown)
-  // Initial check
   handleScroll()
 })
+
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleKeydown)
-  if (searchDebounce) clearTimeout(searchDebounce)
 })
+
 watch(() => router.currentRoute.value, () => {
   closeMobileMenu()
   userMenuOpen.value = false
@@ -761,10 +562,8 @@ watch(() => router.currentRoute.value, () => {
 /* ─── SCROLL PROGRESS BAR ───────────────────────────────────────── */
 .scroll-progress {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3px;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
   background: linear-gradient(90deg, var(--brand-primary), var(--brand-gold));
   transform-origin: left;
   z-index: 1001;
@@ -785,7 +584,6 @@ watch(() => router.currentRoute.value, () => {
   will-change: transform;
 }
 
-/* Scrolled State */
 .main-nav.is-scrolled {
   box-shadow: 0 4px 24px rgba(140, 21, 21, .08), 0 1px 4px rgba(0,0,0,.06);
   border-bottom-color: transparent;
@@ -794,12 +592,8 @@ watch(() => router.currentRoute.value, () => {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Hidden State (Smart Scroll) */
-.main-nav.is-hidden {
-  transform: translateY(-100%);
-}
+.main-nav.is-hidden { transform: translateY(-100%); }
 
-/* At Top State (Additional transparency when at hero section) */
 .main-nav.is-at-top {
   background: linear-gradient(180deg, var(--white) 0%, rgba(255,255,255,0.95) 100%);
 }
@@ -817,7 +611,7 @@ watch(() => router.currentRoute.value, () => {
 @media (min-width: 768px)  { .main-nav__container { padding: 0 2rem; height: 78px; } }
 @media (min-width: 1024px) { .main-nav__container { padding: 0 3rem; height: 84px; } }
 
-/* ─── LOGO (IMAGE) ──────────────────────────────────────────────── */
+/* ─── LOGO ──────────────────────────────────────────────────────── */
 .main-nav__logo {
   display: flex;
   align-items: center;
@@ -827,25 +621,19 @@ watch(() => router.currentRoute.value, () => {
   position: relative;
   z-index: 2;
 }
-.main-nav__logo:hover {
-  opacity: .88;
-  transform: scale(1.02);
-}
+.main-nav__logo:hover { opacity: .88; transform: scale(1.02); }
 .main-nav__logo-img {
-  height: 46px;
-  width: auto;
+  height: 46px; width: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
   transition: height 0.3s ease;
 }
-.main-nav.is-scrolled .main-nav__logo-img {
-  height: 42px;
-}
-@media (min-width: 768px)  { 
+.main-nav.is-scrolled .main-nav__logo-img { height: 42px; }
+@media (min-width: 768px)  {
   .main-nav__logo-img { height: 52px; }
   .main-nav.is-scrolled .main-nav__logo-img { height: 48px; }
 }
-@media (min-width: 1280px) { 
+@media (min-width: 1280px) {
   .main-nav__logo-img { height: 58px; }
   .main-nav.is-scrolled .main-nav__logo-img { height: 52px; }
 }
@@ -854,8 +642,7 @@ watch(() => router.currentRoute.value, () => {
 .main-nav__menu {
   display: none;
   list-style: none;
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   gap: .125rem;
   flex: 1;
   justify-content: center;
@@ -879,31 +666,21 @@ watch(() => router.currentRoute.value, () => {
 .main-nav__link::after {
   content: '';
   position: absolute;
-  bottom: -2px;
-  right: .5rem;
-  left: .5rem;
+  bottom: -2px; right: .5rem; left: .5rem;
   height: 3px;
   background: linear-gradient(90deg, var(--brand-primary), var(--brand-primary-light));
   border-radius: 3px 3px 0 0;
   transform: scaleX(0);
   transition: transform var(--transition-normal) cubic-bezier(.16, 1, .3, 1);
 }
-.main-nav__link:hover {
-  color: var(--brand-primary);
-  background-color: rgba(140, 21, 21, .04);
-}
+.main-nav__link:hover { color: var(--brand-primary); background-color: rgba(140, 21, 21, .04); }
 .main-nav__link:hover::after,
 .main-nav__link.is-active::after,
-.main-nav__link.is-exact-active::after {
-  transform: scaleX(1);
-}
+.main-nav__link.is-exact-active::after { transform: scaleX(1); }
 .main-nav__link.is-active,
-.main-nav__link.is-exact-active {
-  color: var(--brand-primary);
-  font-weight: 700;
-}
+.main-nav__link.is-exact-active { color: var(--brand-primary); font-weight: 700; }
 
-/* ─── ★ FEATURED BUTTONS (Library & Archive) ★ ──────────────────── */
+/* ─── FEATURED BUTTONS ──────────────────────────────────────────── */
 .featured-btns {
   display: none;
   align-items: center;
@@ -928,53 +705,32 @@ watch(() => router.currentRoute.value, () => {
 }
 .featured-btn::before {
   content: '';
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   opacity: 0;
   transition: opacity .3s ease;
   border-radius: inherit;
   z-index: 0;
 }
-.featured-btn:hover::before {
-  opacity: 1;
-}
-.featured-btn svg,
-.featured-btn span {
-  position: relative;
-  z-index: 1;
-}
-.featured-btn:hover {
-  transform: translateY(-2px);
-}
-.featured-btn:active {
-  transform: translateY(0);
-}
+.featured-btn:hover::before { opacity: 1; }
+.featured-btn svg, .featured-btn span { position: relative; z-index: 1; }
+.featured-btn:hover { transform: translateY(-2px); }
+.featured-btn:active { transform: translateY(0); }
 
-/* Library Button — Warm gold/amber */
 .featured-btn--library {
   background: linear-gradient(135deg, #C6922A 0%, #E8B84B 100%);
   color: #fff;
   box-shadow: 0 3px 12px rgba(198, 146, 42, .35), inset 0 1px 0 rgba(255,255,255,.2);
 }
-.featured-btn--library::before {
-  background: linear-gradient(135deg, #B58425 0%, #D4A63F 100%);
-}
-.featured-btn--library:hover {
-  box-shadow: 0 6px 20px rgba(198, 146, 42, .45), inset 0 1px 0 rgba(255,255,255,.25);
-}
+.featured-btn--library::before { background: linear-gradient(135deg, #B58425 0%, #D4A63F 100%); }
+.featured-btn--library:hover { box-shadow: 0 6px 20px rgba(198, 146, 42, .45), inset 0 1px 0 rgba(255,255,255,.25); }
 
-/* Archive Button — Deep teal */
 .featured-btn--archive {
   background: linear-gradient(135deg, #0D7377 0%, #14A3A8 100%);
   color: #fff;
   box-shadow: 0 3px 12px rgba(13, 115, 119, .35), inset 0 1px 0 rgba(255,255,255,.15);
 }
-.featured-btn--archive::before {
-  background: linear-gradient(135deg, #0A5F62 0%, #118F93 100%);
-}
-.featured-btn--archive:hover {
-  box-shadow: 0 6px 20px rgba(13, 115, 119, .45), inset 0 1px 0 rgba(255,255,255,.2);
-}
+.featured-btn--archive::before { background: linear-gradient(135deg, #0A5F62 0%, #118F93 100%); }
+.featured-btn--archive:hover { box-shadow: 0 6px 20px rgba(13, 115, 119, .45), inset 0 1px 0 rgba(255,255,255,.2); }
 
 /* ─── ACTIONS ───────────────────────────────────────────────────── */
 .main-nav__actions {
@@ -989,8 +745,7 @@ watch(() => router.currentRoute.value, () => {
   display: none;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 42px; height: 42px;
   background: var(--grey-50);
   border: 1.5px solid var(--grey-200);
   border-radius: var(--radius-md);
@@ -1012,8 +767,7 @@ watch(() => router.currentRoute.value, () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 44px; height: 44px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1022,8 +776,7 @@ watch(() => router.currentRoute.value, () => {
 @media (min-width: 1024px) { .mobile-toggle { display: none; } }
 
 .hamburger {
-  width: 22px;
-  height: 16px;
+  width: 22px; height: 16px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -1031,8 +784,7 @@ watch(() => router.currentRoute.value, () => {
 }
 .hamburger span {
   display: block;
-  width: 100%;
-  height: 2.5px;
+  width: 100%; height: 2.5px;
   background-color: var(--grey-900);
   border-radius: 2px;
   transition: all var(--transition-normal);
@@ -1092,8 +844,7 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .user-menu__avatar {
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
   color: var(--white);
@@ -1121,11 +872,7 @@ watch(() => router.currentRoute.value, () => {
 }
 @media (min-width: 1100px) { .user-menu__name { display: block; } }
 
-.user-menu__chevron {
-  color: var(--grey-500);
-  transition: transform .3s cubic-bezier(.16, 1, .3, 1);
-  flex-shrink: 0;
-}
+.user-menu__chevron { color: var(--grey-500); transition: transform .3s cubic-bezier(.16, 1, .3, 1); flex-shrink: 0; }
 .user-menu__chevron.is-rotated { transform: rotate(180deg); }
 
 /* ─── USER DROPDOWN ─────────────────────────────────────────────── */
@@ -1152,8 +899,7 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .user-dropdown__avatar-lg {
-  width: 44px;
-  height: 44px;
+  width: 44px; height: 44px;
   border-radius: 50%;
   flex-shrink: 0;
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
@@ -1169,23 +915,8 @@ watch(() => router.currentRoute.value, () => {
 .user-dropdown__avatar-img { width: 100%; height: 100%; object-fit: cover; }
 
 .user-dropdown__info-text { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
-
-.user-dropdown__username {
-  font-size: .9rem;
-  font-weight: 700;
-  color: var(--grey-900);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.user-dropdown__role {
-  font-size: .675rem;
-  color: var(--brand-primary);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-
+.user-dropdown__username { font-size: .9rem; font-weight: 700; color: var(--grey-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-dropdown__role { font-size: .675rem; color: var(--brand-primary); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .user-dropdown__divider { height: 1px; background: var(--grey-100); margin: .25rem 0; }
 
 .user-dropdown__item {
@@ -1205,10 +936,7 @@ watch(() => router.currentRoute.value, () => {
   text-align: start;
   transition: all var(--transition-fast);
 }
-.user-dropdown__item:hover {
-  background: var(--grey-50);
-  color: var(--brand-primary);
-}
+.user-dropdown__item:hover { background: var(--grey-50); color: var(--brand-primary); }
 .user-dropdown__item--danger { color: #CC2936; }
 .user-dropdown__item--danger:hover { background: #FFF0F0; color: #CC2936; }
 
@@ -1248,28 +976,16 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .lang-switcher__flag {
-  width: 24px;
-  height: 16px;
+  width: 24px; height: 16px;
   border-radius: 3px;
   overflow: hidden;
   box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
   flex-shrink: 0;
 }
 .lang-switcher__flag svg { width: 100%; height: 100%; display: block; }
-
-.lang-switcher__text {
-  font-size: .875rem;
-  font-weight: 700;
-  color: var(--grey-900);
-  transition: color .3s;
-}
+.lang-switcher__text { font-size: .875rem; font-weight: 700; color: var(--grey-900); transition: color .3s; }
 .lang-switcher__trigger:hover .lang-switcher__text { color: var(--brand-primary); }
-
-.lang-switcher__chevron {
-  color: var(--brand-primary);
-  transition: transform .3s cubic-bezier(.16, 1, .3, 1);
-  flex-shrink: 0;
-}
+.lang-switcher__chevron { color: var(--brand-primary); transition: transform .3s cubic-bezier(.16, 1, .3, 1); flex-shrink: 0; }
 .lang-switcher__chevron.is-rotated { transform: rotate(180deg); }
 
 .lang-dropdown {
@@ -1313,15 +1029,9 @@ watch(() => router.currentRoute.value, () => {
   box-shadow: inset 4px 0 0 transparent;
 }
 [dir="ltr"] .lang-dropdown__item { box-shadow: inset -4px 0 0 transparent; }
-.lang-dropdown__item:hover {
-  background: linear-gradient(135deg, #fafafa 0%, #f9f9f9 100%);
-  box-shadow: inset 4px 0 0 var(--brand-primary);
-}
+.lang-dropdown__item:hover { background: linear-gradient(135deg, #fafafa 0%, #f9f9f9 100%); box-shadow: inset 4px 0 0 var(--brand-primary); }
 [dir="ltr"] .lang-dropdown__item:hover { box-shadow: inset -4px 0 0 var(--brand-primary); }
-.lang-dropdown__item.is-active {
-  background: linear-gradient(135deg, rgba(140, 21, 21, .08) 0%, rgba(140, 21, 21, .04) 100%);
-  box-shadow: inset 4px 0 0 var(--brand-primary);
-}
+.lang-dropdown__item.is-active { background: linear-gradient(135deg, rgba(140, 21, 21, .08) 0%, rgba(140, 21, 21, .04) 100%); box-shadow: inset 4px 0 0 var(--brand-primary); }
 [dir="ltr"] .lang-dropdown__item.is-active { box-shadow: inset -4px 0 0 var(--brand-primary); }
 
 .lang-dropdown__info { display: flex; flex-direction: column; gap: .25rem; text-align: start; }
@@ -1333,241 +1043,8 @@ watch(() => router.currentRoute.value, () => {
 .lang-dropdown__check { color: var(--brand-primary); flex-shrink: 0; }
 
 /* ─── DROPDOWN ANIMATION ────────────────────────────────────────── */
-.dropdown-enter-active,
-.dropdown-leave-active { transition: all .3s cubic-bezier(.16, 1, .3, 1); }
-.dropdown-enter-from,
-.dropdown-leave-to { opacity: 0; transform: translateY(-12px) scale(.95); }
-
-/* ─── SEARCH OVERLAY ────────────────────────────────────────────── */
-.search-overlay {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(26, 26, 26, .97) 0%, rgba(107, 15, 15, .95) 100%);
-  z-index: 1000;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 12vh 1.5rem 2rem;
-  overflow-y: auto;
-}
-
-.search-overlay__content { width: 100%; max-width: 700px; position: relative; }
-
-.search-overlay__close {
-  position: fixed;
-  top: 1.5rem;
-  left: 1.5rem;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1.5px solid rgba(255, 255, 255, .2);
-  border-radius: 50%;
-  color: var(--white);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-[dir="rtl"] .search-overlay__close { left: auto; right: 1.5rem; }
-.search-overlay__close:hover {
-  background: rgba(255, 255, 255, .1);
-  border-color: rgba(255, 255, 255, .4);
-  transform: rotate(90deg);
-}
-
-.search-overlay__title {
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--white);
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.search-overlay__form {
-  display: flex;
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, .3);
-}
-
-.search-overlay__input {
-  flex: 1;
-  padding: 1.25rem 1.5rem;
-  font-family: var(--font-sans);
-  font-size: 1.0625rem;
-  border: none;
-  outline: none;
-  background: transparent;
-}
-
-.search-overlay__submit {
-  padding: 1.125rem 1.5rem;
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light));
-  border: none;
-  color: var(--white);
-  cursor: pointer;
-  transition: background .3s;
-}
-.search-overlay__submit:hover {
-  background: linear-gradient(135deg, var(--brand-primary-dark), var(--brand-primary));
-}
-
-.search-overlay__quick {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: .75rem;
-  margin-top: 1.75rem;
-}
-.search-overlay__quick-label { color: rgba(255, 255, 255, .5); font-size: .875rem; }
-.search-overlay__quick-link {
-  color: rgba(255, 255, 255, .85);
-  font-size: .875rem;
-  padding: .375rem .875rem;
-  background: rgba(255, 255, 255, .08);
-  border: 1px solid rgba(255, 255, 255, .1);
-  border-radius: 100px;
-  text-decoration: none;
-  transition: all var(--transition-fast);
-}
-.search-overlay__quick-link:hover {
-  background: rgba(255, 255, 255, .18);
-  border-color: rgba(255, 255, 255, .25);
-  color: var(--white);
-}
-
-/* ─── SEARCH RESULTS ────────────────────────────────────────────── */
-.search-results {
-  margin-top: 1.5rem;
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, .25);
-  overflow: hidden;
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-.search-results__loading {
-  padding: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #e5e5e5;
-  border-top-color: var(--brand-primary);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.search-results__list {
-  display: flex;
-  flex-direction: column;
-}
-
-.search-result-item {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  width: 100%;
-  padding: 0.875rem 1.25rem;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid #f0f0f0;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: start;
-  font-family: var(--font-sans);
-}
-
-.search-result-item:last-child {
-  border-bottom: none;
-}
-
-.search-result-item:hover {
-  background: linear-gradient(135deg, rgba(140, 21, 21, 0.04), rgba(140, 21, 21, 0.02));
-}
-
-.search-result-item__icon {
-  font-size: 1.25rem;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  background: #f7f7f7;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-result-item__info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.search-result-item__title {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--grey-900);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.search-result-item:hover .search-result-item__title {
-  color: var(--brand-primary);
-}
-
-.search-result-item__meta {
-  font-size: 0.75rem;
-  color: var(--grey-500);
-  font-weight: 500;
-}
-
-.search-result-item__arrow {
-  color: var(--grey-300);
-  flex-shrink: 0;
-  transition: transform 0.2s;
-}
-
-.search-result-item:hover .search-result-item__arrow {
-  color: var(--brand-primary);
-  transform: translateX(-4px);
-}
-
-[dir="ltr"] .search-result-item:hover .search-result-item__arrow {
-  transform: translateX(4px);
-}
-
-.search-results__empty {
-  padding: 2rem;
-  text-align: center;
-  color: var(--grey-500);
-  font-size: 0.9375rem;
-}
-
-.search-fade-enter-active,
-.search-fade-leave-active { transition: opacity var(--transition-slow); }
-.search-fade-enter-active .search-overlay__content,
-.search-fade-leave-active .search-overlay__content { transition: transform var(--transition-slow), opacity var(--transition-slow); }
-.search-fade-enter-from,
-.search-fade-leave-to { opacity: 0; }
-.search-fade-enter-from .search-overlay__content,
-.search-fade-leave-to .search-overlay__content { opacity: 0; transform: translateY(-16px); }
+.dropdown-enter-active, .dropdown-leave-active { transition: all .3s cubic-bezier(.16, 1, .3, 1); }
+.dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-12px) scale(.95); }
 
 /* ─── MOBILE MENU ───────────────────────────────────────────────── */
 .mobile-menu { position: fixed; inset: 0; z-index: 1000; }
@@ -1575,10 +1052,8 @@ watch(() => router.currentRoute.value, () => {
 
 .mobile-menu__drawer {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 100%;
-  max-width: 380px;
+  top: 0; right: 0;
+  width: 100%; max-width: 380px;
   height: 100%;
   background: var(--white);
   overflow-y: auto;
@@ -1598,15 +1073,13 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .mobile-menu__logo-img {
-  height: 36px;
-  width: auto;
+  height: 36px; width: auto;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
 
 .mobile-menu__close {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1638,7 +1111,7 @@ watch(() => router.currentRoute.value, () => {
   outline: none;
 }
 
-/* ─── ★ MOBILE FEATURED BUTTONS ★ ──────────────────────────────── */
+/* Mobile Featured Buttons */
 .mobile-menu__featured {
   display: flex;
   flex-direction: column;
@@ -1660,33 +1133,18 @@ watch(() => router.currentRoute.value, () => {
   position: relative;
   overflow: hidden;
 }
-.mobile-featured-btn__label {
-  font-size: 1rem;
-  font-weight: 700;
-  flex: 1;
-}
-.mobile-featured-btn__arrow {
-  font-size: 1.25rem;
-  opacity: .6;
-  transition: transform .3s;
-}
+.mobile-featured-btn__label { font-size: 1rem; font-weight: 700; flex: 1; }
+.mobile-featured-btn__arrow { font-size: 1.25rem; opacity: .6; transition: transform .3s; }
 [dir="ltr"] .mobile-featured-btn__arrow { transform: scaleX(-1); }
-.mobile-featured-btn:hover .mobile-featured-btn__arrow {
-  transform: translateX(-4px);
-}
-[dir="ltr"] .mobile-featured-btn:hover .mobile-featured-btn__arrow {
-  transform: scaleX(-1) translateX(-4px);
-}
+.mobile-featured-btn:hover .mobile-featured-btn__arrow { transform: translateX(-4px); }
+[dir="ltr"] .mobile-featured-btn:hover .mobile-featured-btn__arrow { transform: scaleX(-1) translateX(-4px); }
 
 .mobile-featured-btn--library {
   background: linear-gradient(135deg, #C6922A 0%, #E8B84B 100%);
   color: #fff;
   box-shadow: 0 4px 16px rgba(198, 146, 42, .3);
 }
-.mobile-featured-btn--library:hover {
-  box-shadow: 0 6px 24px rgba(198, 146, 42, .45);
-  transform: translateX(-4px);
-}
+.mobile-featured-btn--library:hover { box-shadow: 0 6px 24px rgba(198, 146, 42, .45); transform: translateX(-4px); }
 [dir="ltr"] .mobile-featured-btn--library:hover { transform: translateX(4px); }
 
 .mobile-featured-btn--archive {
@@ -1694,15 +1152,11 @@ watch(() => router.currentRoute.value, () => {
   color: #fff;
   box-shadow: 0 4px 16px rgba(13, 115, 119, .3);
 }
-.mobile-featured-btn--archive:hover {
-  box-shadow: 0 6px 24px rgba(13, 115, 119, .45);
-  transform: translateX(-4px);
-}
+.mobile-featured-btn--archive:hover { box-shadow: 0 6px 24px rgba(13, 115, 119, .45); transform: translateX(-4px); }
 [dir="ltr"] .mobile-featured-btn--archive:hover { transform: translateX(4px); }
 
-/* ─── MOBILE NAV ────────────────────────────────────────────────── */
+/* Mobile Nav */
 .mobile-menu__nav { flex: 1; padding: .5rem 0; }
-
 .mobile-menu__link {
   display: block;
   padding: 1rem 1.25rem;
@@ -1713,14 +1167,13 @@ watch(() => router.currentRoute.value, () => {
   border-bottom: 1px solid var(--grey-100);
   transition: all var(--transition-fast);
 }
-.mobile-menu__link:hover,
-.mobile-menu__link.router-link-active {
+.mobile-menu__link:hover, .mobile-menu__link.router-link-active {
   background: var(--grey-50);
   color: var(--brand-primary);
   padding-inline-start: 1.75rem;
 }
 
-/* ─── MOBILE AUTH ───────────────────────────────────────────────── */
+/* Mobile Auth */
 .mobile-menu__auth {
   padding: 1.25rem;
   border-top: 2px solid var(--grey-100);
@@ -1740,8 +1193,7 @@ watch(() => router.currentRoute.value, () => {
 }
 
 .mobile-menu__user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 40px; height: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
   color: var(--white);
@@ -1755,7 +1207,6 @@ watch(() => router.currentRoute.value, () => {
   box-shadow: 0 2px 8px rgba(140, 21, 21, .2);
 }
 .mobile-menu__user-avatar-img { width: 100%; height: 100%; object-fit: cover; }
-
 .mobile-menu__user-name { font-size: .9375rem; font-weight: 700; color: var(--grey-900); margin: 0; }
 .mobile-menu__user-role { font-size: .7rem; color: var(--brand-primary); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin: .125rem 0 0; }
 
@@ -1779,11 +1230,7 @@ watch(() => router.currentRoute.value, () => {
   text-align: center;
   transition: all .3s cubic-bezier(.16, 1, .3, 1);
 }
-.mobile-menu__auth-btn--primary {
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light));
-  color: var(--white);
-  box-shadow: 0 3px 12px rgba(140, 21, 21, .3);
-}
+.mobile-menu__auth-btn--primary { background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light)); color: var(--white); box-shadow: 0 3px 12px rgba(140, 21, 21, .3); }
 .mobile-menu__auth-btn--primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(140, 21, 21, .4); }
 .mobile-menu__auth-btn--profile { background: rgba(140, 21, 21, .08); color: var(--brand-primary); border: 1.5px solid rgba(140, 21, 21, .18); }
 .mobile-menu__auth-btn--profile:hover { background: rgba(140, 21, 21, .14); }
@@ -1792,21 +1239,10 @@ watch(() => router.currentRoute.value, () => {
 .mobile-menu__auth-btn--danger { background: #FFF0F0; color: #CC2936; border: 1.5px solid #F5C6C8; }
 .mobile-menu__auth-btn--danger:hover { background: #FFE0E2; }
 
-/* ─── MOBILE LANGUAGE ───────────────────────────────────────────── */
+/* Mobile Language */
 .mobile-menu__lang { padding: 1.25rem; border-top: 1px solid var(--grey-100); }
-
-.mobile-menu__lang-title {
-  display: block;
-  font-size: .6875rem;
-  font-weight: 700;
-  color: var(--grey-500);
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  margin-bottom: .75rem;
-}
-
+.mobile-menu__lang-title { display: block; font-size: .6875rem; font-weight: 700; color: var(--grey-500); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .75rem; }
 .mobile-menu__lang-btns { display: flex; gap: .5rem; }
-
 .mobile-menu__lang-btn {
   flex: 1;
   padding: .625rem .75rem;
@@ -1828,7 +1264,7 @@ watch(() => router.currentRoute.value, () => {
   box-shadow: 0 3px 12px rgba(140, 21, 21, .25);
 }
 
-/* ─── MOBILE QUICK LINKS ───────────────────────────────────────── */
+/* Mobile Quick Links */
 .mobile-menu__quick {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1848,19 +1284,13 @@ watch(() => router.currentRoute.value, () => {
   text-decoration: none;
   transition: all var(--transition-fast);
 }
-.mobile-menu__quick a:hover {
-  border-color: var(--brand-primary);
-  color: var(--brand-primary);
-  box-shadow: 0 2px 8px rgba(140, 21, 21, .1);
-}
+.mobile-menu__quick a:hover { border-color: var(--brand-primary); color: var(--brand-primary); box-shadow: 0 2px 8px rgba(140, 21, 21, .1); }
 
-/* ─── MOBILE SLIDE ANIMATION ────────────────────────────────────── */
-.mobile-slide-enter-active,
-.mobile-slide-leave-active { transition: opacity var(--transition-normal); }
+/* Mobile Slide Animation */
+.mobile-slide-enter-active, .mobile-slide-leave-active { transition: opacity var(--transition-normal); }
 .mobile-slide-enter-active .mobile-menu__drawer,
 .mobile-slide-leave-active .mobile-menu__drawer { transition: transform var(--transition-normal) cubic-bezier(.16, 1, .3, 1); }
-.mobile-slide-enter-from,
-.mobile-slide-leave-to { opacity: 0; }
+.mobile-slide-enter-from, .mobile-slide-leave-to { opacity: 0; }
 .mobile-slide-enter-from .mobile-menu__drawer,
 .mobile-slide-leave-to .mobile-menu__drawer { transform: translateX(100%); }
 [dir="ltr"] .mobile-slide-enter-from .mobile-menu__drawer,
