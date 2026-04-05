@@ -45,6 +45,11 @@ const endpoints = [
     extract: d => d?.data?.totalElements ?? d?.totalElements ?? (Array.isArray(d?.data) ? d.data.length : null)
   },
   {
+    key: 'services',
+    url: '/api/v1/services',
+    extract: d => Array.isArray(d) ? d.length : Array.isArray(d?.data) ? d.data.length : (d?.data?.totalElements ?? d?.totalElements ?? null)
+  },
+  {
     key: 'videos',
     url: '/api/v1/videos?page=0&size=1',
     // ✅ FIXED - Simplified extraction logic
@@ -124,6 +129,7 @@ const pct = (n) => totalRaw.value ? Math.round((n / totalRaw.value) * 100) : 0
 const palette = {
   projects:            { color: '#8C1515', soft: 'rgba(140,21,21,.08)',   to: '/admin/projects' },
   news:                { color: '#0d7c6e', soft: 'rgba(13,124,110,.08)',  to: '/admin/news' },
+  services:            { color: '#9a3412', soft: 'rgba(154,52,18,.08)',   to: '/admin/services' },
   videos:              { color: '#b45309', soft: 'rgba(180,83,9,.08)',    to: '/admin/videos' },
   writings:            { color: '#4338ca', soft: 'rgba(67,56,202,.08)',   to: '/admin/writings' },
   'image-collections': { color: '#6d28d9', soft: 'rgba(109,40,217,.08)', to: '/admin/image-collections' },
@@ -138,6 +144,7 @@ const svg = (key, d) =>
 const icons = {
   projects:            svg('projects', 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z'),
   news:                svg('news', 'M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2z'),
+  services:            `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${palette.services.color}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1 1 0 00.2 1.1l.04.04a2 2 0 01-2.83 2.83l-.04-.04a1 1 0 00-1.1-.2 1 1 0 00-.6.92V21a2 2 0 01-4 0v-.06a1 1 0 00-.67-.94 1 1 0 00-1.1.2l-.04.04a2 2 0 01-2.83-2.83l.04-.04a1 1 0 00.2-1.1 1 1 0 00-.92-.6H3a2 2 0 010-4h.06a1 1 0 00.94-.67 1 1 0 00-.2-1.1l-.04-.04a2 2 0 012.83-2.83l.04.04a1 1 0 001.1.2H7.8a1 1 0 00.6-.92V3a2 2 0 014 0v.06a1 1 0 00.67.94 1 1 0 001.1-.2l.04-.04a2 2 0 012.83 2.83l-.04.04a1 1 0 00-.2 1.1v.07a1 1 0 00.92.6H21a2 2 0 010 4h-.06a1 1 0 00-.94.67 1 1 0 00.2 1.1z"/></svg>`,
   videos:              `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${palette.videos.color}" stroke-width="2" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="2"/><polygon points="10,8 16,12 10,16"/></svg>`,
   writings:            svg('writings', 'M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z'),
   'image-collections': `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${palette['image-collections'].color}" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
@@ -149,6 +156,7 @@ const icons = {
 const statsDef = [
   { key: 'projects',          label: 'پڕۆژەکان',    to: '/admin/projects' },
   { key: 'news',              label: 'هەواڵەکان',    to: '/admin/news' },
+  { key: 'services',          label: 'خزمەتگوزارییەکان', to: '/admin/services' },
   { key: 'videos',            label: 'ڤیدیۆکان',     to: '/admin/videos' },
   { key: 'writings',          label: 'نووسراوەکان',  to: '/admin/writings' },
   { key: 'image-collections', label: 'وێنەکان',      to: '/admin/image-collections' },
@@ -163,6 +171,7 @@ const stats = statsDef.map(s => ({
 const qaIcons = {
   projects:            `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
   news:                `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/></svg>`,
+  services:            `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1 1 0 00.2 1.1l.04.04a2 2 0 01-2.83 2.83l-.04-.04a1 1 0 00-1.1-.2 1 1 0 00-.6.92V21a2 2 0 01-4 0v-.06a1 1 0 00-.67-.94 1 1 0 00-1.1.2l-.04.04a2 2 0 01-2.83-2.83l.04-.04a1 1 0 00.2-1.1 1 1 0 00-.92-.6H3a2 2 0 010-4h.06a1 1 0 00.94-.67 1 1 0 00-.2-1.1l-.04-.04a2 2 0 012.83-2.83l.04.04a1 1 0 001.1.2H7.8a1 1 0 00.6-.92V3a2 2 0 014 0v.06a1 1 0 00.67.94 1 1 0 001.1-.2l.04-.04a2 2 0 012.83 2.83l-.04.04a1 1 0 00-.2 1.1v.07a1 1 0 00.92.6H21a2 2 0 010 4h-.06a1 1 0 00-.94.67 1 1 0 00.2 1.1z"/></svg>`,
   videos:              `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>`,
   writings:            `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>`,
   images:              `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
@@ -173,6 +182,7 @@ const qaIcons = {
 const quickActions = [
   { label: 'پڕۆژەی نوێ',    to: '/admin/projects/new',          icon: qaIcons.projects },
   { label: 'هەواڵی نوێ',     to: '/admin/news/new',              icon: qaIcons.news },
+  { label: 'خزمەتگوزاریی نوێ', to: '/admin/services/new',         icon: qaIcons.services },
   { label: 'ڤیدیۆی نوێ',    to: '/admin/videos/new',            icon: qaIcons.videos },
   { label: 'نووسراوەی نوێ',  to: '/admin/writings/new',          icon: qaIcons.writings },
   { label: 'وێنەی نوێ',      to: '/admin/image-collections/new', icon: qaIcons.images },
@@ -183,6 +193,7 @@ const quickActions = [
 const shortcuts = [
   { key: 'projects',          label: 'پڕۆژەکان',       hint: 'بینین و بەڕێوەبردنی پڕۆژەکان',       to: '/admin/projects',          toNew: '/admin/projects/new',          ...palette.projects,            icon: icons.projects },
   { key: 'news',              label: 'هەواڵەکان',       hint: 'بڵاوکردنەوەی بابەت و هەواڵ',          to: '/admin/news',              toNew: '/admin/news/new',              ...palette.news,                icon: icons.news },
+  { key: 'services',          label: 'خزمەتگوزارییەکان', hint: 'بەڕێوەبردنی خزمەتگوزاری و gallery ـەکان', to: '/admin/services',          toNew: '/admin/services/new',          ...palette.services,            icon: icons.services },
   { key: 'videos',            label: 'ڤیدیۆکان',        hint: 'فیلم و دۆکیومێنتاری کوردی',           to: '/admin/videos',            toNew: '/admin/videos/new',            ...palette.videos,              icon: icons.videos },
   { key: 'image-collections', label: 'کۆمەڵە وێنەکان', hint: 'گالەری و ئەرشیفی وێنەکان',            to: '/admin/image-collections', toNew: '/admin/image-collections/new', ...palette['image-collections'],icon: icons['image-collections'] },
   { key: 'soundtracks',       label: 'دەنگەکان',        hint: 'ئەرشیفی مووسیقا و دەنگ',              to: '/admin/soundtracks',       toNew: '/admin/soundtracks/new',       ...palette.soundtracks,         icon: icons.soundtracks },
@@ -193,6 +204,7 @@ const shortcuts = [
 const breakdownStats = [
   { key: 'projects',          label: 'پڕۆژەکان',    sub: 'بەڕێوەبردن',           to: '/admin/projects',          ...palette.projects,            icon: icons.projects },
   { key: 'news',              label: 'هەواڵەکان',    sub: 'بابەت و بڵاوکراوە',    to: '/admin/news',              ...palette.news,                icon: icons.news },
+  { key: 'services',          label: 'خزمەتگوزارییەکان', sub: 'جۆر، شوێن و میدیا',  to: '/admin/services',          ...palette.services,            icon: icons.services },
   { key: 'videos',            label: 'ڤیدیۆکان',     sub: 'فیلم و دۆکیومێنتاری',  to: '/admin/videos',            ...palette.videos,              icon: icons.videos },
   { key: 'image-collections', label: 'وێنەکان',      sub: 'کۆمەڵە و گالەری',       to: '/admin/image-collections', ...palette['image-collections'],icon: icons['image-collections'] },
   { key: 'soundtracks',       label: 'دەنگەکان',     sub: 'مووسیقا و تۆمار',       to: '/admin/soundtracks',       ...palette.soundtracks,         icon: icons.soundtracks },
@@ -205,8 +217,8 @@ const donutSegments = computed(() => {
   const total = Math.max(1, totalRaw.value)
   const circ  = 2 * Math.PI * 60
   let cum = 0
-  const keys   = ['projects','news','videos','writings','image-collections','soundtracks','about']
-  const labels = { projects:'پڕۆژەکان', news:'هەواڵەکان', videos:'ڤیدیۆکان', writings:'نووسراوەکان', 'image-collections':'وێنەکان', soundtracks:'دەنگەکان', about:'دەربارەکان' }
+  const keys   = ['projects','news','services','videos','writings','image-collections','soundtracks','about']
+  const labels = { projects:'پڕۆژەکان', news:'هەواڵەکان', services:'خزمەتگوزارییەکان', videos:'ڤیدیۆکان', writings:'نووسراوەکان', 'image-collections':'وێنەکان', soundtracks:'دەنگەکان', about:'دەربارەکان' }
   return keys
     .map(key => {
       const count = counts.value[key] ?? 0

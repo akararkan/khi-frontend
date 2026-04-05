@@ -74,6 +74,7 @@ const resource = computed(() => String(route.params.resource || ''))
 const labelMap = {
   projects:            'پڕۆژەکان',
   news:                'هەواڵەکان',
+  services:            'خزمەتگوزارییەکان',
   videos:              'ڤیدیۆکان',
   'image-collections': 'کۆمەڵە وێنەکان',
   soundtracks:         'دەنگەکان',
@@ -88,6 +89,7 @@ const resourceLabel = computed(() => labelMap[resource.value] || resource.value 
 const customListRouteNames = {
   projects:            'AdminProjectList',
   news:                'AdminNewsList',
+  services:            'AdminServiceList',
   videos:              'AdminVideoList',
   'image-collections': 'AdminImageCollectionList',
   soundtracks:         'AdminSoundTrackList',

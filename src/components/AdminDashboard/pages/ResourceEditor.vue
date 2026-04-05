@@ -58,6 +58,7 @@ const desc  = ref('')
 const labelMap = {
   projects:            'پڕۆژەکان',
   news:                'هەواڵەکان',
+  services:            'خزمەتگوزارییەکان',
   videos:              'ڤیدیۆکان',
   'image-collections': 'کۆمەڵە وێنەکان',
   soundtracks:         'دەنگەکان',
@@ -72,6 +73,7 @@ const resourceLabel = computed(() => labelMap[resource.value] || resource.value 
 const customEditorRouteNames = {
   projects:            { create: 'AdminProjectCreate',         edit: 'AdminProjectEdit' },
   news:                { create: 'AdminNewsCreate',            edit: 'AdminNewsEdit' },
+  services:            { create: 'AdminServiceCreate',         edit: 'AdminServiceEdit' },
   videos:              { create: 'AdminVideoCreate',           edit: 'AdminVideoEdit' },
   'image-collections': { create: 'AdminImageCollectionCreate', edit: 'AdminImageCollectionEdit' },
   soundtracks:         { create: 'AdminSoundTrackCreate',      edit: 'AdminSoundTrackEdit' },

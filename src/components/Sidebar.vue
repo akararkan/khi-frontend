@@ -91,6 +91,18 @@
         <Transition name="label"><span v-if="!slim" class="nav-item__arrow"><ArrowIcon /></span></Transition>
       </RouterLink>
 
+      <!-- Services -->
+      <RouterLink
+        class="nav-item"
+        :to="{ name: 'AdminServiceList' }"
+        :class="{ 'nav-item--active': isActive('services') }"
+        title="خزمەتگوزارییەکان"
+      >
+        <span class="nav-item__ico" v-html="SVGs.services"></span>
+        <Transition name="label"><span v-if="!slim" class="nav-item__label">خزمەتگوزارییەکان</span></Transition>
+        <Transition name="label"><span v-if="!slim" class="nav-item__arrow"><ArrowIcon /></span></Transition>
+      </RouterLink>
+
       <!-- ── Publications Accordion (wide mode) ── -->
       <div v-if="!slim" class="accordion">
         <button
@@ -244,6 +256,7 @@ const ArrowIcon = defineComponent({
 const SVGs = {
   projects: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
   news:     `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2z"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>`,
+  services: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.25"/><path d="M19.4 15a1 1 0 00.2 1.1l.04.04a2 2 0 01-2.83 2.83l-.04-.04a1 1 0 00-1.1-.2 1 1 0 00-.6.92V21a2 2 0 01-4 0v-.06a1 1 0 00-.67-.94 1 1 0 00-1.1.2l-.04.04a2 2 0 01-2.83-2.83l.04-.04a1 1 0 00.2-1.1 1 1 0 00-.92-.6H3a2 2 0 010-4h.06a1 1 0 00.94-.67 1 1 0 00-.2-1.1l-.04-.04a2 2 0 012.83-2.83l.04.04a1 1 0 001.1.2H7.8a1 1 0 00.6-.92V3a2 2 0 014 0v.06a1 1 0 00.67.94 1 1 0 001.1-.2l.04-.04a2 2 0 012.83 2.83l-.04.04a1 1 0 00-.2 1.1v.07a1 1 0 00.92.6H21a2 2 0 010 4h-.06a1 1 0 00-.94.67 1 1 0 00.2 1.1z"/></svg>`,
   images:   `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
   videos:   `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="15" height="10" rx="1.5"/><path d="M17 9l4-2v10l-4-2V9z"/></svg>`,
   sounds:   `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
@@ -265,6 +278,7 @@ const isActive = (key) => {
   const routeMap = {
     projects:            { names: ['AdminProjectList','AdminProjectCreate','AdminProjectEdit'],                           prefix: '/admin/projects' },
     news:                { names: ['AdminNewsList','AdminNewsCreate','AdminNewsEdit'],                                    prefix: '/admin/news' },
+    services:            { names: ['AdminServiceList','AdminServiceCreate','AdminServiceEdit'],                           prefix: '/admin/services' },
     'image-collections': { names: ['AdminImageCollectionList','AdminImageCollectionCreate','AdminImageCollectionEdit'],  prefix: '/admin/image-collections' },
     soundtracks:         { names: ['AdminSoundTrackList','AdminSoundTrackCreate','AdminSoundTrackEdit'],                  prefix: '/admin/soundtracks' },
     videos:              { names: ['AdminVideoList','AdminVideoCreate','AdminVideoEdit'],                                 prefix: '/admin/videos' },

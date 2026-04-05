@@ -74,7 +74,7 @@ function getCacheTTL(url) {
 }
 
 function extractBasePath(url) {
-  const match = url.match(/^(\/api\/[^/?]+)/)
+  const match = url.match(/^(\/api\/[^/?]+\/[^/?]+)/)
   return match ? match[1] : null
 }
 

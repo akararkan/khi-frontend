@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import Home         from './components/pages/Home.vue'
 import About        from './components/pages/About.vue'
 import Contact      from './components/pages/Contact.vue'
-import Services     from './components/pages/Services.vue'
+import Service      from './components/pages/Service.vue'
 import Archive      from './components/pages/Archive.vue'
 import Library      from './components/pages/Library.vue'
 import Publishments from './components/pages/Publishments.vue'
@@ -56,6 +56,10 @@ import AdminAboutEditor from './components/AdminDashboard/pages/about/AdminAbout
 import ContactList   from './components/AdminDashboard/pages/contact/ContactList.vue'
 import ContactEditor from './components/AdminDashboard/pages/contact/ContactEditor.vue'
 
+// Admin — Services
+import ServiceList   from './components/AdminDashboard/pages/service/ServiceList.vue'
+import ServiceEditor from './components/AdminDashboard/pages/service/ServiceEditor.vue'
+
 import SearchResults from './components/SearchResult.vue'
 
 const routes = [
@@ -63,7 +67,7 @@ const routes = [
   { path: '/',             name: 'Home',         component: Home },
   { path: '/about',        name: 'About',        component: About },
   { path: '/contact',      name: 'Contact',      component: Contact },
-  { path: '/services',     name: 'Services',     component: Services },
+  { path: '/services',     name: 'Services',     component: Service },
   { path: '/archive',      name: 'Archive',      component: Archive },
   { path: '/library',      name: 'Library',      component: Library },
   { path: '/publishments', name: 'Publishments', component: Publishments },
@@ -125,6 +129,11 @@ const routes = [
       { path: 'contact',          name: 'AdminContactList',   component: ContactList },
       { path: 'contact/new',      name: 'AdminContactCreate', component: ContactEditor },
       { path: 'contact/:id/edit', name: 'AdminContactEdit',   component: ContactEditor, props: true },
+
+      // Services
+      { path: 'services',          name: 'AdminServiceList',   component: ServiceList },
+      { path: 'services/new',      name: 'AdminServiceCreate', component: ServiceEditor },
+      { path: 'services/:id/edit', name: 'AdminServiceEdit',   component: ServiceEditor, props: true },
 
       // Generic dynamic resources — MUST be last
       { path: ':resource',          name: 'AdminResourceList',   component: ResourceList },
