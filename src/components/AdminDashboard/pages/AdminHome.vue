@@ -73,7 +73,7 @@ const endpoints = [
   },
   {
     key: 'soundtracks',
-    url: '/api/v1/soundtracks',
+    url: '/api/v1/sound-tracks',
     extract: d => Array.isArray(d) ? d.length : Array.isArray(d?.data) ? d.data.length : (d?.data?.totalElements ?? d?.totalElements ?? null)
   },
   {
@@ -133,7 +133,7 @@ const palette = {
   videos:              { color: '#b45309', soft: 'rgba(180,83,9,.08)',    to: '/admin/videos' },
   writings:            { color: '#4338ca', soft: 'rgba(67,56,202,.08)',   to: '/admin/writings' },
   'image-collections': { color: '#6d28d9', soft: 'rgba(109,40,217,.08)', to: '/admin/image-collections' },
-  soundtracks:         { color: '#be185d', soft: 'rgba(190,24,93,.08)',   to: '/admin/soundtracks' },
+  soundtracks:         { color: '#be185d', soft: 'rgba(190,24,93,.08)',   to: '/admin/sound-tracks' },
   about:               { color: '#0369a1', soft: 'rgba(3,105,161,.08)',   to: '/admin/about' },
 }
 
@@ -160,7 +160,7 @@ const statsDef = [
   { key: 'videos',            label: 'ڤیدیۆکان',     to: '/admin/videos' },
   { key: 'writings',          label: 'نووسراوەکان',  to: '/admin/writings' },
   { key: 'image-collections', label: 'وێنەکان',      to: '/admin/image-collections' },
-  { key: 'soundtracks',       label: 'دەنگەکان',     to: '/admin/soundtracks' },
+  { key: 'soundtracks',       label: 'دەنگەکان',     to: '/admin/sound-tracks' },
   { key: 'about',             label: 'دەربارەکان',   to: '/admin/about' },
 ]
 const stats = statsDef.map(s => ({
@@ -186,7 +186,7 @@ const quickActions = [
   { label: 'ڤیدیۆی نوێ',    to: '/admin/videos/new',            icon: qaIcons.videos },
   { label: 'نووسراوەی نوێ',  to: '/admin/writings/new',          icon: qaIcons.writings },
   { label: 'وێنەی نوێ',      to: '/admin/image-collections/new', icon: qaIcons.images },
-  { label: 'دەنگی نوێ',      to: '/admin/soundtracks/new',       icon: qaIcons.sounds },
+  { label: 'دەنگی نوێ',      to: '/admin/sound-tracks/new',       icon: qaIcons.sounds },
   { label: 'دەربارەی نوێ',   to: '/admin/about/new',             icon: qaIcons.about },
 ]
 
@@ -196,7 +196,7 @@ const shortcuts = [
   { key: 'services',          label: 'خزمەتگوزارییەکان', hint: 'بەڕێوەبردنی خزمەتگوزاری و gallery ـەکان', to: '/admin/services',          toNew: '/admin/services/new',          ...palette.services,            icon: icons.services },
   { key: 'videos',            label: 'ڤیدیۆکان',        hint: 'فیلم و دۆکیومێنتاری کوردی',           to: '/admin/videos',            toNew: '/admin/videos/new',            ...palette.videos,              icon: icons.videos },
   { key: 'image-collections', label: 'کۆمەڵە وێنەکان', hint: 'گالەری و ئەرشیفی وێنەکان',            to: '/admin/image-collections', toNew: '/admin/image-collections/new', ...palette['image-collections'],icon: icons['image-collections'] },
-  { key: 'soundtracks',       label: 'دەنگەکان',        hint: 'ئەرشیفی مووسیقا و دەنگ',              to: '/admin/soundtracks',       toNew: '/admin/soundtracks/new',       ...palette.soundtracks,         icon: icons.soundtracks },
+  { key: 'soundtracks',       label: 'دەنگەکان',        hint: 'ئەرشیفی مووسیقا و دەنگ',              to: '/admin/sound-tracks',       toNew: '/admin/sound-tracks/new',       ...palette.soundtracks,         icon: icons.soundtracks },
   { key: 'writings',          label: 'نووسراوەکان',     hint: 'کتێب و نووسراوەی دیجیتاڵ',            to: '/admin/writings',          toNew: '/admin/writings/new',          ...palette.writings,            icon: icons.writings },
   { key: 'about',             label: 'دەربارەکان',      hint: 'پەڕەکانی دەربارە و زانیاری',          to: '/admin/about',             toNew: '/admin/about/new',             ...palette.about,               icon: icons.about },
 ]
@@ -207,7 +207,7 @@ const breakdownStats = [
   { key: 'services',          label: 'خزمەتگوزارییەکان', sub: 'جۆر، شوێن و میدیا',  to: '/admin/services',          ...palette.services,            icon: icons.services },
   { key: 'videos',            label: 'ڤیدیۆکان',     sub: 'فیلم و دۆکیومێنتاری',  to: '/admin/videos',            ...palette.videos,              icon: icons.videos },
   { key: 'image-collections', label: 'وێنەکان',      sub: 'کۆمەڵە و گالەری',       to: '/admin/image-collections', ...palette['image-collections'],icon: icons['image-collections'] },
-  { key: 'soundtracks',       label: 'دەنگەکان',     sub: 'مووسیقا و تۆمار',       to: '/admin/soundtracks',       ...palette.soundtracks,         icon: icons.soundtracks },
+  { key: 'soundtracks',       label: 'دەنگەکان',     sub: 'مووسیقا و تۆمار',       to: '/admin/sound-tracks',       ...palette.soundtracks,         icon: icons.soundtracks },
   { key: 'writings',          label: 'نووسراوەکان',  sub: 'کتێب و نووسراوە',       to: '/admin/writings',          ...palette.writings,            icon: icons.writings },
   { key: 'about',             label: 'دەربارەکان',   sub: 'پەڕەی دەربارە',         to: '/admin/about',             ...palette.about,               icon: icons.about },
 ]

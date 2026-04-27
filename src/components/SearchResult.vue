@@ -737,7 +737,7 @@ async function goToPage(key, page) {
 async function loadTags() {
   try {
     const [s, v, w, i] = await Promise.allSettled([
-      api.get('/soundtracks/topics'),
+      api.get('/sound-tracks/topics'),
       api.get('/videos/topics'),
       api.get('/writings/topics'),
       api.get('/image-collections/topics'),

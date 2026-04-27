@@ -111,9 +111,9 @@ const routes = [
       { path: 'image-collections/:id/edit', name: 'AdminImageCollectionEdit',   component: ImageCollectionEditor, props: true },
 
       // SoundTracks
-      { path: 'soundtracks',          name: 'AdminSoundTrackList',   component: SoundTrackList },
-      { path: 'soundtracks/new',      name: 'AdminSoundTrackCreate', component: SoundTrackEditor },
-      { path: 'soundtracks/:id/edit', name: 'AdminSoundTrackEdit',   component: SoundTrackEditor, props: true },
+      { path: 'sound-tracks',          name: 'AdminSoundTrackList',   component: SoundTrackList },
+      { path: 'sound-tracks/new',      name: 'AdminSoundTrackCreate', component: SoundTrackEditor },
+      { path: 'sound-tracks/:id/edit', name: 'AdminSoundTrackEdit',   component: SoundTrackEditor, props: true },
 
       // Writings
       { path: 'writings',          name: 'AdminWritingList',   component: WritingList },

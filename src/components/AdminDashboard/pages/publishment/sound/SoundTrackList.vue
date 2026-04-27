@@ -646,7 +646,7 @@ const fetchAll = async () => {
   try {
     let page = 0, all = []
     while (true) {
-      const { data } = await api.get('/api/v1/soundtracks', {
+      const { data } = await api.get('/api/v1/sound-tracks', {
         params: { page, size: 100 }
       })
       const pageObj = data?.data          // Page<Response>
@@ -670,7 +670,7 @@ const doDelete = async () => {
   if (!deleteTarget.value) return
   deleting.value = true
   try {
-    await api.delete(`/api/v1/soundtracks/${deleteTarget.value.id}`)
+    await api.delete(`/api/v1/sound-tracks/${deleteTarget.value.id}`)
     items.value        = items.value.filter(x => x.id !== deleteTarget.value.id)
     deleteTarget.value = null
   } catch (e) {

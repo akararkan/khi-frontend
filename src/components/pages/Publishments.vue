@@ -706,7 +706,7 @@ async function searchByTagGlobal(tag) {
   tagSearchResults.value = { sounds: [], images: [], videos: [], writings: [] }
   window.scrollTo({ top: 0, behavior: 'smooth' })
   const [snd, img, vid, wrt] = await Promise.allSettled([
-    api.get('/soundtracks/search/tag', { params: { tag, page: 0, size: 200 } }),
+    api.get('/sound-tracks/search/tag', { params: { tag, page: 0, size: 200 } }),
     api.get('/image-collections/search/tag', { params: { tag, page: 0, size: 200 } }),
     api.get('/videos/search/tag', { params: { value: tag, page: 0, size: 200 } }),
     api.get('/writings/search/tag', { params: { tag, page: 0, size: 200 } }),
@@ -837,12 +837,12 @@ async function fetchAll() {
   finally { isLoading.value = false }
 }
 async function fetchImages()   { try { const { data } = await api.get('/image-collections', { params: { page: 0, size: 1000 } }); images.value   = toArray(data).map(i => ({ ...i, _mediaType: 'image'   })) } catch (e) { console.warn('images:', e.message) } }
-async function fetchSounds()   { try { const { data } = await api.get('/soundtracks',        { params: { page: 0, size: 1000 } }); sounds.value   = toArray(data).map(s => ({ ...s, _mediaType: 'sound'   })) } catch (e) { console.warn('sounds:', e.message) } }
+async function fetchSounds()   { try { const { data } = await api.get('/sound-tracks',        { params: { page: 0, size: 1000 } }); sounds.value   = toArray(data).map(s => ({ ...s, _mediaType: 'sound'   })) } catch (e) { console.warn('sounds:', e.message) } }
 async function fetchVideos()   { try { const { data } = await api.get('/videos',             { params: { page: 0, size: 200  } }); videos.value   = toArray(data).map(v => ({ ...v, _mediaType: 'video'   })) } catch (e) { console.warn('videos:', e.message) } }
 async function fetchWritings() { try { const { data } = await api.get('/writings',           { params: { page: 0, size: 200  } }); writings.value = toArray(data).map(w => ({ ...w, _mediaType: 'writing' })) } catch (e) { console.warn('writings:', e.message) } }
 async function fetchTopics() {
   try {
-    const [imgT, sndT, vidT, wrtT] = await Promise.allSettled([api.get('/image-collections/topics'), api.get('/soundtracks/topics'), api.get('/videos/topics'), api.get('/writings/topics')])
+    const [imgT, sndT, vidT, wrtT] = await Promise.allSettled([api.get('/image-collections/topics'), api.get('/sound-tracks/topics'), api.get('/videos/topics'), api.get('/writings/topics')])
     if (imgT.status === 'fulfilled') imageTopics.value   = toArray(imgT.value.data)
     if (sndT.status === 'fulfilled') soundTopics.value   = toArray(sndT.value.data)
     if (vidT.status === 'fulfilled') videoTopics.value   = toArray(vidT.value.data)

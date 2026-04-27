@@ -801,7 +801,7 @@ async function fetchPublications() {
   pubLoading.value = true
   try {
     const [s, v, w, i] = await Promise.allSettled([
-      api.get('/soundtracks'),
+      api.get('/sound-tracks'),
       api.get('/videos',            { params: { page: 0, size: 100 } }),
       api.get('/writings',          { params: { page: 0, size: 100 } }),
       api.get('/image-collections')

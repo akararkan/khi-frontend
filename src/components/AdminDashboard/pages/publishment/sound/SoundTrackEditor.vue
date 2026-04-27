@@ -3,7 +3,7 @@
  
     <!-- Header -->
     <div class="ste__head">
-      <RouterLink to="/admin/soundtracks" class="ste__back">
+      <RouterLink to="/admin/sound-tracks" class="ste__back">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 12H5M12 5l-7 7 7 7"/>
         </svg>
@@ -474,7 +474,7 @@
               <span v-if="saving" class="spinner"></span>
               {{ saving ? 'پاشەکەوتکردن…' : (isEdit ? 'پاشەکەوتکردنی گۆڕانکاری' : 'دروستکردنی دەنگ') }}
             </button>
-            <RouterLink to="/admin/soundtracks" class="btn btn--ghost btn--full">هەڵوەشاندنەوە</RouterLink>
+            <RouterLink to="/admin/sound-tracks" class="btn btn--ghost btn--full">هەڵوەشاندنەوە</RouterLink>
           </div>
  
           <!-- Danger zone -->
@@ -900,7 +900,7 @@ const submit = async () => {
     else              await api.post('/api/v1/sound-tracks', fd, cfg)
  
     showToast('success', isEdit.value ? 'دەنگەکە نوێکرایەوە ✓' : 'دەنگەکە دروستکرا ✓')
-    setTimeout(() => router.push('/admin/soundtracks'), 1200)
+    setTimeout(() => router.push('/admin/sound-tracks'), 1200)
   } catch (e) {
     console.error('Submit error:', e)
     showToast('error', e?.response?.data?.message || e?.response?.data?.error || e.message || 'هەڵەیەک ڕوویدا')
@@ -914,7 +914,7 @@ const doDelete = async () => {
   try {
     await api.delete(`/api/v1/sound-tracks/${route.params.id}`)
     showToast('success', 'دەنگەکە سڕایەوە')
-    setTimeout(() => router.push('/admin/soundtracks'), 800)
+    setTimeout(() => router.push('/admin/sound-tracks'), 800)
   } catch (e) {
     showToast('error', e?.response?.data?.message || 'سڕینەوە سەرنەکەوت')
   }

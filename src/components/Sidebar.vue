@@ -280,7 +280,7 @@ const isActive = (key) => {
     news:                { names: ['AdminNewsList','AdminNewsCreate','AdminNewsEdit'],                                    prefix: '/admin/news' },
     services:            { names: ['AdminServiceList','AdminServiceCreate','AdminServiceEdit'],                           prefix: '/admin/services' },
     'image-collections': { names: ['AdminImageCollectionList','AdminImageCollectionCreate','AdminImageCollectionEdit'],  prefix: '/admin/image-collections' },
-    soundtracks:         { names: ['AdminSoundTrackList','AdminSoundTrackCreate','AdminSoundTrackEdit'],                  prefix: '/admin/soundtracks' },
+    soundtracks:         { names: ['AdminSoundTrackList','AdminSoundTrackCreate','AdminSoundTrackEdit'],                  prefix: '/admin/sound-tracks' },
     videos:              { names: ['AdminVideoList','AdminVideoCreate','AdminVideoEdit'],                                 prefix: '/admin/videos' },
     writings:            { names: ['AdminWritingList','AdminWritingCreate','AdminWritingEdit'],                           prefix: '/admin/writings' },
     about:               { names: ['AdminAboutList','AdminAboutCreate','AdminAboutEdit'],                                 prefix: '/admin/about' },
