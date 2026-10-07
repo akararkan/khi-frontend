@@ -63,16 +63,8 @@
                   <span v-if="errors.subject" class="su-err">{{ errors.subject }}</span>
                 </div>
                 <div class="su-field">
-                  <label class="su-label">{{ lang.t('contact.topicLabel') }}</label>
-                  <div class="su-select-wrap">
-                    <select v-model="form.topic" class="su-input">
-                      <option value="GENERAL">{{ lang.t('contact.topicGeneral') || 'General Inquiry' }}</option>
-                      <option value="SERVICE">{{ lang.t('contact.topicService') || 'Services' }}</option>
-                      <option value="PROJECT">{{ lang.t('contact.topicProject') || 'Projects' }}</option>
-                      <option value="PARTNERSHIP">{{ lang.t('contact.topicPartnership') || 'Partnership' }}</option>
-                    </select>
-                    <svg class="su-select-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
-                  </div>
+                  <label class="su-label">{{ lang.t('contact.phoneLabel') || lang.t('contact.phone') }}</label>
+                  <input v-model.trim="form.phone" class="su-input" type="tel" maxlength="60" dir="ltr" :placeholder="lang.t('contact.phonePlaceholder') || '+964 ...'" />
                 </div>
               </div>
               
@@ -242,13 +234,16 @@ async function loadContact() {
   loading.value = true
   try {
     const { data } = await api.get('/api/v1/contact/active')
-    const list = data?.data ?? data
-    contact.value = Array.isArray(list) && list.length ? list[0] : null
+    // Envelope -> { data: { content: [...] } } paged; older builds answered a
+    // bare array, so read both shapes.
+    const body = data?.data ?? data
+    const list = Array.isArray(body) ? body : (body?.content ?? [])
+    contact.value = list.length ? list[0] : null
   } catch (e) { console.error(e) }
   finally { loading.value = false }
 }
 
-const form = reactive({ name: '', email: '', subject: '', topic: 'GENERAL', message: '' })
+const form = reactive({ name: '', email: '', phone: '', subject: '', message: '' })
 const errors = reactive({ name: '', email: '', subject: '', message: '' })
 const sending = ref(false)
 const submitted = ref(false)
@@ -269,7 +264,14 @@ async function submitForm() {
   
   sending.value = true
   try {
-    await api.post('/api/contact', { name:form.name, email:form.email, subject:form.subject, topic:form.topic, message:form.message })
+    await api.post('/api/v1/contact/messages', {
+      name: form.name,
+      email: form.email,
+      phone: form.phone || null,
+      subject: form.subject,
+      message: form.message,
+      locale: lang.current || 'ckb',
+    })
     submitted.value = true
     resetForm()
   } catch { 
@@ -280,7 +282,7 @@ async function submitForm() {
 }
 
 function resetForm() { 
-  form.name=''; form.email=''; form.subject=''; form.topic='GENERAL'; form.message=''; 
+  form.name=''; form.email=''; form.phone=''; form.subject=''; form.message='';
   clearErrors() 
 }
 
